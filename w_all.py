@@ -118,6 +118,12 @@ def _process_file(args, folder, file, index, count):
         '-i', file,             # Input
         '-vcodec', args.codec,  # Codec
         '-crf', str(args.rate)] # Compression rate
+    
+    # If recoding from other formats to mp4 add audio codec params
+    if args.video_files != '.mp4':
+         command += ['-c:a', 'aac', '-q:a', '100']
+         _print.filedetails('Extended ffmpeg params with audio codec to handle conversion.')
+
     # Output file
     filename = pathlib.Path(file).stem
     output_file = os.path.join(folder, f'{filename}.{args.suffix}{args.output_video_files}')
