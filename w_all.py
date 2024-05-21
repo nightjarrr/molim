@@ -22,20 +22,23 @@ class _print:
     level = 0
 
     def __filtered(s, lvl):
-        if lvl >= _print.level:
+        if lvl < _print.level:
             print(s)
 
     def totals(s):
-        _print.__filtered(s, 4)
+        _print.__filtered(s, 0)
 
     def folder(s):
-        _print.__filtered(s, 3)
+        _print.__filtered(s, 1)
 
     def file(s):
         _print.__filtered('\t' + s, 2)
 
     def filedetails(s):
-        _print.__filtered('\t\t' + s, 1)
+        _print.__filtered('\t\t' + s, 3)
+
+    def verbose(s):
+         _print.__filtered('\t\t' + s, 4)
 
 def _human_to_byte(size):
     size_name = {'K':1, 'M':2, 'G':3}
@@ -96,7 +99,8 @@ def _prepare_folder(args, folder, index, count):
     if args.originals == 'move':
         orig_folder = os.path.join(folder, args.originals_folder)
         try:
-            os.mkdir(orig_folder)
+            if not args.dry_run:
+                os.mkdir(orig_folder)
             _print.folder(f'\n\tCreated subfolder for original files: {orig_folder}')
         except FileExistsError:
             _print.folder(f'\n\tSubfolder for original files already exists: {orig_folder}')
@@ -134,19 +138,23 @@ def _process_file(args, folder, file, index, count):
         command.append('-report')
 
     _print.filedetails(f'Running ffmpeg to create {output_file}')
+    _print.verbose(' '.join(command))
     # ffmpeg -i "$fullpath" -vcodec libx265 -crf 26 "$newpath"
-    subprocess.run(command, stdout = subprocess.DEVNULL, stderr = subprocess.STDOUT)    
-    stat.output_file_size = os.path.getsize(output_file)
+    if not args.dry_run:
+        subprocess.run(command, stdout = subprocess.DEVNULL, stderr = subprocess.STDOUT)    
+    stat.output_file_size = os.path.getsize(output_file) if not args.dry_run else stat.original_size
 
     # original file post processing
     if args.originals == 'move':
         destination = os.path.join(folder, args.originals_folder, os.path.basename(file))
-        _print.filedetails(f'Moving original file to {destination}.')
-        os.rename(file, destination)
+        _print.filedetails(f'Moving original file to {destination}')
+        if not args.dry_run:
+            os.rename(file, destination)
         stat.original_moved = destination
     elif args.originals == 'delete':
         _print.filedetails(f'Deleting original file.')
-        os.remove(file)
+        if not args.dry_run:
+            os.remove(file)
 
     elapsed = time.time() - start_time
     stat.elapsed = elapsed
@@ -206,10 +214,12 @@ def main():
     parser.add_argument('-o', '--originals', choices=ORIGINAL_HANDLING_OPTIONS,
         default = 'move', help='How to handle original files after processing.')
     parser.add_argument('-f', '--originals-folder', default=ORIGINALS_FOLDER, help='Subfolder to save originals into.')
-    parser.add_argument('--display-verbosity', type=int, choices=range(1, 4),
-        default = 2, help='Verbosity of processing progress display.')
+    parser.add_argument('--display-verbosity', type=int, choices=range(1, 6),
+        default = 3, help='Verbosity of processing progress display.')
     parser.add_argument('--ffmpeg-report', default = False, action = 'store_true',
-        help='Write ffmpeg report with extended conversion information')
+        help='Write ffmpeg report with extended conversion information.')
+    parser.add_argument('--dry-run', default = False, action = 'store_true',
+        help='Execute everything but do not run processing or modify filesystem.')
 
     args = parser.parse_args()
     _print.level = args.display_verbosity
