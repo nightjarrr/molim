@@ -98,51 +98,51 @@ class FileStats(Stats):
     def __init__(self, original_file):
         super().__init__()
         util.ensure_file(original_file)
-        self.__originalFile = original_file
-        self.__originalFileSize = original_file.stat().st_size
-        self.__processedFile = None
-        self.__processedFileSize = None
-        self.__deltaSize = None
+        self.__original_file = original_file
+        self.__original_file_size = original_file.stat().st_size
+        self.__processed_file = None
+        self.__processed_file_size = None
+        self.__delta_size = None
 
     @ensure_not_finished
     def set_processed(self, processed_file):
-        if self.__processedFile:
+        if self.__processed_file:
             raise FileStatsAlreadyHaveProcessedFileError()
         util.ensure_file(processed_file)
-        self.__processedFile = processed_file
-        self.__processedFileSize = processed_file.stat().st_size
+        self.__processed_file = processed_file
+        self.__processed_file_size = processed_file.stat().st_size
 
     def finish(self):
         super().finish()
-        if self.__processedFileSize:
-            self.__deltaSize = self.__processedFileSize - self.__originalFileSize
+        if self.__processed_file_size:
+            self.__delta_size = self.__processed_file_size - self.__original_file_size
 
     # Properties
 
     @property
     @ensure_finished
-    def originalFile(self):
-        return self.__originalFile
+    def original_file(self):
+        return self.__original_file
 
     @property
     @ensure_finished
-    def originalFileSize(self):
-        return self.__originalFileSize
+    def original_file_size(self):
+        return self.__original_file_size
 
     @property
     @ensure_finished
-    def processedFile(self):
-        return self.__processedFile
+    def processed_file(self):
+        return self.__processed_file
 
     @property
     @ensure_finished
-    def processedFileSize(self):
-        return self.__processedFileSize
+    def processed_file_size(self):
+        return self.__processed_file_size
 
     @property
     @ensure_finished
-    def deltaSize(self):
-        return self.__deltaSize
+    def delta_size(self):
+        return self.__delta_size
 
 
 class FolderStats(Stats):

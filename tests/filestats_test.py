@@ -25,15 +25,15 @@ def test_FileStats_unfinished_stats_throws(files_pair):
     instance = stats.FileStats(src)
     instance.start()
     with pytest.raises(stats.StatsNotFinishedError):
-        instance.originalFile
+        instance.original_file
     with pytest.raises(stats.StatsNotFinishedError):
-        instance.originalFileSize
+        instance.original_file_size
     with pytest.raises(stats.StatsNotFinishedError):
-        instance.processedFile
+        instance.processed_file
     with pytest.raises(stats.StatsNotFinishedError):
-        instance.processedFileSize
+        instance.processed_file_size
     with pytest.raises(stats.StatsNotFinishedError):
-        instance.deltaSize
+        instance.delta_size
 
 
 def test_FileStats_processed_after_finish_throws(files_pair):
@@ -65,8 +65,8 @@ def test_FileStats_processed_correct_stats(files_pair):
     src, dest = files_pair
     with stats.FileStats(src) as s:
         s.set_processed(dest)
-    assert s.originalFile == src
-    assert s.originalFileSize == SOURCE_SIZE
-    assert s.processedFile == dest
-    assert s.processedFileSize == DEST_SIZE
-    assert s.deltaSize == (DEST_SIZE - SOURCE_SIZE)
+    assert s.original_file == src
+    assert s.original_file_size == SOURCE_SIZE
+    assert s.processed_file == dest
+    assert s.processed_file_size == DEST_SIZE
+    assert s.delta_size == (DEST_SIZE - SOURCE_SIZE)
