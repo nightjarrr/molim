@@ -15,4 +15,4 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "--cov=. --cov-config=.coveragerc"
+addopts = "--cov=. --cov-config=.coveragerc --cov-report html"

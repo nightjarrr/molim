@@ -2,7 +2,7 @@ import pytest
 import stats
 
 
-def test_stats():
+def test_Stats():
     instance = stats.Stats()
     instance.start()
     assert not instance.finished
@@ -13,7 +13,8 @@ def test_stats():
     assert instance.endTimestamp is not None
     assert instance.elapsed > 0
 
-def test_stats_with():
+
+def test_Stats_with():
     with stats.Stats() as instance:
         assert not instance.finished
     assert instance.finished
@@ -21,7 +22,8 @@ def test_stats_with():
     assert instance.endTimestamp is not None
     assert instance.elapsed > 0
 
-def test_unfinished_stats_throws():
+
+def test_Stats_unfinished_stats_throws():
     instance = stats.Stats()
     instance.start()
     with pytest.raises(stats.StatsNotFinishedError):
@@ -31,7 +33,8 @@ def test_unfinished_stats_throws():
     with pytest.raises(stats.StatsNotFinishedError):
         instance.elapsed
 
-def test_double_finish_throws():
+
+def test_Stats_double_finish_throws():
     with stats.Stats() as instance:
         pass
     with pytest.raises(stats.StatsAlreadyFinishedError):
