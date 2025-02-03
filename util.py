@@ -1,5 +1,6 @@
 import pathlib
 
+
 class NotAFileError(Exception):
     DEFAULT_MESSAGE = "A file is required."
 
