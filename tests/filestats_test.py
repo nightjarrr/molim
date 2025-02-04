@@ -1,7 +1,7 @@
 import pytest
 import random
 import stats
-import util
+
 
 SOURCE_SIZE = 200
 SOURCE_DATA = random.randbytes(SOURCE_SIZE)
@@ -46,10 +46,10 @@ def test_FileStats_processed_after_finish_throws(files_pair):
 
 def test_FileStats_expects_file(files_pair, tmp_path):
     src, dest = files_pair
-    with pytest.raises(util.NotAFileError):
+    with pytest.raises(ValueError):
         s = stats.FileStats(tmp_path)
     with stats.FileStats(src) as s:
-        with pytest.raises(util.NotAFileError):
+        with pytest.raises(ValueError):
             s.set_processed(tmp_path)
 
 
