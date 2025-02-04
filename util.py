@@ -21,3 +21,10 @@ def ensure_file(obj):
     ensure_path(obj)
     if not obj.is_file():
         raise ValueError("A file is required.")
+
+
+def ensure_folder(obj):
+    ensure_path(obj)
+    if not obj.is_dir():
+        raise ValueError("A folder is required.")
+

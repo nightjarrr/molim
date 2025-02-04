@@ -112,4 +112,3 @@ def test_FileProcessor_dry_run(tmp_path):
     assert stat.processed_file_size == input_size
     assert stat.delta_size == 0
     assert stat.elapsed > 0
-

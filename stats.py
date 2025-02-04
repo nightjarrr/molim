@@ -1,3 +1,4 @@
+import pathlib
 import time
 import util
 
@@ -118,7 +119,7 @@ class FileStats(Stats):
     def finish(self):
         super().finish()
         if self.__processed_file_size:
-            self.__delta_size = self.__processed_file_size - self.__original_file_size
+            self.__delta_size = self.__original_file_size - self.__processed_file_size
 
     # Properties
 
@@ -149,7 +150,59 @@ class FileStats(Stats):
 
 
 class FolderStats(Stats):
-    pass
+    def __init__(self, folder_path: pathlib.Path):
+        super().__init__()
+        util.ensure_folder(folder_path)
+        self.__folder_path = folder_path
+        self.__processed_files_stats = []
+        self.__total_original_size = 0
+        self.__total_processed_size = 0
+        self.__skipped_files_count = 0
+
+    @ensure_not_finished
+    def add_processed_file_stats(self, file_stats: FileStats) -> None:
+        util.ensure_type(file_stats, FileStats)
+        if not file_stats.finished:
+            raise ValueError("Cannot add non-finished file stats to folder stats.")
+        self.__processed_files_stats.append(file_stats)
+        self.__total_original_size += file_stats.original_file_size
+        self.__total_processed_size += file_stats.processed_file_size
+
+    @ensure_not_finished
+    def add_skipped_file(self) -> None:
+        self.__skipped_files_count += 1
+
+    # Properties
+
+    @property
+    @ensure_finished
+    def folder_path(self) -> pathlib.Path:
+        return self.__folder_path
+
+    @property
+    @ensure_finished
+    def processed_files_stats(self) -> list[FileStats]:
+        return self.__processed_files_stats
+
+    @property
+    @ensure_finished
+    def skipped_files_count(self) -> int:
+        return self.__skipped_files_count
+
+    @property
+    @ensure_finished
+    def total_original_size(self) -> int:
+        return self.__total_original_size
+
+    @property
+    @ensure_finished
+    def total_processed_size(self) -> int:
+        return self.__total_processed_size
+
+    @property
+    @ensure_finished
+    def total_delta_size(self) -> int:
+        return self.__total_original_size - self.__total_processed_size
 
 
 class TotalStats(Stats):

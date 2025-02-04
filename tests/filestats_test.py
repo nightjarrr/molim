@@ -69,4 +69,4 @@ def test_FileStats_processed_correct_stats(files_pair):
     assert s.original_file_size == SOURCE_SIZE
     assert s.processed_file == dest
     assert s.processed_file_size == DEST_SIZE
-    assert s.delta_size == (DEST_SIZE - SOURCE_SIZE)
+    assert s.delta_size == (SOURCE_SIZE - DEST_SIZE)
