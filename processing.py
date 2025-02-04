@@ -18,6 +18,16 @@ class SuffixOutputFilePathStrategy(OutputFilePathStrategy):
         return input_path.with_stem(output_stem)
 
 
+class ChangeExtOutputFilePathStrategy(OutputFilePathStrategy):
+    def __init__(self, ext):
+        util.ensure_not_none(ext)
+        self.__ext = ext
+
+    def get_output_path(self, input_path):
+        util.ensure_path(input_path)
+        return input_path.with_suffix(self.__ext)
+
+
 class PostProcessingStrategy(object):
     pass
 
@@ -25,6 +35,8 @@ class PostProcessingStrategy(object):
 class FileProcessor(object):
     def __init__(self, filepath, output_strategy, post_processor):
         util.ensure_file(filepath)
+        util.ensure_type(output_strategy, OutputFilePathStrategy)
+        util.ensure_type(post_processor, PostProcessingStrategy)
         self.__filepath = filepath
         self.__output_strategy = output_strategy
         self.__post_processor = post_processor
