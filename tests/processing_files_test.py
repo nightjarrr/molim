@@ -62,30 +62,27 @@ def test_FileProcessor_input_validation(tmp_path):
     s = processing.ChangeExtOutputFilePathStrategy(".zip")
     pp = processing.NoopPostProcessingStrategy()
 
-    # Null checks
     with pytest.raises(ValueError):
-        processing.FileProcessor(None, s, pp)
+        processing.FileProcessor(None, pp)
 
     with pytest.raises(ValueError):
-        processing.FileProcessor(input_path, None, pp)
-
-    with pytest.raises(ValueError):
-        processing.FileProcessor(input_path, s, None)
-
-    # File check
-    with pytest.raises(ValueError):
-        processing.FileProcessor(input_path, s, pp)
-    input_path.touch()
+        processing.FileProcessor(s, None)
 
     # Type checks
     with pytest.raises(TypeError):
-        processing.FileProcessor("/tmp/path", s, pp)
+        processing.FileProcessor(s, s)
 
     with pytest.raises(TypeError):
-        processing.FileProcessor(input_path, s, s)
+        processing.FileProcessor(pp, pp)
+
+    # File check
+    p = processing.FileProcessor(s, pp)
+    with pytest.raises(ValueError):
+        p.process(input_path)
+    input_path.touch()
 
     with pytest.raises(TypeError):
-        processing.FileProcessor(input_path, pp, pp)
+        p.process("/tmp/path")
 
 
 def test_FileProcessor_dry_run(tmp_path):
@@ -96,12 +93,12 @@ def test_FileProcessor_dry_run(tmp_path):
     s = processing.ChangeExtOutputFilePathStrategy(".zip")
     pp = processing.NoopPostProcessingStrategy()
 
-    p = processing.FileProcessor(input_path, s, pp)
+    p = processing.FileProcessor(s, pp)
     # Verify that non-dry run fails on abstract class.
     with pytest.raises(NotImplementedError):
-        p.process()
+        p.process(input_path)
 
-    stat = p.process(dry_run=True)
+    stat = p.process(input_path, dry_run=True)
 
     assert stat is not None
     assert isinstance(stat, stats.FileStats)
