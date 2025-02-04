@@ -105,12 +105,15 @@ class FileStats(Stats):
         self.__delta_size = None
 
     @ensure_not_finished
-    def set_processed(self, processed_file):
+    def set_processed_file(self, processed_file, processed_file_size=None):
         if self.__processed_file:
             raise FileStatsAlreadyHaveProcessedFileError()
-        util.ensure_file(processed_file)
+        if processed_file_size:
+            self.__processed_file_size = processed_file_size
+        else:
+            util.ensure_file(processed_file)
+            self.__processed_file_size = processed_file.stat().st_size
         self.__processed_file = processed_file
-        self.__processed_file_size = processed_file.stat().st_size
 
     def finish(self):
         super().finish()

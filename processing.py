@@ -29,7 +29,13 @@ class ChangeExtOutputFilePathStrategy(OutputFilePathStrategy):
 
 
 class PostProcessingStrategy(object):
-    pass
+    def process(self, input_filepath, output_filepath):
+        raise NotImplementedError()
+
+
+class NoopPostProcessingStrategy(PostProcessingStrategy):
+    def process(self, input_filepath, output_filepath):
+        pass
 
 
 class FileProcessor(object):
@@ -44,12 +50,15 @@ class FileProcessor(object):
     def process(self, dry_run=False):
         with stats.FileStats(self.__filepath) as statistics:
             output_filepath = self.__output_strategy.get_output_path(self.__filepath)
+            output_filepath_size = None
 
             if not dry_run:
-                self._execute(self, output_filepath)
-                statistics.set_processed(output_filepath)
+                self._execute(output_filepath)
             else:
-                statistics.set_processed(self.__filepath)
+                # For dry run, emulate output size matching the input size.
+                output_filepath_size = self.__filepath.stat().st_size
+
+            statistics.set_processed_file(output_filepath, output_filepath_size)
 
             self.__post_processor.process(self.__filepath, output_filepath)
 

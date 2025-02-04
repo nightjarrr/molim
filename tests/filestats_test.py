@@ -41,7 +41,7 @@ def test_FileStats_processed_after_finish_throws(files_pair):
     with stats.FileStats(src) as s:
         pass
     with pytest.raises(stats.StatsAlreadyFinishedError):
-        s.set_processed(dest)
+        s.set_processed_file(dest)
 
 
 def test_FileStats_expects_file(files_pair, tmp_path):
@@ -50,21 +50,21 @@ def test_FileStats_expects_file(files_pair, tmp_path):
         s = stats.FileStats(tmp_path)
     with stats.FileStats(src) as s:
         with pytest.raises(ValueError):
-            s.set_processed(tmp_path)
+            s.set_processed_file(tmp_path)
 
 
 def test_FileStats_double_processed_throws(files_pair, tmp_path):
     src, dest = files_pair
     with stats.FileStats(src) as s:
-        s.set_processed(dest)
+        s.set_processed_file(dest)
         with pytest.raises(stats.FileStatsAlreadyHaveProcessedFileError):
-            s.set_processed(dest)
+            s.set_processed_file(dest)
 
 
 def test_FileStats_processed_correct_stats(files_pair):
     src, dest = files_pair
     with stats.FileStats(src) as s:
-        s.set_processed(dest)
+        s.set_processed_file(dest)
     assert s.original_file == src
     assert s.original_file_size == SOURCE_SIZE
     assert s.processed_file == dest
