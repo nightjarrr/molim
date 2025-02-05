@@ -27,4 +27,3 @@ def ensure_folder(obj):
     ensure_path(obj)
     if not obj.is_dir():
         raise ValueError("A folder is required.")
-
