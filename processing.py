@@ -75,11 +75,38 @@ class FileProcessor(object):
 
 
 class FileMatchStrategy(object):
-    pass
+    def match(self, file_path):
+        raise NotImplementedError()
+
+
+class AnyFileMatchStrategy(FileMatchStrategy):
+    def match(self, file_path):
+        return True
+
+
+class ByExtensionFileMatchStrategy(FileMatchStrategy):
+    def __init__(self, ext):
+        util.ensure_type(ext, str)
+        self.__ext = ext
+
+    def match(self, file_path):
+        util.ensure_file(file_path)
+        return file_path.suffix == self.__ext
 
 
 class FileSkipStrategy(object):
-    pass
+    def skip(self, file_path):
+        raise NotImplementedError()
+
+
+class BySuffixFileSkipStrategy(FileSkipStrategy):
+    def __init__(self, suffix):
+        util.ensure_type(suffix, str)
+        self.__suffix = suffix
+
+    def skip(self, file_path):
+        util.ensure_file(file_path)
+        return file_path.stem.endswith(self.__suffix)
 
 
 class FolderProcessor(object):
