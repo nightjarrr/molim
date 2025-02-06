@@ -106,7 +106,9 @@ class FileStats(Stats):
         self.__delta_size = None
 
     @ensure_not_finished
-    def set_processed_file(self, processed_file: pathlib.Path, processed_file_size: int = None):
+    def set_processed_file(
+        self, processed_file: pathlib.Path, processed_file_size: int = None
+    ):
         if self.__processed_file:
             raise FileStatsAlreadyHaveProcessedFileError()
         if processed_file_size:
@@ -203,4 +205,3 @@ class FolderStats(Stats):
     @ensure_finished
     def total_delta_size(self) -> int:
         return self.__total_original_size - self.__total_processed_size
-
