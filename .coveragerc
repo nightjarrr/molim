@@ -1,2 +1,9 @@
 [run]
-omit = tests/*
+omit = 
+    tests/*
+    ; Legacy implementation, non-testable.
+    w_all.py
+
+[report]
+exclude_also =
+    raise NotImplementedError
