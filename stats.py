@@ -47,11 +47,11 @@ class Stats(object):
         self.__finished = False
 
     @ensure_not_finished
-    def start(self):
+    def start(self) -> None:
         self.__startTs = time.time()
 
     @ensure_not_finished
-    def finish(self):
+    def finish(self) -> None:
         self.__endTs = time.time()
         self.__elapsed = self.__endTs - self.__startTs
         self.__finished = True
@@ -68,22 +68,22 @@ class Stats(object):
     # Properties
 
     @property
-    def finished(self):
+    def finished(self) -> bool:
         return self.__finished
 
     @property
     @ensure_finished
-    def start_timestamp(self):
+    def start_timestamp(self) -> float:
         return self.__startTs
 
     @property
     @ensure_finished
-    def end_timestamp(self):
+    def end_timestamp(self) -> float:
         return self.__endTs
 
     @property
     @ensure_finished
-    def elapsed(self):
+    def elapsed(self) -> float:
         return self.__elapsed
 
 
@@ -96,7 +96,7 @@ class FileStatsAlreadyHaveProcessedFileError(Exception):
 
 
 class FileStats(Stats):
-    def __init__(self, original_file):
+    def __init__(self, original_file: pathlib.Path):
         super().__init__()
         check.ensure_file(original_file)
         self.__original_file = original_file
@@ -106,7 +106,7 @@ class FileStats(Stats):
         self.__delta_size = None
 
     @ensure_not_finished
-    def set_processed_file(self, processed_file, processed_file_size=None):
+    def set_processed_file(self, processed_file: pathlib.Path, processed_file_size: int = None):
         if self.__processed_file:
             raise FileStatsAlreadyHaveProcessedFileError()
         if processed_file_size:
@@ -125,27 +125,27 @@ class FileStats(Stats):
 
     @property
     @ensure_finished
-    def original_file(self):
+    def original_file(self) -> pathlib.Path:
         return self.__original_file
 
     @property
     @ensure_finished
-    def original_file_size(self):
+    def original_file_size(self) -> int:
         return self.__original_file_size
 
     @property
     @ensure_finished
-    def processed_file(self):
+    def processed_file(self) -> pathlib.Path:
         return self.__processed_file
 
     @property
     @ensure_finished
-    def processed_file_size(self):
+    def processed_file_size(self) -> int:
         return self.__processed_file_size
 
     @property
     @ensure_finished
-    def delta_size(self):
+    def delta_size(self) -> int:
         return self.__delta_size
 
 
@@ -203,3 +203,4 @@ class FolderStats(Stats):
     @ensure_finished
     def total_delta_size(self) -> int:
         return self.__total_original_size - self.__total_processed_size
+
