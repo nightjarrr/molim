@@ -30,17 +30,25 @@ class ChangeExtOutputFilePathStrategy(OutputFilePathStrategy):
 
 
 class PostProcessingStrategy(object):
-    def process(self, input_filepath: pathlib.Path, output_filepath: pathlib.Path) -> None:
+    def process(
+        self, input_filepath: pathlib.Path, output_filepath: pathlib.Path
+    ) -> None:
         raise NotImplementedError()
 
 
 class NoopPostProcessingStrategy(PostProcessingStrategy):
-    def process(self, input_filepath: pathlib.Path, output_filepath: pathlib.Path) -> None:
+    def process(
+        self, input_filepath: pathlib.Path, output_filepath: pathlib.Path
+    ) -> None:
         pass
 
 
 class FileProcessor(object):
-    def __init__(self, output_strategy: OutputFilePathStrategy, post_processor: PostProcessingStrategy):
+    def __init__(
+        self,
+        output_strategy: OutputFilePathStrategy,
+        post_processor: PostProcessingStrategy,
+    ):
         check.ensure_type(output_strategy, OutputFilePathStrategy)
         check.ensure_type(post_processor, PostProcessingStrategy)
         self.__output_strategy = output_strategy
