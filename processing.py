@@ -4,43 +4,43 @@ import check
 
 
 class OutputFilePathStrategy(object):
-    def get_output_path(input_path):
+    def get_output_path(input_path: pathlib.Path):
         raise NotImplementedError()
 
 
 class SuffixOutputFilePathStrategy(OutputFilePathStrategy):
-    def __init__(self, suffix):
-        check.ensure_not_none(suffix)
+    def __init__(self, suffix: str):
+        check.ensure_type(suffix, str)
         self.__suffix = suffix
 
-    def get_output_path(self, input_path):
+    def get_output_path(self, input_path: pathlib.Path) -> pathlib.Path:
         check.ensure_path(input_path)
         output_stem = f"{input_path.stem}.{self.__suffix}"
         return input_path.with_stem(output_stem)
 
 
 class ChangeExtOutputFilePathStrategy(OutputFilePathStrategy):
-    def __init__(self, ext):
-        check.ensure_not_none(ext)
+    def __init__(self, ext: str):
+        check.ensure_type(ext, str)
         self.__ext = ext
 
-    def get_output_path(self, input_path):
+    def get_output_path(self, input_path: pathlib.Path) -> pathlib.Path:
         check.ensure_path(input_path)
         return input_path.with_suffix(self.__ext)
 
 
 class PostProcessingStrategy(object):
-    def process(self, input_filepath, output_filepath):
+    def process(self, input_filepath: pathlib.Path, output_filepath: pathlib.Path) -> None:
         raise NotImplementedError()
 
 
 class NoopPostProcessingStrategy(PostProcessingStrategy):
-    def process(self, input_filepath, output_filepath):
+    def process(self, input_filepath: pathlib.Path, output_filepath: pathlib.Path) -> None:
         pass
 
 
 class FileProcessor(object):
-    def __init__(self, output_strategy, post_processor):
+    def __init__(self, output_strategy: OutputFilePathStrategy, post_processor: PostProcessingStrategy):
         check.ensure_type(output_strategy, OutputFilePathStrategy)
         check.ensure_type(post_processor, PostProcessingStrategy)
         self.__output_strategy = output_strategy
@@ -65,46 +65,46 @@ class FileProcessor(object):
 
         return statistics
 
-    def _prepare_execution(self, output_file_path: pathlib.Path):
+    def _prepare_execution(self, output_file_path: pathlib.Path) -> None:
         pass
 
     # Abstract methods
 
-    def _execute(self, output_file_path: pathlib.Path):
+    def _execute(self, output_file_path: pathlib.Path) -> None:
         raise NotImplementedError()
 
 
 class FileMatchStrategy(object):
-    def match(self, file_path):
+    def match(self, file_path: pathlib.Path) -> bool:
         raise NotImplementedError()
 
 
 class AnyFileMatchStrategy(FileMatchStrategy):
-    def match(self, file_path):
+    def match(self, file_path: pathlib.Path) -> bool:
         return True
 
 
 class ByExtensionFileMatchStrategy(FileMatchStrategy):
-    def __init__(self, ext):
+    def __init__(self, ext: str):
         check.ensure_type(ext, str)
         self.__ext = ext
 
-    def match(self, file_path):
+    def match(self, file_path: pathlib.Path) -> bool:
         check.ensure_file(file_path)
         return file_path.suffix == self.__ext
 
 
 class FileSkipStrategy(object):
-    def skip(self, file_path):
+    def skip(self, file_path: pathlib.Path) -> bool:
         raise NotImplementedError()
 
 
 class BySuffixFileSkipStrategy(FileSkipStrategy):
-    def __init__(self, suffix):
+    def __init__(self, suffix: str):
         check.ensure_type(suffix, str)
         self.__suffix = suffix
 
-    def skip(self, file_path):
+    def skip(self, file_path: pathlib.Path) -> bool:
         check.ensure_file(file_path)
         return file_path.stem.endswith(self.__suffix)
 
