@@ -1,6 +1,6 @@
 import pathlib
 import stats
-import util
+import check
 
 
 class OutputFilePathStrategy(object):
@@ -10,22 +10,22 @@ class OutputFilePathStrategy(object):
 
 class SuffixOutputFilePathStrategy(OutputFilePathStrategy):
     def __init__(self, suffix):
-        util.ensure_not_none(suffix)
+        check.ensure_not_none(suffix)
         self.__suffix = suffix
 
     def get_output_path(self, input_path):
-        util.ensure_path(input_path)
+        check.ensure_path(input_path)
         output_stem = f"{input_path.stem}.{self.__suffix}"
         return input_path.with_stem(output_stem)
 
 
 class ChangeExtOutputFilePathStrategy(OutputFilePathStrategy):
     def __init__(self, ext):
-        util.ensure_not_none(ext)
+        check.ensure_not_none(ext)
         self.__ext = ext
 
     def get_output_path(self, input_path):
-        util.ensure_path(input_path)
+        check.ensure_path(input_path)
         return input_path.with_suffix(self.__ext)
 
 
@@ -41,13 +41,13 @@ class NoopPostProcessingStrategy(PostProcessingStrategy):
 
 class FileProcessor(object):
     def __init__(self, output_strategy, post_processor):
-        util.ensure_type(output_strategy, OutputFilePathStrategy)
-        util.ensure_type(post_processor, PostProcessingStrategy)
+        check.ensure_type(output_strategy, OutputFilePathStrategy)
+        check.ensure_type(post_processor, PostProcessingStrategy)
         self.__output_strategy = output_strategy
         self.__post_processor = post_processor
 
     def process(self, file_path: pathlib.Path, dry_run=False) -> stats.FileStats:
-        util.ensure_file(file_path)
+        check.ensure_file(file_path)
         with stats.FileStats(file_path) as statistics:
             output_file_path = self.__output_strategy.get_output_path(file_path)
             output_file_size = None
@@ -86,11 +86,11 @@ class AnyFileMatchStrategy(FileMatchStrategy):
 
 class ByExtensionFileMatchStrategy(FileMatchStrategy):
     def __init__(self, ext):
-        util.ensure_type(ext, str)
+        check.ensure_type(ext, str)
         self.__ext = ext
 
     def match(self, file_path):
-        util.ensure_file(file_path)
+        check.ensure_file(file_path)
         return file_path.suffix == self.__ext
 
 
@@ -101,11 +101,11 @@ class FileSkipStrategy(object):
 
 class BySuffixFileSkipStrategy(FileSkipStrategy):
     def __init__(self, suffix):
-        util.ensure_type(suffix, str)
+        check.ensure_type(suffix, str)
         self.__suffix = suffix
 
     def skip(self, file_path):
-        util.ensure_file(file_path)
+        check.ensure_file(file_path)
         return file_path.stem.endswith(self.__suffix)
 
 
@@ -117,10 +117,10 @@ class FolderProcessor(object):
         file_skiper: FileSkipStrategy,
         file_processor: FileProcessor,
     ):
-        util.ensure_folder(folder_path)
-        util.ensure_type(file_matcher, FileMatchStrategy)
-        util.ensure_type(file_skiper, FileSkipStrategy)
-        util.ensure_type(file_processor, FileProcessor)
+        check.ensure_folder(folder_path)
+        check.ensure_type(file_matcher, FileMatchStrategy)
+        check.ensure_type(file_skiper, FileSkipStrategy)
+        check.ensure_type(file_processor, FileProcessor)
         self.__folder_path = folder_path
         self.__file_matcher = file_matcher
         self.__file_skiper = file_skiper

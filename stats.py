@@ -1,6 +1,6 @@
 import pathlib
 import time
-import util
+import check
 
 
 class StatsNotFinishedError(Exception):
@@ -98,7 +98,7 @@ class FileStatsAlreadyHaveProcessedFileError(Exception):
 class FileStats(Stats):
     def __init__(self, original_file):
         super().__init__()
-        util.ensure_file(original_file)
+        check.ensure_file(original_file)
         self.__original_file = original_file
         self.__original_file_size = original_file.stat().st_size
         self.__processed_file = None
@@ -112,7 +112,7 @@ class FileStats(Stats):
         if processed_file_size:
             self.__processed_file_size = processed_file_size
         else:
-            util.ensure_file(processed_file)
+            check.ensure_file(processed_file)
             self.__processed_file_size = processed_file.stat().st_size
         self.__processed_file = processed_file
 
@@ -152,7 +152,7 @@ class FileStats(Stats):
 class FolderStats(Stats):
     def __init__(self, folder_path: pathlib.Path):
         super().__init__()
-        util.ensure_folder(folder_path)
+        check.ensure_folder(folder_path)
         self.__folder_path = folder_path
         self.__processed_files_stats = []
         self.__total_original_size = 0
@@ -161,7 +161,7 @@ class FolderStats(Stats):
 
     @ensure_not_finished
     def add_processed_file_stats(self, file_stats: FileStats) -> None:
-        util.ensure_type(file_stats, FileStats)
+        check.ensure_type(file_stats, FileStats)
         if not file_stats.finished:
             raise ValueError("Cannot add non-finished file stats to folder stats.")
         self.__processed_files_stats.append(file_stats)
