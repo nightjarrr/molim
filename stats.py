@@ -203,7 +203,3 @@ class FolderStats(Stats):
     @ensure_finished
     def total_delta_size(self) -> int:
         return self.__total_original_size - self.__total_processed_size
-
-
-class TotalStats(Stats):
-    pass
