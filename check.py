@@ -12,10 +12,17 @@ def ensure_type(obj, type):
     if not isinstance(obj, type):
         raise TypeError(f"A {type} object is required.")
 
+
 def ensure_str_startswith(obj, start):
     ensure_type(obj, str)
     if not obj.startswith(start):
         raise ValueError(f"A string value that starts with '{start}' is required.")
+
+
+def ensure_int_positive(obj):
+    ensure_type(obj, int)
+    if obj < 1:
+        raise ValueError("A positive integer value is required.")
 
 
 def ensure_path(obj):

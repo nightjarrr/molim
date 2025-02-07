@@ -117,6 +117,26 @@ class BySuffixFileSkipStrategy(FileSkipStrategy):
         return file_path.stem.endswith(self.__suffix)
 
 
+class BySizeFileSkipStrategy(FileSkipStrategy):
+    def __init__(self, less_than: int):
+        check.ensure_int_positive(less_than)
+        self.__less_than = less_than
+
+    def skip(self, file_path: pathlib.Path) -> bool:
+        check.ensure_file(file_path)
+        return file_path.stat().st_size < self.__less_than
+
+
+class MultiFileSkipStrategy(FileSkipStrategy):
+    def __init__(self, skip_strategies: list[FileSkipStrategy]):
+        check.ensure_type(skip_strategies, list)
+        self.__skip_strategies = skip_strategies
+
+    def skip(self, file_path: pathlib.Path) -> bool:
+        check.ensure_file(file_path)
+        return any([s.skip(file_path) for s in self.__skip_strategies])
+
+
 class FolderProcessor(object):
     def __init__(
         self,

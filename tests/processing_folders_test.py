@@ -50,6 +50,104 @@ def test_BySuffixFileSkipStrategy_input_validation():
         s.skip(None)
 
 
+def test_BySuffixFileSkipStrategy_core_logic(tmp_path):
+    s = processing.BySuffixFileSkipStrategy(".min")
+
+    path = tmp_path / "data.txt"
+    path.touch()
+    assert not s.skip(path)
+
+    path = tmp_path / "data.min.txt"
+    path.touch()
+    assert s.skip(path)
+
+
+# BySizeFileSkipStrategy tests
+
+
+def test_BySizeFileSkipStrategy_input_validation():
+    with pytest.raises(ValueError):
+        processing.BySizeFileSkipStrategy(None)
+
+    with pytest.raises(TypeError):
+        processing.BySizeFileSkipStrategy("12")
+
+    with pytest.raises(ValueError):
+        processing.BySizeFileSkipStrategy(0)
+
+    with pytest.raises(ValueError):
+        processing.BySizeFileSkipStrategy(-100)
+
+    s = processing.BySizeFileSkipStrategy(100)
+    with pytest.raises(TypeError):
+        s.skip("/tmp/path")
+    with pytest.raises(ValueError):
+        s.skip(None)
+
+
+def test_BySizeFileSkipStrategy_core_logic(tmp_path):
+    s = processing.BySizeFileSkipStrategy(120)
+
+    path = tmp_path / "data.txt"
+    path.write_bytes(random.randbytes(150))
+    assert not s.skip(path)
+
+    path.write_bytes(random.randbytes(100))
+    assert s.skip(path)
+
+
+# MultiFileSkipStrategy tests
+
+
+def test_MultiFileSkipStrategy_input_validation():
+    with pytest.raises(ValueError):
+        processing.MultiFileSkipStrategy(None)
+
+    with pytest.raises(TypeError):
+        processing.MultiFileSkipStrategy("12")
+
+    with pytest.raises(TypeError):
+        processing.MultiFileSkipStrategy(100)
+
+    s = processing.MultiFileSkipStrategy([])
+    with pytest.raises(TypeError):
+        s.skip("/tmp/path")
+    with pytest.raises(ValueError):
+        s.skip(None)
+
+
+def test_MultiFileSkipStrategy_empty(tmp_path):
+    s = processing.MultiFileSkipStrategy([])
+
+    path = tmp_path / "data.min.txt"
+    path.write_bytes(random.randbytes(150))
+    assert not s.skip(path)
+
+    path = tmp_path / "data.txt"
+    path.write_bytes(random.randbytes(100))
+    assert not s.skip(path)
+
+    path.write_bytes(random.randbytes(150))
+    assert not s.skip(path)
+
+
+def test_MultiFileSkipStrategy_core_logic(tmp_path):
+    s = processing.MultiFileSkipStrategy([
+        processing.BySuffixFileSkipStrategy(".min"),
+        processing.BySizeFileSkipStrategy(120),
+    ])
+
+    path = tmp_path / "data.min.txt"
+    path.write_bytes(random.randbytes(150))
+    assert s.skip(path)
+
+    path = tmp_path / "data.txt"
+    path.write_bytes(random.randbytes(100))
+    assert s.skip(path)
+
+    path.write_bytes(random.randbytes(150))
+    assert not s.skip(path)
+
 # FolderProcessor tests
 
 
