@@ -25,6 +25,12 @@ def ensure_int_positive(obj):
         raise ValueError("A positive integer value is required.")
 
 
+def ensure_int_between(obj, min, max):
+    ensure_type(obj, int)
+    if obj < min or obj > max:
+        raise ValueError("An integer value between {min} and {max} is required.")
+
+
 def ensure_list_non_empty(obj):
     ensure_type(obj, list)
     if len(obj) == 0:

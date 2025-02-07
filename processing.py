@@ -73,9 +73,9 @@ class FileProcessor(object):
             output_file_path = self.__output_strategy.get_output_path(file_path)
             output_file_size = None
 
-            self._prepare_execution(output_file_path)
+            self._prepare_execution(file_path, output_file_path)
             if not dry_run:
-                self._execute(output_file_path)
+                self._execute(file_path, output_file_path)
             else:
                 # For dry run, emulate output size matching the input size.
                 output_file_size = file_path.stat().st_size
@@ -86,12 +86,12 @@ class FileProcessor(object):
 
         return statistics
 
-    def _prepare_execution(self, output_file_path: pathlib.Path) -> None:
+    def _prepare_execution(self, file_path: pathlib.Path, output_file_path: pathlib.Path) -> None:
         pass
 
     # Abstract methods
 
-    def _execute(self, output_file_path: pathlib.Path) -> None:
+    def _execute(self, file_path: pathlib.Path, output_file_path: pathlib.Path) -> None:
         raise NotImplementedError()
 
 
