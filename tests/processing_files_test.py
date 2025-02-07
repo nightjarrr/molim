@@ -60,6 +60,45 @@ def test_ChangeExtOutputFilePathStrategy_core_logic(tmp_path):
     assert output_path.name == "data.zip"
 
 
+# MultiOutputFilePathStrategy
+
+
+def test_MultiOutputFilePathStrategy_input_validation():
+    with pytest.raises(ValueError):
+        processing.MultiOutputFilePathStrategy(None)
+
+    with pytest.raises(TypeError):
+        processing.MultiOutputFilePathStrategy("12")
+
+    with pytest.raises(TypeError):
+        processing.MultiOutputFilePathStrategy(100)
+
+    with pytest.raises(ValueError):
+        processing.MultiOutputFilePathStrategy([])
+
+    s = processing.MultiOutputFilePathStrategy(
+        [processing.ChangeExtOutputFilePathStrategy(".jpg")]
+    )
+    with pytest.raises(TypeError):
+        s.get_output_path("/tmp/path")
+    with pytest.raises(ValueError):
+        s.get_output_path(None)
+
+
+def test_MultiOutputFilePathStrategy_core_logic(tmp_path):
+    input_path = tmp_path / "data.txt"
+    s = processing.MultiOutputFilePathStrategy([
+        processing.ChangeExtOutputFilePathStrategy(".zip"),
+        processing.SuffixOutputFilePathStrategy(".min")
+    ])
+    output_path = s.get_output_path(input_path)
+
+    # Input and output in the same folder
+    assert output_path.parent == input_path.parent
+    # Output filename is input with a changed extension
+    assert output_path.name == "data.min.zip"
+
+
 # FileProcessor tests
 
 

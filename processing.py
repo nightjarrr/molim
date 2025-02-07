@@ -29,6 +29,19 @@ class ChangeExtOutputFilePathStrategy(OutputFilePathStrategy):
         return input_path.with_suffix(self.__ext)
 
 
+class MultiOutputFilePathStrategy(OutputFilePathStrategy):
+    def __init__(self, output_strategies: list[OutputFilePathStrategy]):
+        check.ensure_list_non_empty(output_strategies)
+        self.__output_strategies = output_strategies
+
+    def get_output_path(self, input_path: pathlib.Path) -> pathlib.Path:
+        check.ensure_path(input_path)
+        output_path = input_path
+        for s in self.__output_strategies:
+            output_path = s.get_output_path(output_path)
+        return output_path
+
+
 class PostProcessingStrategy(object):
     def process(
         self, input_filepath: pathlib.Path, output_filepath: pathlib.Path

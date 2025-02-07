@@ -25,6 +25,12 @@ def ensure_int_positive(obj):
         raise ValueError("A positive integer value is required.")
 
 
+def ensure_list_non_empty(obj):
+    ensure_type(obj, list)
+    if len(obj) == 0:
+        raise ValueError("A non-empty list is required.")
+
+
 def ensure_path(obj):
     ensure_type(obj, pathlib.Path)
 
