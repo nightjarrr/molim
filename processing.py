@@ -10,18 +10,18 @@ class OutputFilePathStrategy(object):
 
 class SuffixOutputFilePathStrategy(OutputFilePathStrategy):
     def __init__(self, suffix: str):
-        check.ensure_type(suffix, str)
+        check.ensure_str_startswith(suffix, ".")
         self.__suffix = suffix
 
     def get_output_path(self, input_path: pathlib.Path) -> pathlib.Path:
         check.ensure_path(input_path)
-        output_stem = f"{input_path.stem}.{self.__suffix}"
+        output_stem = f"{input_path.stem}{self.__suffix}"
         return input_path.with_stem(output_stem)
 
 
 class ChangeExtOutputFilePathStrategy(OutputFilePathStrategy):
     def __init__(self, ext: str):
-        check.ensure_type(ext, str)
+        check.ensure_str_startswith(ext, ".")
         self.__ext = ext
 
     def get_output_path(self, input_path: pathlib.Path) -> pathlib.Path:
@@ -94,7 +94,7 @@ class AnyFileMatchStrategy(FileMatchStrategy):
 
 class ByExtensionFileMatchStrategy(FileMatchStrategy):
     def __init__(self, ext: str):
-        check.ensure_type(ext, str)
+        check.ensure_str_startswith(ext, ".")
         self.__ext = ext
 
     def match(self, file_path: pathlib.Path) -> bool:
@@ -109,7 +109,7 @@ class FileSkipStrategy(object):
 
 class BySuffixFileSkipStrategy(FileSkipStrategy):
     def __init__(self, suffix: str):
-        check.ensure_type(suffix, str)
+        check.ensure_str_startswith(suffix, ".")
         self.__suffix = suffix
 
     def skip(self, file_path: pathlib.Path) -> bool:

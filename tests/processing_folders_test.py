@@ -2,6 +2,10 @@ import processing
 import pytest
 import random
 
+
+# Fixtures
+
+
 UNMATCHED_FILES_COUNT = 10
 PROCESSED_FILES_COUNT = 23
 SKIPPED_FILES_COUNT = 7
@@ -26,11 +30,34 @@ def prepared_folder(tmp_path_factory):
     return dir
 
 
+# BySuffixFileSkipStrategy tests
+
+
+def test_BySuffixFileSkipStrategy_input_validation():
+    with pytest.raises(ValueError):
+        processing.BySuffixFileSkipStrategy(None)
+
+    with pytest.raises(TypeError):
+        processing.BySuffixFileSkipStrategy(12)
+
+    with pytest.raises(ValueError):
+        processing.BySuffixFileSkipStrategy("min")
+
+    s = processing.BySuffixFileSkipStrategy(".min")
+    with pytest.raises(TypeError):
+        s.skip("/tmp/path")
+    with pytest.raises(ValueError):
+        s.skip(None)
+
+
+# FolderProcessor tests
+
+
 def test_FolderProcessor_input_validation(tmp_path):
     m = processing.FileMatchStrategy()
     s = processing.FileSkipStrategy()
     p = processing.FileProcessor(
-        processing.SuffixOutputFilePathStrategy("min"),
+        processing.SuffixOutputFilePathStrategy(".min"),
         processing.NoopPostProcessingStrategy(),
     )
 
@@ -59,7 +86,7 @@ def test_FolderProcessor_empty_folder(tmp_path):
     m = processing.FileMatchStrategy()
     s = processing.FileSkipStrategy()
     p = processing.FileProcessor(
-        processing.SuffixOutputFilePathStrategy("min"),
+        processing.SuffixOutputFilePathStrategy(".min"),
         processing.NoopPostProcessingStrategy(),
     )
 
@@ -83,7 +110,7 @@ def test_FolderProcessor_dry_run(prepared_folder):
     m = processing.ByExtensionFileMatchStrategy(".mp4")
     s = processing.BySuffixFileSkipStrategy(".min")
     p = processing.FileProcessor(
-        processing.SuffixOutputFilePathStrategy("min"),
+        processing.SuffixOutputFilePathStrategy(".min"),
         processing.NoopPostProcessingStrategy(),
     )
 
