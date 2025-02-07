@@ -42,14 +42,14 @@ class FfmpegFileProcessor(processing.FileProcessor):
         check.ensure_type(ffmpeg_codec, str)
         check.ensure_int_between(ffmpeg_rate, 0, 51)
         if ffmpeg_additional is not None:
-            check.ensure_type(ffmpeg_additional, bool)
+            check.ensure_type(ffmpeg_additional, str)
         check.ensure_type(ffmpeg_report, bool)
         self.__ffmpeg_codec = ffmpeg_codec
         self.__ffmpeg_rate = ffmpeg_rate
         self.__ffmpeg_additional = ffmpeg_additional
         self.__ffmpeg_report = ffmpeg_report
         try:
-            # This will fail if there's no ffmpeg comman available.
+            # This will fail if there's no ffmpeg command available.
             self.__ffmpeg = sh.ffmpeg
         except sh.CommandNotFound:
             raise FfmpegNotFoundError()
@@ -66,7 +66,7 @@ class FfmpegFileProcessor(processing.FileProcessor):
         self.__args = [
             "-y",
             "-i",
-            f'"{file_path}"',  # Input
+            str(file_path),  # Input
             "-vcodec",
             self.__ffmpeg_codec,  # Codec
             "-crf",
@@ -75,7 +75,7 @@ class FfmpegFileProcessor(processing.FileProcessor):
         if self.__ffmpeg_additional:
             addl = self.__ffmpeg_additional.split(" ")
             self.__args += addl
-        self.__args.append(f'"{output_file_path}"')  # Output
+        self.__args.append(f"{output_file_path}")  # Output
         if self.__ffmpeg_report:
             self.__args.append("-report")
 
