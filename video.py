@@ -79,8 +79,6 @@ class FfmpegFileProcessor(processing.FileProcessor):
         if self.__ffmpeg_report:
             self.__args.append("-report")
 
-        print(" ".join(self.__args))
-
     def _execute(self, file_path: pathlib.Path, output_file_path: pathlib.Path) -> None:
         try:
             # ffmpeg -i "$fullpath" -vcodec libx265 -crf 26 "$newpath"
