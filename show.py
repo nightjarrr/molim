@@ -64,12 +64,14 @@ def verbose(message: str, new_line=False) -> None:
         if new_line:
             __CONSOLE__.print()
 
+
 def verbose_args(args, new_line=False):
     if __verbose:
         for k in args.__dict__:
             verbose(f" - {k} = {args.__dict__[k]}")
         if new_line:
             __CONSOLE__.print()
+
 
 def error(message: str, ex: Exception) -> None:
     __CONSOLE__.print(message)

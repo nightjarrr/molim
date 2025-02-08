@@ -36,6 +36,8 @@ def video_ffmpeg_command(
     check.ensure_folder(folder_path)
 
     show.important(f"Processing *{video_ext} files in folder {folder_path}.")
+    if dry_run:
+        show.important("Dry run mode.")
     show.rule()
 
     PROCESSED_SUFFIX = ".min"
