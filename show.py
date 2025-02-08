@@ -1,4 +1,8 @@
 from datetime import timedelta
+import rich
+import rich.traceback
+
+# Formatting helpers
 
 
 def percent(old: int, new: int):
@@ -20,13 +24,19 @@ def human_size(size: int):
     return f"{size:.1f}Yi"
 
 
+# Output helpers
+
+
 def important(message):
-    pass
+    rich.print(message)
+    rich.print()
 
 
 def verbose(message):
-    pass
+    rich.print(message)
 
 
 def error(message: str, ex: Exception):
-    pass
+    rich.print(message)
+    t = rich.traceback.Traceback.from_exception(type(ex), ex, ex.__traceback__)
+    rich.print(t)

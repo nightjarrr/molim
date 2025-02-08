@@ -2,6 +2,7 @@ import check
 import enum
 import pathlib
 import processing
+import show
 import stats
 import video
 
@@ -33,6 +34,8 @@ def video_ffmpeg_command(
     verbosity: int,
 ) -> stats.FolderStats:
     check.ensure_folder(folder_path)
+
+    show.important(f"Processing *{video_ext} files in folder {folder_path}.")
 
     PROCESSED_SUFFIX = ".min"
     PROCESSED_EXT = ".mp4"
@@ -69,4 +72,6 @@ def video_ffmpeg_command(
         folder_path, matcher, skipper, file_processor
     )
     statistics = processor.process(dry_run=dry_run)
+    show.important(repr(statistics))
+
     return statistics

@@ -13,22 +13,18 @@ class FfmpegNotFoundError(Exception):
 
 
 class FfmpegRuntimeError(Exception):
-    DEFAULT_MESSAGE = (
-        "An error occurred during FFMpeg execution. ffmpeg exit code: {exit_code}"
-    )
+    DEFAULT_MESSAGE = "An error occurred during FFMpeg execution. Exit code: {exit_code}. Command line: '{args}'"
 
-    def __init__(self, internal_error: sh.ErrorReturnCode):
+    def __init__(self, e: sh.ErrorReturnCode):
         self.message = FfmpegRuntimeError.DEFAULT_MESSAGE.format(
-            exit_code=internal_error.exit_code
+            exit_code=e.exit_code, args=e.full_cmd
         )
-        self.internal_error = internal_error
         super().__init__(self.message)
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}(message="{self.message}", internal_error={repr(self.internal_error)})'
 
 
 class FfmpegFileProcessor(processing.FileProcessor):
+    VERSION_ARGS = ["-version"]
+
     def __init__(
         self,
         ffmpeg_codec: str,
@@ -51,13 +47,13 @@ class FfmpegFileProcessor(processing.FileProcessor):
         try:
             # This will fail if there's no ffmpeg command available.
             self.__ffmpeg = sh.ffmpeg
-        except sh.CommandNotFound:
-            raise FfmpegNotFoundError()
+        except sh.CommandNotFound as e:
+            raise FfmpegNotFoundError() from e
         try:
             # Run 'ffmpeg -version' to ensure that it is able to launch successfully.
-            self.__ffmpeg("-version")
+            self.__ffmpeg(*FfmpegFileProcessor.VERSION_ARGS)
         except sh.ErrorReturnCode as e:
-            raise FfmpegRuntimeError(e)
+            raise FfmpegRuntimeError(e) from e
         self.__args = []
 
     def _prepare_execution(
@@ -84,4 +80,4 @@ class FfmpegFileProcessor(processing.FileProcessor):
             # ffmpeg -i "$fullpath" -vcodec libx265 -crf 26 "$newpath"
             self.__ffmpeg(*self.__args)
         except sh.ErrorReturnCode as e:
-            raise FfmpegRuntimeError(e)
+            raise FfmpegRuntimeError(e) from e
