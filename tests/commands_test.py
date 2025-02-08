@@ -25,7 +25,7 @@ def test_video_ffmpeg_command():
         ffmpeg_rate=27,
         ffmpeg_additional=None,
         ffmpeg_report=False,
-        verbosity=4,
+        verbose=True,
     )
     assert s is not None
     assert len(s.processed_files_stats) == 2

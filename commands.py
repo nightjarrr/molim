@@ -31,7 +31,7 @@ def video_ffmpeg_command(
     ffmpeg_rate: int,
     ffmpeg_additional: str,
     ffmpeg_report: bool,
-    verbosity: int,
+    verbose: bool,
 ) -> stats.FolderStats:
     check.ensure_folder(folder_path)
 
