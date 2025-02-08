@@ -11,6 +11,9 @@ def cleanup_processed_files():
 
 
 def test_video_ffmpeg_command():
+    # Cleanup any previous leftover results.
+    cleanup_processed_files()
+
     s = commands.video_ffmpeg_command(
         VIDEO_FOLDER,
         dry_run=False,

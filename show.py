@@ -1,5 +1,8 @@
 from datetime import timedelta
-import rich
+import rich.console
+import rich.panel
+import rich.progress
+import rich.text
 import rich.traceback
 
 # Formatting helpers
@@ -26,17 +29,36 @@ def human_size(size: int):
 
 # Output helpers
 
-
-def important(message):
-    rich.print(message)
-    rich.print()
+__CONSOLE__ = rich.console.Console()
 
 
-def verbose(message):
-    rich.print(message)
+def important(message: str, new_line=False):
+    __CONSOLE__.print(message, style="bold", highlight=False)
+    if new_line:
+        __CONSOLE__.print()
+
+
+def rule(message: str = ""):
+    __CONSOLE__.rule(message)
+
+
+def normal(message: str, new_line=False):
+    __CONSOLE__.print(message, highlight=False)
+    if new_line:
+        __CONSOLE__.print()
+
+
+def status(message: str):
+    return __CONSOLE__.status(message, refresh_per_second=5)
+
+
+def verbose(message: str, new_line=False):
+    __CONSOLE__.print(message, style="grey50", highlight=False)
+    if new_line:
+        __CONSOLE__.print()
 
 
 def error(message: str, ex: Exception):
-    rich.print(message)
+    __CONSOLE__.print(message)
     t = rich.traceback.Traceback.from_exception(type(ex), ex, ex.__traceback__)
-    rich.print(t)
+    __CONSOLE__.print(t)

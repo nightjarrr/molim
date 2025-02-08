@@ -1,6 +1,7 @@
-import pathlib
-import stats
 import check
+import pathlib
+import show
+import stats
 
 
 class OutputFilePathStrategy(object):
@@ -86,7 +87,9 @@ class FileProcessor(object):
 
         return statistics
 
-    def _prepare_execution(self, file_path: pathlib.Path, output_file_path: pathlib.Path) -> None:
+    def _prepare_execution(
+        self, file_path: pathlib.Path, output_file_path: pathlib.Path
+    ) -> None:
         pass
 
     # Abstract methods
@@ -127,7 +130,12 @@ class BySuffixFileSkipStrategy(FileSkipStrategy):
 
     def skip(self, file_path: pathlib.Path) -> bool:
         check.ensure_file(file_path)
-        return file_path.stem.endswith(self.__suffix)
+        res = file_path.stem.endswith(self.__suffix)
+        if res:
+            show.verbose(
+                f" - {file_path.name} skipped as it has suffix {self.__suffix}."
+            )
+        return res
 
 
 class BySizeFileSkipStrategy(FileSkipStrategy):
@@ -137,7 +145,13 @@ class BySizeFileSkipStrategy(FileSkipStrategy):
 
     def skip(self, file_path: pathlib.Path) -> bool:
         check.ensure_file(file_path)
-        return file_path.stat().st_size < self.__less_than
+        size = file_path.stat().st_size
+        res = size < self.__less_than
+        if res:
+            show.verbose(
+                f" - {file_path.name} ({show.human_size(size)}) skipped as it is smaller than {show.human_size(self.__less_than)}."
+            )
+        return res
 
 
 class MultiFileSkipStrategy(FileSkipStrategy):
@@ -147,7 +161,10 @@ class MultiFileSkipStrategy(FileSkipStrategy):
 
     def skip(self, file_path: pathlib.Path) -> bool:
         check.ensure_file(file_path)
-        return any([s.skip(file_path) for s in self.__skip_strategies])
+        for s in self.__skip_strategies:
+            if s.skip(file_path):
+                return True
+        return False
 
 
 class FolderProcessor(object):
@@ -172,13 +189,39 @@ class FolderProcessor(object):
             files_list = []
             for f in self.__folder_path.iterdir():
                 if f.is_file() and self.__file_matcher.match(f):
+                    files_list.append(f)
+            if files_list:
+                show.normal(
+                    f"Matched {len(files_list)} files. Checking whether some of them can be skipped..."
+                )
+                files_to_process = []
+                skipped = 0
+                for f in files_list:
                     if self.__file_skiper.skip(f):
                         statistics.add_skipped_file()
+                        skipped += 1
                     else:
-                        files_list.append(f)
-            if files_list:
-                for f in files_list:
-                    s = self.__file_processor.process(f, dry_run)
-                    statistics.add_processed_file_stats(s)
+                        files_to_process.append(f)
+                if skipped > 0:
+                    show.normal(f"Skipped {skipped} of {len(files_list)} files.")
+                else:
+                    show.normal("No files were skipped.")
+                if files_to_process:
+                    show.normal(f"Processing {len(files_to_process)} files...")
+                    i = 1
+                    for f in files_to_process:
+                        with show.status(
+                            f" [{i}/{len(files_to_process)}] {f.name} ({show.human_size(f.stat().st_size)})"
+                        ) as status:
+                            s = self.__file_processor.process(f, dry_run)
+                            statistics.add_processed_file_stats(s)
+                        show.normal(
+                            f" \u2713 [{show.elapsed(s.elapsed)}] {f.name}, {show.human_size(s.original_file_size)} \u2192 {show.human_size(s.processed_file_size)} ({show.percent(s.original_file_size, s.processed_file_size)}), saved {show.human_size(s.delta_size)}"
+                        )
+                        i += 1
+                else:
+                    show.normal("No files to process, done here.", new_line=True)
+            else:
+                show.normal("No matching files here, nothing to do.", new_line=True)
 
         return statistics

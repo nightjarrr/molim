@@ -36,6 +36,7 @@ def video_ffmpeg_command(
     check.ensure_folder(folder_path)
 
     show.important(f"Processing *{video_ext} files in folder {folder_path}.")
+    show.rule()
 
     PROCESSED_SUFFIX = ".min"
     PROCESSED_EXT = ".mp4"
@@ -71,7 +72,16 @@ def video_ffmpeg_command(
     processor = processing.FolderProcessor(
         folder_path, matcher, skipper, file_processor
     )
-    statistics = processor.process(dry_run=dry_run)
-    show.important(repr(statistics))
+    s = processor.process(dry_run=dry_run)
+    show.rule()
 
-    return statistics
+    if s.processed_files_stats:
+        show.important(
+            f"Processed {len(s.processed_files_stats)} files ({show.human_size(s.total_original_size)} in total) in {show.elapsed(s.elapsed)}"
+        )
+        show.important(
+            f"New total size: {show.human_size(s.total_processed_size)}, ({show.percent(s.total_original_size, s.total_processed_size)} of original, saved {show.human_size(s.total_delta_size)})",
+            new_line=True,
+        )
+
+    return s
