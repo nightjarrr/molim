@@ -16,7 +16,7 @@ def test_video_ffmpeg_command():
         dry_run=False,
         video_ext=".mp4",
         skip_processed=True,
-        skip_less_than=None,
+        skip_less_than=500 * 1024,
         originals_handling=commands.OriginalFilesHandlingEnum.LEAVE,
         ffmpeg_codec="libx265",
         ffmpeg_rate=27,
@@ -26,7 +26,7 @@ def test_video_ffmpeg_command():
     )
     assert s is not None
     assert len(s.processed_files_stats) == 2
-    assert s.skipped_files_count == 0
+    assert s.skipped_files_count == 1
     assert s.total_delta_size > 0
 
     cleanup_processed_files()

@@ -40,8 +40,9 @@ def video_ffmpeg_command(
         [
             processing.SuffixOutputFilePathStrategy(PROCESSED_SUFFIX),
             processing.ChangeExtOutputFilePathStrategy(
+                # Force output extension.
                 PROCESSED_EXT
-            ),  # Force output extension.
+            ),
         ]
     )
     post_processor = get_post_processor(originals_handling)

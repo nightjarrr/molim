@@ -1,6 +1,7 @@
-import pathlib
-import time
 import check
+import pathlib
+import show
+import time
 
 
 class StatsNotFinishedError(Exception):
@@ -156,11 +157,11 @@ class FileStats(Stats):
         if self.finished:
             return (
                 f"<FileStats(original_file={self.original_file}, "
-                f"original_file_size={self.original_file_size}, "
+                f"original_file_size={show.human_size(self.original_file_size)}, "
                 f"processed_file={self.processed_file}, "
-                f"processed_file_size={self.processed_file_size}, "
-                f"delta_size={self.delta_size}, "
-                f"elapsed={self.elapsed})>"
+                f"processed_file_size={show.human_size(self.processed_file_size)}, "
+                f"delta_size={show.human_size(self.delta_size)}, "
+                f"elapsed={show.elapsed(self.elapsed)})>"
             )
         else:
             return f"<FileStats(original_file={self.__original_file}) - UNFINISHED>"
@@ -229,10 +230,10 @@ class FolderStats(Stats):
                 f"<FolderStats(folder_path={self.folder_path}, "
                 f"processed_files_stats={self.processed_files_stats}, "
                 f"skipped_files_count={self.skipped_files_count}, "
-                f"total_original_size={self.total_original_size}, "
-                f"total_processed_size={self.total_processed_size}, "
-                f"total_delta_size={self.total_delta_size}, >"
-                f"elapsed={self.elapsed})>"
+                f"total_original_size={show.human_size(self.total_original_size)}, "
+                f"total_processed_size={show.human_size(self.total_processed_size)}, "
+                f"total_delta_size={show.human_size(self.total_delta_size)}, "
+                f"elapsed={show.elapsed(self.elapsed)})>"
             )
         else:
             return f"<FolderStats(folder_path={self.__folder_path}) - UNFINISHED>"
