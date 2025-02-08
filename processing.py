@@ -212,7 +212,7 @@ class FolderProcessor(object):
                     for f in files_to_process:
                         with show.status(
                             f" [{i}/{len(files_to_process)}] {f.name} ({show.human_size(f.stat().st_size)})"
-                        ) as status:
+                        ):
                             s = self.__file_processor.process(f, dry_run)
                             statistics.add_processed_file_stats(s)
                         show.normal(
