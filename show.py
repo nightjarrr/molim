@@ -4,6 +4,7 @@ import rich.panel
 import rich.progress
 import rich.text
 import rich.traceback
+import stats
 
 # Formatting helpers
 
@@ -52,6 +53,23 @@ def normal(message: str, new_line=False) -> None:
     __CONSOLE__.print(message, highlight=False)
     if new_line:
         __CONSOLE__.print()
+
+
+def file_stats(s: stats.FileStats):
+    t = rich.text.Text(f"{s.original_file.name}\n")
+    t.append(
+        f"{human_size(s.original_file_size)} \u2192 {human_size(s.processed_file_size)}, saved {human_size(s.delta_size)}",
+        style="grey50",
+    )
+
+    cols = rich.columns.Columns(
+        [
+            rich.text.Text(f" \u2713 {elapsed(s.elapsed)}"),
+            t,
+        ],
+        expand=False,
+    )
+    __CONSOLE__.print(cols, highlight=False)
 
 
 def status(message: str):

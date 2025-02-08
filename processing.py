@@ -211,13 +211,11 @@ class FolderProcessor(object):
                     i = 1
                     for f in files_to_process:
                         with show.status(
-                            f" [{i}/{len(files_to_process)}] {f.name} ({show.human_size(f.stat().st_size)})"
+                            f" {i}/{len(files_to_process)} {f.name} ({show.human_size(f.stat().st_size)})"
                         ):
                             s = self.__file_processor.process(f, dry_run)
                             statistics.add_processed_file_stats(s)
-                        show.normal(
-                            f" \u2713 [{show.elapsed(s.elapsed)}] {f.name}, {show.human_size(s.original_file_size)} \u2192 {show.human_size(s.processed_file_size)} ({show.percent(s.original_file_size, s.processed_file_size)}), saved {show.human_size(s.delta_size)}"
-                        )
+                        show.file_stats(s)
                         i += 1
                 else:
                     show.normal("No files to process, done here.", new_line=True)
