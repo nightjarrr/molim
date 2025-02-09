@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
 FOLDER="$(dirname "$0")"
-uv --project $FOLDER run python $FOLDER/do.py "$@"
+uv --project $FOLDER run python $FOLDER/cli.py "$@"
