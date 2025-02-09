@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
 
-cd "$(dirname "$0")"
-source ./.venv/bin/activate
-python do.py "$@"
+FOLDER="$(dirname "$0")"
+uv --project $FOLDER run python $FOLDER/do.py "$@"
