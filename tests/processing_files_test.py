@@ -87,16 +87,107 @@ def test_MultiOutputFilePathStrategy_input_validation():
 
 def test_MultiOutputFilePathStrategy_core_logic(tmp_path):
     input_path = tmp_path / "data.txt"
-    s = processing.MultiOutputFilePathStrategy([
-        processing.ChangeExtOutputFilePathStrategy(".zip"),
-        processing.SuffixOutputFilePathStrategy(".min")
-    ])
+    s = processing.MultiOutputFilePathStrategy(
+        [
+            processing.ChangeExtOutputFilePathStrategy(".zip"),
+            processing.SuffixOutputFilePathStrategy(".min"),
+        ]
+    )
     output_path = s.get_output_path(input_path)
 
     # Input and output in the same folder
     assert output_path.parent == input_path.parent
     # Output filename is input with a changed extension
     assert output_path.name == "data.min.zip"
+
+
+# MoveOriginalPostProcessingStrategy tests
+
+
+def test_MoveOriginalPostProcessingStrategy_input_validation(tmp_path):
+    input_path = tmp_path / "data.txt"
+    input_path.touch()
+
+    with pytest.raises(ValueError):
+        processing.MoveOriginalPostProcessingStrategy(None, False)
+    with pytest.raises(TypeError):
+        processing.MoveOriginalPostProcessingStrategy(str(tmp_path), False)
+    with pytest.raises(ValueError):
+        processing.MoveOriginalPostProcessingStrategy(input_path, False)
+
+    move_to = tmp_path / "_orig"
+    m = processing.MoveOriginalPostProcessingStrategy(move_to, True)
+    with pytest.raises(ValueError):
+        m.process(None, input_path, True)
+    with pytest.raises(ValueError):
+        m.process(input_path, None, False)
+
+
+def test_MoveOriginalPostProcessingStrategy_dry_run(tmp_path):
+    input_path = tmp_path / "data.txt"
+    input_path.touch()
+
+    move_to = tmp_path / "_orig"
+    m = processing.MoveOriginalPostProcessingStrategy(move_to, True)
+    m.process(input_path, tmp_path / "data.zip", True)
+
+    assert not move_to.exists()
+    assert input_path.exists()
+    assert input_path == (tmp_path / "data.txt")
+
+
+def test_MoveOriginalPostProcessingStrategy_core_logic(tmp_path):
+    input_path = tmp_path / "data.txt"
+    input_path.touch()
+
+    output_path = tmp_path / "data.zip"
+    output_path.touch()
+
+    move_to = tmp_path / "_orig"
+    m = processing.MoveOriginalPostProcessingStrategy(move_to, False)
+    m.process(input_path, output_path, False)
+
+    assert move_to.exists()
+    assert not input_path.exists()
+    assert (move_to / "data.txt").exists()
+
+
+# DeleteOriginalPostProcessingStrategy tests
+
+
+def test_DeleteOriginalPostProcessingStrategy_input_validation(tmp_path):
+    input_path = tmp_path / "data.txt"
+    input_path.touch()
+
+    m = processing.DeleteOriginalPostProcessingStrategy()
+    with pytest.raises(ValueError):
+        m.process(None, input_path, True)
+    with pytest.raises(ValueError):
+        m.process(input_path, None, False)
+
+
+def test_DeleteOriginalPostProcessingStrategy_dry_run(tmp_path):
+    input_path = tmp_path / "data.txt"
+    input_path.touch()
+
+    m = processing.DeleteOriginalPostProcessingStrategy()
+    m.process(input_path, tmp_path / "data.zip", True)
+
+    assert input_path.exists()
+    assert input_path == (tmp_path / "data.txt")
+
+
+def test_DeleteOriginalPostProcessingStrategy_core_logic(tmp_path):
+    input_path = tmp_path / "data.txt"
+    input_path.touch()
+
+    output_path = tmp_path / "data.zip"
+    output_path.touch()
+
+    m = processing.DeleteOriginalPostProcessingStrategy()
+    m.process(input_path, output_path, False)
+
+    assert not input_path.exists()
 
 
 # FileProcessor tests

@@ -1,4 +1,5 @@
 import commands
+import processing
 import pytest
 
 # HumanReadableSizeType tests
@@ -45,3 +46,24 @@ def test_OriginalsHandlingArgType_input_validation():
     with pytest.raises(ValueError):
         o("LEAVE")  # Correct value but not lowercase
 
+
+# Command tests
+
+
+def test_Command_get_post_processing_strategy(tmp_path):
+    c = commands.Command()
+
+    p = c._get_post_processing_strategy(
+        commands.OriginalsHandlingEnum.LEAVE, tmp_path, False
+    )
+    assert isinstance(p, processing.NoopPostProcessingStrategy)
+
+    p = c._get_post_processing_strategy(
+        commands.OriginalsHandlingEnum.DELETE, tmp_path, False
+    )
+    assert isinstance(p, processing.DeleteOriginalPostProcessingStrategy)
+
+    p = c._get_post_processing_strategy(
+        commands.OriginalsHandlingEnum.MOVE, tmp_path, False
+    )
+    assert isinstance(p, processing.MoveOriginalPostProcessingStrategy)

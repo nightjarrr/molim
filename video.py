@@ -57,9 +57,9 @@ class VideoFfmpegCommand(commands.Command):
         folder_path = folder_path.absolute()
 
         show.important(f"Processing *{args.extension} files in folder {folder_path}.")
+
         if args.dry_run:
-            show.important("Dry run mode, no real modifications will be made.")
-        show.rule()
+            show.normal("Dry run mode, no real modifications will be made.")
 
         output_namer = processing.MultiOutputFilePathStrategy(
             [
@@ -70,7 +70,9 @@ class VideoFfmpegCommand(commands.Command):
                 ),
             ]
         )
-        post_processor = processing.NoopPostProcessingStrategy()
+
+        move_to = folder_path / "_orig"
+        post_processor = self._get_post_processing_strategy(args.originals, move_to, args.dry_run)
 
         file_processor = FfmpegFileProcessor(
             args.ffmpeg_codec,
@@ -93,6 +95,8 @@ class VideoFfmpegCommand(commands.Command):
         processor = processing.FolderProcessor(
             folder_path, matcher, skipper, file_processor
         )
+
+        show.rule()
         s = processor.process(dry_run=args.dry_run)
         show.rule()
 

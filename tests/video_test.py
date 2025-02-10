@@ -159,7 +159,7 @@ def test_VideoFfmpegCommand_core_logic():
             extension=".mp4",
             no_skip_processed=False,
             greater_than=500 * 1024,
-            originals="leave",
+            originals=commands.OriginalsHandlingEnum.LEAVE,
             ffmpeg_codec="libx265",
             ffmpeg_rate=27,
             ffmpeg_additional=None,

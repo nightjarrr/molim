@@ -45,16 +45,59 @@ class MultiOutputFilePathStrategy(OutputFilePathStrategy):
 
 class PostProcessingStrategy(object):
     def process(
-        self, input_filepath: pathlib.Path, output_filepath: pathlib.Path
+        self, input_filepath: pathlib.Path, output_filepath: pathlib.Path, dry_run: bool
     ) -> None:
         raise NotImplementedError()
 
 
 class NoopPostProcessingStrategy(PostProcessingStrategy):
     def process(
-        self, input_filepath: pathlib.Path, output_filepath: pathlib.Path
+        self, input_filepath: pathlib.Path, output_filepath: pathlib.Path, dry_run: bool
     ) -> None:
         pass
+
+
+class MoveOriginalPostProcessingStrategy(PostProcessingStrategy):
+    def __init__(self, move_to: pathlib.Path, dry_run: bool):
+        check.ensure_path(move_to)
+        if move_to.exists():
+            check.ensure_folder(move_to)
+        else:
+            if not dry_run:
+                move_to.mkdir()
+            show.verbose(f"Creating folder {move_to}.")
+        show.normal(f"Original files will be moved to folder {move_to}.")
+        self.__move_to = move_to
+
+    def process(
+        self, input_filepath: pathlib.Path, output_filepath: pathlib.Path, dry_run: bool
+    ) -> None:
+        check.ensure_file(input_filepath)
+        if not dry_run:
+            check.ensure_file(output_filepath)
+        show.verbose(
+            f"Moving original file {input_filepath.name} to folder {self.__move_to}."
+        )
+        if not dry_run:
+            target = self.__move_to / input_filepath.name
+            input_filepath.rename(target)
+
+
+class DeleteOriginalPostProcessingStrategy(PostProcessingStrategy):
+    def __init__(self):
+        show.normal("Original files will be deleted.")
+
+    def process(
+        self, input_filepath: pathlib.Path, output_filepath: pathlib.Path, dry_run: bool
+    ) -> None:
+        check.ensure_file(input_filepath)
+        if not dry_run:
+            check.ensure_file(output_filepath)
+        show.verbose(
+            f"Deleting original file {input_filepath.name}, only processed file {output_filepath.name} will remain."
+        )
+        if not dry_run:
+            input_filepath.unlink()
 
 
 class FileProcessor(object):
@@ -83,7 +126,7 @@ class FileProcessor(object):
 
             statistics.set_processed_file(output_file_path, output_file_size)
 
-            self.__post_processor.process(file_path, output_file_path)
+            self.__post_processor.process(file_path, output_file_path, dry_run)
 
         return statistics
 

@@ -1,6 +1,8 @@
 import argparse
 import check
 import enum
+import pathlib
+import processing
 import stats
 
 
@@ -111,12 +113,22 @@ class Command(object):
         )
         parser.add_argument(
             "--originals",
-            choices=OriginalsHandlingArgType.ORIGINALS_HANDLING_OPTIONS,
             default="leave",
             type=OriginalsHandlingArgType(),
-            help="How to handle original files after processing.",
+            help=f"How to handle original files after processing. Available choices: {OriginalsHandlingArgType.ORIGINALS_HANDLING_OPTIONS}",
         )
         return parser
+
+    def _get_post_processing_strategy(
+        self, originals: OriginalsHandlingEnum, move_to: pathlib.Path, dry_run: bool
+    ) -> processing.PostProcessingStrategy:
+        if originals == OriginalsHandlingEnum.LEAVE:
+            return processing.NoopPostProcessingStrategy()
+        elif originals == OriginalsHandlingEnum.MOVE:
+            return processing.MoveOriginalPostProcessingStrategy(move_to, dry_run)
+        elif originals == OriginalsHandlingEnum.DELETE:
+            return processing.DeleteOriginalPostProcessingStrategy()
+        raise ValueError(originals)
 
     # Public methods
 
