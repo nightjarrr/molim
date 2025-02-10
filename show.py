@@ -49,7 +49,7 @@ def rule(message: str = "") -> None:
 
 
 def normal(message: str, new_line=False) -> None:
-    __CONSOLE__.print(message, highlight=False)
+    __CONSOLE__.print(" " + message, highlight=False)
     if new_line:
         __CONSOLE__.print()
 
@@ -77,7 +77,7 @@ def status(message: str):
 
 def verbose(message: str, new_line=False) -> None:
     if __verbose:
-        __CONSOLE__.print(message, style="grey50", highlight=False)
+        __CONSOLE__.print("   " + message, style="grey50", highlight=False)
         if new_line:
             __CONSOLE__.print()
 

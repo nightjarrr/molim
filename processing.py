@@ -235,8 +235,9 @@ class FolderProcessor(object):
                     files_list.append(f)
             if files_list:
                 show.normal(
-                    f"Matched {len(files_list)} files. Checking whether some of them can be skipped..."
+                    f"Matched {len(files_list)} files."
                 )
+                show.normal("Checking whether some of them can be skipped...")
                 files_to_process = []
                 skipped = 0
                 for f in files_list:
@@ -253,6 +254,7 @@ class FolderProcessor(object):
                     show.normal(f"Processing {len(files_to_process)} files...")
                     i = 1
                     for f in files_to_process:
+                        show.verbose(f"Starting to process {f.name}...")
                         with show.status(
                             f" {i}/{len(files_to_process)} {f.name} ({show.human_size(f.stat().st_size)})"
                         ):
@@ -260,6 +262,7 @@ class FolderProcessor(object):
                             statistics.add_processed_file_stats(s)
                         show.file_stats(s)
                         i += 1
+                        show.verbose("")
                 else:
                     show.normal("No files to process, done here.", new_line=True)
             else:

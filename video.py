@@ -102,10 +102,10 @@ class VideoFfmpegCommand(commands.Command):
 
         if s.processed_files_stats:
             show.important(
-                f"Processed {len(s.processed_files_stats)} files ({show.human_size(s.total_original_size)} in total) in {show.elapsed(s.elapsed)}"
+                f"Processed {len(s.processed_files_stats)} files in {show.elapsed(s.elapsed)}"
             )
             show.important(
-                f"New total size: {show.human_size(s.total_processed_size)}, ({show.percent(s.total_original_size, s.total_processed_size)} of original, saved {show.human_size(s.total_delta_size)})",
+                f"{show.human_size(s.total_original_size)} \u2192 {show.human_size(s.total_processed_size)}, new size {show.percent(s.total_original_size, s.total_processed_size)} of original, saved {show.human_size(s.total_delta_size)}",
                 new_line=True,
             )
         return s
