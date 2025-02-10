@@ -310,6 +310,7 @@ def main():
 
     args = parser.parse_args()
     _print.level = args.display_verbosity
+    _print.totals("\n*** DEPRECATED ***\n")
     _print.totals(f"Starting processing with these parameters:\n{args}")
 
     i = 0
