@@ -1,8 +1,14 @@
+import argparse
+import commands
 import os.path
 import pathlib
 import processing
 import pytest
+import show
 import video
+
+# Set verbose output
+show.set_verbose(True)
 
 VIDEO_FOLDER = pathlib.Path(os.path.dirname(__file__)) / "data/video"
 
@@ -14,6 +20,11 @@ def get_input_file(name: str):
 
 def cleanup_output_file(file_path: pathlib.Path):
     file_path.unlink(missing_ok=False)
+
+
+def cleanup_processed_files():
+    for f in VIDEO_FOLDER.glob("*.min.mp4"):
+        f.unlink()
 
 
 # FfmpegFileProcessor tests
@@ -98,3 +109,68 @@ def test_FfmpegFileProcessor_real_run():
     real_run("Sample Video 1280x720 1mb.mp4")  # Test name with spaces
     with pytest.raises(video.FfmpegRuntimeError):
         real_run("sample_720x480_1mb.mp4", "---non -existent ARGUMENT!!!")
+
+
+# VideoFfmpegCommand tests
+
+
+def test_VideoFfmpegCommand_name():
+    v = video.VideoFfmpegCommand()
+    assert v.name == "video"
+
+
+def test_VideoFfmpegCommand_get_common_arguments_defaults():
+    v = video.VideoFfmpegCommand()
+    a, b, c = v._get_common_arguments_defaults()
+
+    assert a == video.VIDEO_EXTENSION
+    assert b == video.VIDEO_GREATER_THAN
+    assert c == video.VIDEO_ORIGINALS
+
+
+def test_VideoFfmpegCommand_create_parser():
+    parser = argparse.ArgumentParser()
+    v = video.VideoFfmpegCommand()
+    v.configure_parser(parser)
+    args = parser.parse_args(["--dry-run", "."])
+
+    assert args.FOLDER == "."
+    assert args.dry_run
+    assert args.extension == video.VIDEO_EXTENSION
+    assert not args.no_skip_processed
+    assert args.greater_than == commands.HumanReadableSizeType()(video.VIDEO_GREATER_THAN)
+    assert args.originals == commands.OriginalsHandlingEnum.LEAVE
+    assert args.ffmpeg_codec == video.VIDEO_FFMPEG_CODEC
+    assert args.ffmpeg_rate == video.VIDEO_FFMPEG_RATE
+    assert args.ffmpeg_additional is None
+    assert not args.ffmpeg_report
+    assert not args.verbose
+
+
+def test_VideoFfmpegCommand_core_logic():
+    # Cleanup any previous leftover results.
+    cleanup_processed_files()
+
+    c = video.VideoFfmpegCommand()
+    s = c(
+        argparse.Namespace(
+            FOLDER=str(VIDEO_FOLDER),
+            dry_run=False,
+            extension=".mp4",
+            no_skip_processed=False,
+            greater_than=500 * 1024,
+            originals="leave",
+            ffmpeg_codec="libx265",
+            ffmpeg_rate=27,
+            ffmpeg_additional=None,
+            ffmpeg_report=False,
+            verbose=True,
+        )
+    )
+
+    assert s is not None
+    assert len(s.processed_files_stats) == 2
+    assert s.skipped_files_count == 1
+    assert s.total_delta_size > 0
+
+    cleanup_processed_files()

@@ -4,7 +4,6 @@ import rich.panel
 import rich.progress
 import rich.text
 import rich.traceback
-import stats
 
 # Formatting helpers
 
@@ -55,7 +54,7 @@ def normal(message: str, new_line=False) -> None:
         __CONSOLE__.print()
 
 
-def file_stats(s: stats.FileStats):
+def file_stats(s):
     t = rich.text.Text(f"{s.original_file.name}\n")
     t.append(
         f"{human_size(s.original_file_size)} \u2192 {human_size(s.processed_file_size)}, saved {human_size(s.delta_size)}",

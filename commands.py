@@ -1,89 +1,157 @@
+import argparse
 import check
 import enum
-import pathlib
-import processing
-import show
 import stats
-import video
 
 
-class OriginalFilesHandlingEnum(enum.Enum):
+class HumanReadableSizeType(object):
+    SIZE_NAME = {"K": 1, "M": 2, "G": 3}
+
+    def __call__(self, value: str) -> int:
+        check.ensure_type(value, str)
+        result = None
+        for s in HumanReadableSizeType.SIZE_NAME:
+            if value.endswith(s):
+                num = float(value[:-1])
+                idx = HumanReadableSizeType.SIZE_NAME[s]
+                factor = 1024**idx
+                result = int(num * factor)
+        if result is None:
+            # Did not match any suffix, try to convert to regular int. Corresponds to size in bytes.
+            result = int(value)
+        if result < 0:
+            raise ValueError(
+                f"Expected non-negative value to be specified. {value} was converted to {result}."
+            )
+        return result
+
+
+class OriginalsHandlingEnum(enum.Enum):
     LEAVE = 0
     MOVE = 1
     DELETE = 2
 
 
-def get_post_processor(
-    originals_handling: OriginalFilesHandlingEnum,
-) -> processing.PostProcessingStrategy:
-    check.ensure_type(originals_handling, OriginalFilesHandlingEnum)
-    return processing.NoopPostProcessingStrategy()
+class OriginalsHandlingArgType(object):
+    ORIGINALS_HANDLING_OPTIONS = ("leave", "move", "delete")
 
-
-def video_ffmpeg_command(
-    folder_path: pathlib.Path,
-    dry_run: bool,
-    video_ext: str,
-    skip_processed: bool,
-    skip_less_than: int,
-    originals_handling: OriginalFilesHandlingEnum,
-    ffmpeg_codec: str,
-    ffmpeg_rate: int,
-    ffmpeg_additional: str,
-    ffmpeg_report: bool,
-    verbose: bool,
-) -> stats.FolderStats:
-    check.ensure_folder(folder_path)
-
-    show.important(f"Processing *{video_ext} files in folder {folder_path}.")
-    if dry_run:
-        show.important("Dry run mode, no real modifications will be made.")
-    show.rule()
-
-    PROCESSED_SUFFIX = ".min"
-    PROCESSED_EXT = ".mp4"
-    output_namer = processing.MultiOutputFilePathStrategy(
-        [
-            processing.SuffixOutputFilePathStrategy(PROCESSED_SUFFIX),
-            processing.ChangeExtOutputFilePathStrategy(
-                # Force output extension.
-                PROCESSED_EXT
-            ),
-        ]
-    )
-    post_processor = get_post_processor(originals_handling)
-
-    file_processor = video.FfmpegFileProcessor(
-        ffmpeg_codec,
-        ffmpeg_rate,
-        ffmpeg_additional,
-        ffmpeg_report,
-        output_namer,
-        post_processor,
-    )
-
-    matcher = processing.ByExtensionFileMatchStrategy(video_ext)
-
-    skips = []
-    if skip_processed:
-        skips.append(processing.BySuffixFileSkipStrategy(".min"))
-    if skip_less_than:
-        skips.append(processing.BySizeFileSkipStrategy(skip_less_than))
-    skipper = processing.MultiFileSkipStrategy(skips)
-
-    processor = processing.FolderProcessor(
-        folder_path, matcher, skipper, file_processor
-    )
-    s = processor.process(dry_run=dry_run)
-    show.rule()
-
-    if s.processed_files_stats:
-        show.important(
-            f"Processed {len(s.processed_files_stats)} files ({show.human_size(s.total_original_size)} in total) in {show.elapsed(s.elapsed)}"
-        )
-        show.important(
-            f"New total size: {show.human_size(s.total_processed_size)}, ({show.percent(s.total_original_size, s.total_processed_size)} of original, saved {show.human_size(s.total_delta_size)})",
-            new_line=True,
+    def __call__(self, value: str) -> OriginalsHandlingEnum:
+        check.ensure_type(value, str)
+        i = 0
+        for option in OriginalsHandlingArgType.ORIGINALS_HANDLING_OPTIONS:
+            if value == option:
+                return OriginalsHandlingEnum(i)
+            i += 1
+        raise ValueError(
+            f"{value} is not supported. Choose from {OriginalsHandlingArgType.ORIGINALS_HANDLING_OPTIONS}"
         )
 
-    return s
+
+class Command(object):
+    """
+    Base class for defining command-line interface (CLI) commands.
+    This class provides a structure for creating CLI commands with common
+    argument parsing and execution logic. Subclasses should implement the
+    abstract methods to define specific command behavior.
+    Methods:
+        _add_common_arguments(parser, default_extension, default_greater_than, default_originals):
+            Adds common arguments to the argument parser.
+        configure_parser(parser):
+            Configures the argument parser with common and command-specific arguments.
+        _add_arguments(parser):
+            Abstract method to add command-specific arguments to the parser.
+        _get_common_arguments_defaults():
+            Abstract method to get default values for common arguments.
+        _execute(args):
+            Abstract method to execute the command with the given arguments.
+        name:
+            Abstract property to get the name of the command.
+        __call__(args):
+            Executes the command with the given arguments.
+    """
+
+    # Private methods
+
+    def _add_common_arguments(
+        self,
+        parser: argparse.ArgumentParser,
+        default_extension: str,
+        default_greater_than: str,
+        default_originals: str,
+    ) -> argparse.ArgumentParser:
+        parser.add_argument("FOLDER", help="Process files in this folder.")
+        parser.add_argument(
+            "--dry-run",
+            default=False,
+            action="store_true",
+            help="Execute everything but do not run actual processing commands or modify filesystem.",
+        )
+        parser.add_argument(
+            "--verbose",
+            default=False,
+            action="store_true",
+            help="Enable verbose output.",
+        )
+        parser.add_argument(
+            "--extension",
+            default=default_extension,
+            help="Process files with this extension.",
+        )
+        parser.add_argument(
+            "--greater-than",
+            default=default_greater_than,
+            type=HumanReadableSizeType(),
+            help="Process only files greater than this value. Value should be int or float number with size suffix (K, M, G), or without any suffix for bytes.",
+        )
+        parser.add_argument(
+            "--no-skip-processed",
+            default=False,
+            action="store_true",
+            help="Do not skip previously processed files (detect by suffix) and re-process them again.",
+        )
+        parser.add_argument(
+            "--originals",
+            choices=OriginalsHandlingArgType.ORIGINALS_HANDLING_OPTIONS,
+            default="leave",
+            type=OriginalsHandlingArgType(),
+            help="How to handle original files after processing.",
+        )
+        return parser
+
+    # Public methods
+
+    def configure_parser(
+        self, parser: argparse.ArgumentParser
+    ) -> argparse.ArgumentParser:
+        ext, gt_than, originals = self._get_common_arguments_defaults()
+        self._add_common_arguments(parser, ext, gt_than, originals)
+        self._add_arguments(parser)
+        # Set the command as a value to be available in the resulting args object
+        parser.set_defaults(command=self)
+        return parser
+
+    # Abstract methods
+
+    def _add_arguments(
+        self, parser: argparse.ArgumentParser
+    ) -> argparse.ArgumentParser:
+        raise NotImplementedError()
+
+    def _get_common_arguments_defaults(self) -> tuple[str, str, str]:
+        raise NotImplementedError()
+
+    def _execute(self, args: argparse.Namespace) -> stats.FolderStats:
+        raise NotImplementedError()
+
+    @property
+    def name(self) -> str:
+        raise NotImplementedError()
+
+    def __str__(self) -> str:
+        return f"<Command: {self.name}>"
+
+    # Callable
+
+    def __call__(self, args: argparse.Namespace) -> stats.FolderStats:
+        check.ensure_type(args, argparse.Namespace)
+        return self._execute(args)

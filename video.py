@@ -1,7 +1,110 @@
+import argparse
 import check
+import commands
 import pathlib
 import processing
 import sh
+import show
+
+
+VIDEO_EXTENSION = ".mp4"
+VIDEO_GREATER_THAN = "30M"
+VIDEO_ORIGINALS = "leave"
+VIDEO_PROCESSED_SUFFIX = ".min"
+VIDEO_PROCESSED_EXTENSION = ".mp4"
+VIDEO_FFMPEG_CODEC = "libx265"
+VIDEO_FFMPEG_RATE = 26
+
+
+class VideoFfmpegCommand(commands.Command):
+    def _add_arguments(
+        self, parser: argparse.ArgumentParser
+    ) -> argparse.ArgumentParser:
+        parser.add_argument(
+            "--ffmpeg-codec",
+            default=VIDEO_FFMPEG_CODEC,
+            help="FFMpeg codec to use for processing.",
+        )
+        parser.add_argument(
+            "--ffmpeg-rate",
+            default=VIDEO_FFMPEG_RATE,
+            type=int,
+            help="FFMpeg processing compression rate.",
+        )
+        parser.add_argument(
+            "--ffmpeg-additional",
+            default=None,
+            help="Additional parameters for FFMpeg processing.",
+        )
+        parser.add_argument(
+            "--ffmpeg-report",
+            default=False,
+            action="store_true",
+            help="Write FFMpeg report with extended conversion information.",
+        )
+        return parser
+
+    def _get_common_arguments_defaults(self) -> tuple[str, str, str]:
+        return (VIDEO_EXTENSION, VIDEO_GREATER_THAN, VIDEO_ORIGINALS)
+
+    @property
+    def name(self) -> str:
+        return "video"
+
+    def _execute(self, args: argparse.Namespace) -> None:
+        folder_path = pathlib.Path(args.FOLDER)
+        check.ensure_folder(folder_path)
+        folder_path = folder_path.absolute()
+
+        show.important(f"Processing *{args.extension} files in folder {folder_path}.")
+        if args.dry_run:
+            show.important("Dry run mode, no real modifications will be made.")
+        show.rule()
+
+        output_namer = processing.MultiOutputFilePathStrategy(
+            [
+                processing.SuffixOutputFilePathStrategy(VIDEO_PROCESSED_SUFFIX),
+                processing.ChangeExtOutputFilePathStrategy(
+                    # Force output extension.
+                    VIDEO_PROCESSED_EXTENSION
+                ),
+            ]
+        )
+        post_processor = processing.NoopPostProcessingStrategy()
+
+        file_processor = FfmpegFileProcessor(
+            args.ffmpeg_codec,
+            args.ffmpeg_rate,
+            args.ffmpeg_additional,
+            args.ffmpeg_report,
+            output_namer,
+            post_processor,
+        )
+
+        matcher = processing.ByExtensionFileMatchStrategy(args.extension)
+
+        skips = []
+        if not args.no_skip_processed:
+            skips.append(processing.BySuffixFileSkipStrategy(".min"))
+        if args.greater_than:
+            skips.append(processing.BySizeFileSkipStrategy(args.greater_than))
+        skipper = processing.MultiFileSkipStrategy(skips)
+
+        processor = processing.FolderProcessor(
+            folder_path, matcher, skipper, file_processor
+        )
+        s = processor.process(dry_run=args.dry_run)
+        show.rule()
+
+        if s.processed_files_stats:
+            show.important(
+                f"Processed {len(s.processed_files_stats)} files ({show.human_size(s.total_original_size)} in total) in {show.elapsed(s.elapsed)}"
+            )
+            show.important(
+                f"New total size: {show.human_size(s.total_processed_size)}, ({show.percent(s.total_original_size, s.total_processed_size)} of original, saved {show.human_size(s.total_delta_size)})",
+                new_line=True,
+            )
+        return s
 
 
 class FfmpegNotFoundError(Exception):

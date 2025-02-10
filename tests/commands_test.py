@@ -1,35 +1,47 @@
-import os.path
-import pathlib
 import commands
+import pytest
 
-VIDEO_FOLDER = pathlib.Path(os.path.dirname(__file__)) / "data/video"
-
-
-def cleanup_processed_files():
-    for f in VIDEO_FOLDER.glob("*.min.mp4"):
-        f.unlink()
+# HumanReadableSizeType tests
 
 
-def test_video_ffmpeg_command():
-    # Cleanup any previous leftover results.
-    cleanup_processed_files()
+def test_HumanReadableSizeType_input_validation():
+    h = commands.HumanReadableSizeType()
+    with pytest.raises(TypeError):
+        h()  # No required parameter passed
+    with pytest.raises(ValueError):
+        h(None)
+    with pytest.raises(TypeError):
+        h(800)
+    with pytest.raises(ValueError):
+        h("some random string of text")  # Incorrect value and incorrect suffix
+    with pytest.raises(ValueError):
+        h("12-and-a-half-G")  # Correct suffix, incorrect value
+    with pytest.raises(ValueError):
+        h("-2G")  # Correct suffix, negative value
 
-    s = commands.video_ffmpeg_command(
-        VIDEO_FOLDER,
-        dry_run=False,
-        video_ext=".mp4",
-        skip_processed=True,
-        skip_less_than=500 * 1024,
-        originals_handling=commands.OriginalFilesHandlingEnum.LEAVE,
-        ffmpeg_codec="libx265",
-        ffmpeg_rate=27,
-        ffmpeg_additional=None,
-        ffmpeg_report=False,
-        verbose=True,
-    )
-    assert s is not None
-    assert len(s.processed_files_stats) == 2
-    assert s.skipped_files_count == 1
-    assert s.total_delta_size > 0
 
-    cleanup_processed_files()
+def test_HumanReadableSizeType_core_logic():
+    h = commands.HumanReadableSizeType()
+    assert 200 == h("200")
+    assert 450 * 1024 == h("450K")
+    assert 7 * 1024 * 1024 == h("7M")
+    assert int(12.5 * 1024 * 1024) == h("12.5M")
+    assert int(1.2 * 1024 * 1024 * 1024) == h("1.2G")
+
+
+# OriginalsHandlingArgType tests
+
+
+def test_OriginalsHandlingArgType_input_validation():
+    o = commands.OriginalsHandlingArgType()
+    with pytest.raises(TypeError):
+        o()  # No required parameter passed
+    with pytest.raises(ValueError):
+        o(None)
+    with pytest.raises(TypeError):
+        o(800)
+    with pytest.raises(ValueError):
+        o("some random string of text")  # Incorrect value
+    with pytest.raises(ValueError):
+        o("LEAVE")  # Correct value but not lowercase
+
