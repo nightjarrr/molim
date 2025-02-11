@@ -181,6 +181,9 @@ class FfmpegFileProcessor(processing.FileProcessor):
         self.__args.append(f"{output_file_path}")  # Output
         if self.__ffmpeg_report:
             self.__args.append("-report")
+        cmdline = " ".join(self.__args)
+        show.verbose("Running ffmpeg...")
+        show.verbose(f"$ ffmpeg {cmdline}")
 
     def _execute(self, file_path: pathlib.Path, output_file_path: pathlib.Path) -> None:
         try:
