@@ -113,7 +113,7 @@ class Command(object):
         )
         parser.add_argument(
             "--originals",
-            default="leave",
+            default=default_originals,
             type=OriginalsHandlingArgType(),
             help=f"How to handle original files after processing. Available choices: {OriginalsHandlingArgType.ORIGINALS_HANDLING_OPTIONS}",
         )

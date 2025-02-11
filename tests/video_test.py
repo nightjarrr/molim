@@ -139,7 +139,7 @@ def test_VideoFfmpegCommand_create_parser():
     assert args.extension == video.VIDEO_EXTENSION
     assert not args.no_skip_processed
     assert args.greater_than == commands.HumanReadableSizeType()(video.VIDEO_GREATER_THAN)
-    assert args.originals == commands.OriginalsHandlingEnum.LEAVE
+    assert args.originals == commands.OriginalsHandlingEnum.MOVE
     assert args.ffmpeg_codec == video.VIDEO_FFMPEG_CODEC
     assert args.ffmpeg_rate == video.VIDEO_FFMPEG_RATE
     assert args.ffmpeg_additional is None
