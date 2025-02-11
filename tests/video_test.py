@@ -121,11 +121,12 @@ def test_VideoFfmpegCommand_name():
 
 def test_VideoFfmpegCommand_get_common_arguments_defaults():
     v = video.VideoFfmpegCommand()
-    a, b, c = v._get_common_arguments_defaults()
+    a, b, c, d = v._get_common_arguments_defaults()
 
     assert a == video.VIDEO_EXTENSION
     assert b == video.VIDEO_GREATER_THAN
-    assert c == video.VIDEO_ORIGINALS
+    assert c == video.VIDEO_NO_SKIP_PROCESSED
+    assert d == video.VIDEO_ORIGINALS
 
 
 def test_VideoFfmpegCommand_create_parser():
@@ -138,7 +139,9 @@ def test_VideoFfmpegCommand_create_parser():
     assert args.dry_run
     assert args.extension == video.VIDEO_EXTENSION
     assert not args.no_skip_processed
-    assert args.greater_than == commands.HumanReadableSizeType()(video.VIDEO_GREATER_THAN)
+    assert args.greater_than == commands.HumanReadableSizeType()(
+        video.VIDEO_GREATER_THAN
+    )
     assert args.originals == commands.OriginalsHandlingEnum.MOVE
     assert args.ffmpeg_codec == video.VIDEO_FFMPEG_CODEC
     assert args.ffmpeg_rate == video.VIDEO_FFMPEG_RATE

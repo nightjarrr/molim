@@ -9,6 +9,7 @@ import show
 
 VIDEO_EXTENSION = ".mp4"
 VIDEO_GREATER_THAN = "30M"
+VIDEO_NO_SKIP_PROCESSED = False
 VIDEO_ORIGINALS = "move"
 VIDEO_PROCESSED_SUFFIX = ".min"
 VIDEO_PROCESSED_EXTENSION = ".mp4"
@@ -45,22 +46,20 @@ class VideoFfmpegCommand(commands.Command):
         return parser
 
     def _get_common_arguments_defaults(self) -> tuple[str, str, str]:
-        return (VIDEO_EXTENSION, VIDEO_GREATER_THAN, VIDEO_ORIGINALS)
+        return (
+            VIDEO_EXTENSION,
+            VIDEO_GREATER_THAN,
+            VIDEO_NO_SKIP_PROCESSED,
+            VIDEO_ORIGINALS,
+        )
 
     @property
     def name(self) -> str:
         return "video"
 
-    def _execute(self, args: argparse.Namespace) -> None:
-        folder_path = pathlib.Path(args.FOLDER)
-        check.ensure_folder(folder_path)
-        folder_path = folder_path.absolute()
-
-        show.important(f"Processing *{args.extension} files in folder {folder_path}.")
-
-        if args.dry_run:
-            show.normal("Dry run mode, no real modifications will be made.")
-
+    def _get_output_file_path_strategy(
+        self, args: argparse.Namespace
+    ) -> processing.OutputFilePathStrategy:
         output_namer = processing.MultiOutputFilePathStrategy(
             [
                 processing.SuffixOutputFilePathStrategy(VIDEO_PROCESSED_SUFFIX),
@@ -70,10 +69,14 @@ class VideoFfmpegCommand(commands.Command):
                 ),
             ]
         )
+        return output_namer
 
-        move_to = folder_path / "_orig"
-        post_processor = self._get_post_processing_strategy(args.originals, move_to, args.dry_run)
-
+    def _get_file_processor(
+        self,
+        args: argparse.Namespace,
+        output_namer: processing.OutputFilePathStrategy,
+        post_processor: processing.PostProcessingStrategy,
+    ) -> processing.FileProcessor:
         file_processor = FfmpegFileProcessor(
             args.ffmpeg_codec,
             args.ffmpeg_rate,
@@ -82,33 +85,18 @@ class VideoFfmpegCommand(commands.Command):
             output_namer,
             post_processor,
         )
+        return file_processor
 
-        matcher = processing.ByExtensionFileMatchStrategy(args.extension)
-
+    def _get_file_skip_strategy(
+        self, args: argparse.Namespace
+    ) -> processing.FileSkipStrategy:
         skips = []
         if not args.no_skip_processed:
             skips.append(processing.BySuffixFileSkipStrategy(".min"))
         if args.greater_than:
             skips.append(processing.BySizeFileSkipStrategy(args.greater_than))
         skipper = processing.MultiFileSkipStrategy(skips)
-
-        processor = processing.FolderProcessor(
-            folder_path, matcher, skipper, file_processor
-        )
-
-        show.rule()
-        s = processor.process(dry_run=args.dry_run)
-        show.rule()
-
-        if s.processed_files_stats:
-            show.important(
-                f"Processed {len(s.processed_files_stats)} files in {show.elapsed(s.elapsed)}"
-            )
-            show.important(
-                f"{show.human_size(s.total_original_size)} \u2192 {show.human_size(s.total_processed_size)}, new size {show.percent(s.total_original_size, s.total_processed_size)} of original, saved {show.human_size(s.total_delta_size)}",
-                new_line=True,
-            )
-        return s
+        return skipper
 
 
 class FfmpegNotFoundError(Exception):

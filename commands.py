@@ -3,6 +3,7 @@ import check
 import enum
 import pathlib
 import processing
+import show
 import stats
 
 
@@ -79,8 +80,25 @@ class Command(object):
         parser: argparse.ArgumentParser,
         default_extension: str,
         default_greater_than: str,
+        default_no_skip_processed: bool,
         default_originals: str,
     ) -> argparse.ArgumentParser:
+        """
+        Add common arguments to the given argparse parser.
+
+        Args:
+            parser (argparse.ArgumentParser): The argument parser to which the arguments will be added.
+            default_extension (str): The default file extension to process.
+            default_greater_than (str): The default size threshold for processing files.
+                                        None can be passed to suppress this parameter.
+            default_no_skip_processed (bool): The default flag to indicate whether to skip previously processed files.
+                                              None can be passed to suppress this parameter.
+            default_originals (str): The default handling method for original files after processing.
+
+        Returns:
+            argparse.ArgumentParser: The parser with the added arguments.
+        """
+
         parser.add_argument("FOLDER", help="Process files in this folder.")
         parser.add_argument(
             "--dry-run",
@@ -99,18 +117,20 @@ class Command(object):
             default=default_extension,
             help="Process files with this extension.",
         )
-        parser.add_argument(
-            "--greater-than",
-            default=default_greater_than,
-            type=HumanReadableSizeType(),
-            help="Process only files greater than this value. Value should be int or float number with size suffix (K, M, G), or without any suffix for bytes.",
-        )
-        parser.add_argument(
-            "--no-skip-processed",
-            default=False,
-            action="store_true",
-            help="Do not skip previously processed files (detect by suffix) and re-process them again.",
-        )
+        if default_greater_than is not None:
+            parser.add_argument(
+                "--greater-than",
+                default=default_greater_than,
+                type=HumanReadableSizeType(),
+                help="Process only files greater than this value. Value should be int or float number with size suffix (K, M, G), or without any suffix for bytes.",
+            )
+        if default_no_skip_processed is not None:
+            parser.add_argument(
+                "--no-skip-processed",
+                default=False,
+                action="store_true",
+                help="Do not skip previously processed files (detect by suffix) and re-process them again.",
+            )
         parser.add_argument(
             "--originals",
             default=default_originals,
@@ -118,6 +138,10 @@ class Command(object):
             help=f"How to handle original files after processing. Available choices: {OriginalsHandlingArgType.ORIGINALS_HANDLING_OPTIONS}",
         )
         return parser
+
+    @property
+    def _move_to_subfolder_name(self):
+        return "_orig"
 
     def _get_post_processing_strategy(
         self, originals: OriginalsHandlingEnum, move_to: pathlib.Path, dry_run: bool
@@ -130,13 +154,51 @@ class Command(object):
             return processing.DeleteOriginalPostProcessingStrategy()
         raise ValueError(originals)
 
+    def _get_file_match_strategy(self, args: argparse.Namespace):
+        return processing.ByExtensionFileMatchStrategy(args.extension)
+
+    def _execute(self, args: argparse.Namespace) -> stats.FolderStats:
+        folder_path = pathlib.Path(args.FOLDER)
+        check.ensure_folder(folder_path)
+        folder_path = folder_path.absolute()
+
+        show.important(f"Processing *{args.extension} files in folder {folder_path}.")
+
+        if args.dry_run:
+            show.normal("Dry run mode, no real modifications will be made.")
+
+        output_namer = self._get_output_file_path_strategy(args)
+
+        move_to = folder_path / self._move_to_subfolder_name
+        post_processor = self._get_post_processing_strategy(
+            args.originals, move_to, args.dry_run
+        )
+
+        file_processor = self._get_file_processor(args, output_namer, post_processor)
+
+        matcher = self._get_file_match_strategy(args)
+        skipper = self._get_file_skip_strategy(args)
+
+        processor = processing.FolderProcessor(
+            folder_path, matcher, skipper, file_processor
+        )
+
+        show.rule()
+        s = processor.process(dry_run=args.dry_run)
+        show.rule()
+        show.folder_stats(s)
+
+        return s
+
     # Public methods
 
     def configure_parser(
         self, parser: argparse.ArgumentParser
     ) -> argparse.ArgumentParser:
-        ext, gt_than, originals = self._get_common_arguments_defaults()
-        self._add_common_arguments(parser, ext, gt_than, originals)
+        ext, gt_than, no_skip_processed, originals = (
+            self._get_common_arguments_defaults()
+        )
+        self._add_common_arguments(parser, ext, gt_than, no_skip_processed, originals)
         self._add_arguments(parser)
         # Set the command as a value to be available in the resulting args object
         parser.set_defaults(command=self)
@@ -149,10 +211,36 @@ class Command(object):
     ) -> argparse.ArgumentParser:
         raise NotImplementedError()
 
-    def _get_common_arguments_defaults(self) -> tuple[str, str, str]:
+    def _get_common_arguments_defaults(self) -> tuple[str, str, bool, str]:
+        """
+        Abstract methods that descendent classes must implement to provide the default values
+        for common parameters or suppress them. The returned tuple consists of the following values:
+
+        default_extension (str): The default file extension to process.
+        default_greater_than (str): The default size threshold for processing files.
+                                    None can be passed to suppress this parameter.
+        default_no_skip_processed (bool): The default flag to indicate whether to skip previously processed files.
+                                          None can be passed to suppress this parameter.
+        default_originals (str): The default handling method for original files after processing.
+        """
         raise NotImplementedError()
 
-    def _execute(self, args: argparse.Namespace) -> stats.FolderStats:
+    def _get_output_file_path_strategy(
+        self, args: argparse.Namespace
+    ) -> processing.OutputFilePathStrategy:
+        raise NotImplementedError()
+
+    def _get_file_processor(
+        self,
+        args: argparse.Namespace,
+        output_namer: processing.OutputFilePathStrategy,
+        post_processor: processing.PostProcessingStrategy,
+    ) -> processing.FileProcessor:
+        raise NotImplementedError()
+
+    def _get_file_skip_strategy(
+        self, args: argparse.Namespace
+    ) -> processing.FileSkipStrategy:
         raise NotImplementedError()
 
     @property

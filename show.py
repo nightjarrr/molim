@@ -71,6 +71,17 @@ def file_stats(s):
     __CONSOLE__.print(cols, highlight=False)
 
 
+def folder_stats(s):
+    if s.processed_files_stats:
+        important(
+            f"Processed {len(s.processed_files_stats)} files in {elapsed(s.elapsed)}"
+        )
+        important(
+            f"{human_size(s.total_original_size)} \u2192 {human_size(s.total_processed_size)}, new size {percent(s.total_original_size, s.total_processed_size)} of original, saved {human_size(s.total_delta_size)}",
+            new_line=True,
+        )
+
+
 def progress(total: int) -> object:
     p = rich.progress.Progress(
         rich.progress.TextColumn(""),
