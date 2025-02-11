@@ -52,11 +52,17 @@ class JpegifyCommand(commands.Command):
         output_namer: processing.OutputFilePathStrategy,
         post_processor: processing.PostProcessingStrategy,
     ) -> processing.FileProcessor:
+        print(args)
+        check.ensure_int_between(args.imagemagick_quality, 1, 100)
+        if args.imagemagick_additional is not None:
+            check.ensure_type(args.imagemagick_additional, str)
+        cmdline = ["-quality", str(args.imagemagick_quality)]
+        if args.imagemagick_additional is not None:
+            cmdline += args.imagemagick_additional.split(" ")
         file_processor = ImageMagickFileProcessor(
-            args.imagemagick_quality,
-            args.imagemagick_additional,
-            output_namer,
-            post_processor,
+            *cmdline,
+            output_strategy=output_namer,
+            post_processor=post_processor,
         )
         return file_processor
 
@@ -94,17 +100,15 @@ class ImageMagickFileProcessor(processing.FileProcessor):
 
     def __init__(
         self,
-        imagemagick_quality: int,
-        imagemagick_additional: str,
+        *imagemagick_args: str, # All args except for input and output file.
         output_strategy: processing.OutputFilePathStrategy,
         post_processor: processing.PostProcessingStrategy,
     ):
         super().__init__(output_strategy, post_processor)
-        check.ensure_int_between(imagemagick_quality, 1, 100)
-        if imagemagick_additional is not None:
-            check.ensure_type(imagemagick_additional, str)
-        self.__imagemagick_quality = imagemagick_quality
-        self.__imagemagick_additional = imagemagick_additional
+        check.ensure_not_none(imagemagick_args)
+        for a in imagemagick_args:
+            check.ensure_type(a, str)
+        self.__imagemagick_args = imagemagick_args
         try:
             # This will fail if there's no convert command available.
             self.__convert = sh.convert
@@ -120,14 +124,8 @@ class ImageMagickFileProcessor(processing.FileProcessor):
     def _prepare_execution(
         self, file_path: pathlib.Path, output_file_path: pathlib.Path
     ) -> None:
-        self.__args = [
-            str(file_path),  # Input
-            "-quality",
-            str(self.__imagemagick_quality),
-        ]
-        if self.__imagemagick_additional:
-            addl = self.__imagemagick_additional.split(" ")
-            self.__args += addl
+        self.__args = [str(file_path)]
+        self.__args += self.__imagemagick_args
         self.__args.append(f"{output_file_path}")  # Output
         cmdline = " ".join(self.__args)
         show.verbose("Running ImageMagick...")

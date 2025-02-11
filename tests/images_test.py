@@ -34,27 +34,24 @@ def test_ImageMagickFileProcessor_input_validation():
 
     # Null checks
     with pytest.raises(ValueError):
-        images.ImageMagickFileProcessor(None, None, o, p)
+        images.ImageMagickFileProcessor(
+            None, "None", output_strategy=o, post_processor=p
+        )
     with pytest.raises(ValueError):
-        images.ImageMagickFileProcessor(78, None, None, p)
+        images.ImageMagickFileProcessor("78", output_strategy=None, post_processor=p)
     with pytest.raises(ValueError):
-        images.ImageMagickFileProcessor(90, None, o, None)
+        images.ImageMagickFileProcessor("90", output_strategy=o, post_processor=None)
     # Type checks
     with pytest.raises(TypeError):
-        images.ImageMagickFileProcessor("90", None, o, p)
+        images.ImageMagickFileProcessor(90, output_strategy=o, post_processor=p)
     with pytest.raises(TypeError):
-        images.ImageMagickFileProcessor(90, True, o, p)
+        images.ImageMagickFileProcessor("90", True, output_strategy=o, post_processor=p)
     with pytest.raises(TypeError):
-        images.ImageMagickFileProcessor("90", None, 87, p)
+        images.ImageMagickFileProcessor("90", output_strategy=87, post_processor=p)
     with pytest.raises(TypeError):
-        images.ImageMagickFileProcessor("90", None, o, o)
-    # Value checks
-    with pytest.raises(ValueError):
-        images.ImageMagickFileProcessor(-10, None, o, p)
-    with pytest.raises(ValueError):
-        images.ImageMagickFileProcessor(101, None, o, p)
+        images.ImageMagickFileProcessor("90", output_strategy=o, post_processor=o)
     # Method checks
-    i = images.ImageMagickFileProcessor(92, None, o, p)
+    i = images.ImageMagickFileProcessor("92", output_strategy=o, post_processor=p)
     with pytest.raises(TypeError):
         i.process("/tmp/video.mp4")
     with pytest.raises(ValueError):
@@ -64,7 +61,9 @@ def test_ImageMagickFileProcessor_input_validation():
 def test_ImageMagickFileProcessor_dry_run():
     o = processing.ChangeExtOutputFilePathStrategy(".jpg")
     p = processing.NoopPostProcessingStrategy()
-    i = images.ImageMagickFileProcessor(92, None, o, p)
+    i = images.ImageMagickFileProcessor(
+        "-quality", "92", output_strategy=o, post_processor=p
+    )
 
     ii = get_input_file("file_example_PNG_1MB.png")
     assert ii.exists()
@@ -76,7 +75,11 @@ def test_ImageMagickFileProcessor_dry_run():
 def real_run(name: str, addl=None):
     o = processing.ChangeExtOutputFilePathStrategy(".jpg")
     p = processing.NoopPostProcessingStrategy()
-    i = images.ImageMagickFileProcessor(92, addl, o, p)
+
+    cmdln = ["-quality", "92"]
+    if addl:
+        cmdln.append(addl)
+    i = images.ImageMagickFileProcessor(*cmdln, output_strategy=o, post_processor=p)
 
     ii = get_input_file(name)
     assert ii.exists()
@@ -137,6 +140,48 @@ def test_JpegifyCommand_create_parser():
     assert args.imagemagick_quality == images.JpegifyCommand.JPEGIFY_QUALITY
     assert args.imagemagick_additional is None
     assert not args.verbose
+
+
+def test_JpegifyCommand_args_validation():
+    with pytest.raises(ValueError):
+        c = images.JpegifyCommand()
+        c(
+            argparse.Namespace(
+                FOLDER=str(IMAGE_FOLDER),
+                dry_run=True,
+                extension=images.JpegifyCommand.JPEGIFY_EXTENSION,
+                originals=commands.OriginalsHandlingEnum.LEAVE,
+                imagemagick_quality=-5,
+                imagemagick_additional=None,
+                verbose=True,
+            )
+        )
+    with pytest.raises(ValueError):
+        c = images.JpegifyCommand()
+        c(
+            argparse.Namespace(
+                FOLDER=str(IMAGE_FOLDER),
+                dry_run=True,
+                extension=images.JpegifyCommand.JPEGIFY_EXTENSION,
+                originals=commands.OriginalsHandlingEnum.LEAVE,
+                imagemagick_quality=120,
+                imagemagick_additional=None,
+                verbose=True,
+            )
+        )
+    with pytest.raises(TypeError):
+        c = images.JpegifyCommand()
+        c(
+            argparse.Namespace(
+                FOLDER=str(IMAGE_FOLDER),
+                dry_run=True,
+                extension=images.JpegifyCommand.JPEGIFY_EXTENSION,
+                originals=commands.OriginalsHandlingEnum.LEAVE,
+                imagemagick_quality=90,
+                imagemagick_additional=True,
+                verbose=True,
+            )
+        )
 
 
 def test_JpegifyCommand_dry_run():
