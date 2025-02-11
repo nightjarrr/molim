@@ -257,9 +257,6 @@ class FolderProcessor(object):
                         for f in files_to_process:
                             show.verbose(f"Starting to process {f.name}...")
                             show.progress_update(p, f.name)
-                            # with show.status(
-                            #     f" {i}/{len(files_to_process)} {f.name} ({show.human_size(f.stat().st_size)})"
-                            # ):
                             s = self.__file_processor.process(f, dry_run)
                             show.progress_advance(p)
                             statistics.add_processed_file_stats(s)
