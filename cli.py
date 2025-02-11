@@ -7,7 +7,7 @@ import video
 
 def create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="do",
+        prog="molim",
         description="Processing of files for different use cases by commands.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
