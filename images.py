@@ -37,6 +37,35 @@ class JpegifyCommand(commands.Command):
             JpegifyCommand.JPEGIFY_ORIGINALS,
         )
 
+    def _get_output_file_path_strategy(
+        self, args: argparse.Namespace
+    ) -> processing.OutputFilePathStrategy:
+        output_namer = processing.ChangeExtOutputFilePathStrategy(
+            # Force output extension.
+            JpegifyCommand.JPEGIFY_PROCESSED_EXTENSION
+        )
+        return output_namer
+
+    def _get_file_processor(
+        self,
+        args: argparse.Namespace,
+        output_namer: processing.OutputFilePathStrategy,
+        post_processor: processing.PostProcessingStrategy,
+    ) -> processing.FileProcessor:
+        file_processor = ImageMagickFileProcessor(
+            args.imagemagick_quality,
+            args.imagemagick_additional,
+            output_namer,
+            post_processor,
+        )
+        return file_processor
+
+    def _get_file_skip_strategy(
+        self, args: argparse.Namespace
+    ) -> processing.FileSkipStrategy:
+        # Skipping is not applicable for image conversion.
+        return processing.NoFileSkipStrategy()
+
     @property
     def name(self) -> str:
         return "jpegify"

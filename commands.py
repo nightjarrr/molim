@@ -162,7 +162,9 @@ class Command(object):
         check.ensure_folder(folder_path)
         folder_path = folder_path.absolute()
 
-        show.important(f"Processing *{args.extension} files in folder {folder_path}.")
+        show.important(
+            f"Processing {show.ext(args.extension)} files in folder {folder_path}."
+        )
 
         if args.dry_run:
             show.normal("Dry run mode, no real modifications will be made.")

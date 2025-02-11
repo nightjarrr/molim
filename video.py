@@ -53,10 +53,6 @@ class VideoFfmpegCommand(commands.Command):
             VIDEO_ORIGINALS,
         )
 
-    @property
-    def name(self) -> str:
-        return "video"
-
     def _get_output_file_path_strategy(
         self, args: argparse.Namespace
     ) -> processing.OutputFilePathStrategy:
@@ -97,6 +93,10 @@ class VideoFfmpegCommand(commands.Command):
             skips.append(processing.BySizeFileSkipStrategy(args.greater_than))
         skipper = processing.MultiFileSkipStrategy(skips)
         return skipper
+
+    @property
+    def name(self) -> str:
+        return "video"
 
 
 class FfmpegNotFoundError(Exception):

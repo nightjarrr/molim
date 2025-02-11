@@ -8,23 +8,28 @@ import rich.traceback
 # Formatting helpers
 
 
-def percent(old: int, new: int):
+def percent(old: int, new: int) -> str:
     if old == new:
         return "0%"
     p = 100 * float(new) / old
     return f"{p:.1f}%"
 
 
-def elapsed(value: float):
+def elapsed(value: float) -> str:
     return f"{timedelta(seconds=int(value))}"
 
 
-def human_size(size: int):
+def human_size(size: int) -> str:
     for unit in ["", "K", "M", "G"]:
         if abs(size) < 1024.0:
             return f"{size:3.1f}{unit}"
         size /= 1024.0
     return f"{size:.1f}Yi"
+
+
+def ext(value: str) -> str:
+    ex = value.split(",")
+    return ", ".join(f"*{e}" for e in ex)
 
 
 # Output helpers
@@ -54,10 +59,17 @@ def normal(message: str, new_line=False) -> None:
         __CONSOLE__.print()
 
 
+def __delta(delta: int) -> str:
+    if delta < 0:
+        return f"added {human_size(-delta)}"
+    else:
+        return f"saved {human_size(delta)}"
+
+
 def file_stats(s):
     t = rich.text.Text(f"{s.original_file.name}\n")
     t.append(
-        f"{human_size(s.original_file_size)} \u2192 {human_size(s.processed_file_size)}, saved {human_size(s.delta_size)}",
+        f"{human_size(s.original_file_size)} \u2192 {human_size(s.processed_file_size)}, {__delta(s.delta_size)}",
         style="grey50",
     )
 
@@ -77,7 +89,7 @@ def folder_stats(s):
             f"Processed {len(s.processed_files_stats)} files in {elapsed(s.elapsed)}"
         )
         important(
-            f"{human_size(s.total_original_size)} \u2192 {human_size(s.total_processed_size)}, new size {percent(s.total_original_size, s.total_processed_size)} of original, saved {human_size(s.total_delta_size)}",
+            f"{human_size(s.total_original_size)} \u2192 {human_size(s.total_processed_size)}, new size {percent(s.total_original_size, s.total_processed_size)} of original, {__delta(s.total_delta_size)}",
             new_line=True,
         )
 

@@ -153,17 +153,29 @@ class AnyFileMatchStrategy(FileMatchStrategy):
 
 class ByExtensionFileMatchStrategy(FileMatchStrategy):
     def __init__(self, ext: str):
-        check.ensure_str_startswith(ext, ".")
-        self.__ext = ext
+        check.ensure_type(ext, str)
+        ext_list = ext.split(",")
+        for e in ext_list:
+            check.ensure_str_startswith(e, ".")
+        self.__ext = set(ext_list)
 
     def match(self, file_path: pathlib.Path) -> bool:
         check.ensure_file(file_path)
-        return file_path.suffix == self.__ext
+        return file_path.suffix in self.__ext
 
 
 class FileSkipStrategy(object):
     def skip(self, file_path: pathlib.Path) -> bool:
         raise NotImplementedError()
+
+
+class NoFileSkipStrategy(FileSkipStrategy):
+    """
+    The corner-case skip strategy that does not skip any file.
+    """
+
+    def skip(self, file_path: pathlib.Path) -> bool:
+        return False
 
 
 class BySuffixFileSkipStrategy(FileSkipStrategy):
@@ -234,9 +246,7 @@ class FolderProcessor(object):
                 if f.is_file() and self.__file_matcher.match(f):
                     files_list.append(f)
             if files_list:
-                show.normal(
-                    f"Matched {len(files_list)} files."
-                )
+                show.normal(f"Matched {len(files_list)} files.")
                 show.normal("Checking whether some of them can be skipped...")
                 files_to_process = []
                 skipped = 0

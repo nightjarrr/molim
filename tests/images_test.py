@@ -1,9 +1,12 @@
+import argparse
+import commands
 import images
 import os.path
 import pathlib
 import processing
 import pytest
 import show
+import stats
 
 IMAGE_FOLDER = pathlib.Path(os.path.dirname(__file__)) / "data/jpegify"
 
@@ -17,9 +20,9 @@ def cleanup_output_file(file_path: pathlib.Path):
     file_path.unlink(missing_ok=False)
 
 
-def cleanup_processed_files():
-    for f in IMAGE_FOLDER.glob("*.jpg"):
-        f.unlink()
+def cleanup_processed_files(s: stats.FolderStats):
+    for ss in s.processed_files_stats:
+        ss.processed_file.unlink(missing_ok=True)
 
 
 # ImageMagickFileProcessor tests
@@ -87,10 +90,91 @@ def real_run(name: str, addl=None):
     cleanup_output_file(out)
 
 
-def test_FfmpegFileProcessor_real_run():
+def test_ImageMagickFileProcessor_real_run():
     # Set verbose output
     show.set_verbose(True)
     real_run("file_example_PNG_1MB.png")
     real_run("file example WEBP_500kB.webp")  # Test name with spaces
     with pytest.raises(images.ImageMagickRuntimeError):
         real_run("file_example_PNG_1MB.png", "---non -existent ARGUMENT!!!")
+
+
+# JpegifyCommand tests
+
+
+def test_JpegifyCommand_name():
+    j = images.JpegifyCommand()
+    assert j.name == "jpegify"
+
+
+def test_JpegifyCommand_get_common_arguments_defaults():
+    j = images.JpegifyCommand()
+    a, b, c, d = j._get_common_arguments_defaults()
+
+    assert a == images.JpegifyCommand.JPEGIFY_EXTENSION
+    assert b is None
+    assert c is None
+    assert d == images.JpegifyCommand.JPEGIFY_ORIGINALS
+
+
+def test_JpegifyCommand_create_parser():
+    parser = argparse.ArgumentParser()
+    j = images.JpegifyCommand()
+    j.configure_parser(parser)
+    args = parser.parse_args(["--dry-run", "."])
+
+    assert args.FOLDER == "."
+    assert args.dry_run
+    assert args.extension == images.JpegifyCommand.JPEGIFY_EXTENSION
+
+    # Ensure some common args are suppressed
+    with pytest.raises(AttributeError):
+        args.no_skip_processed
+    with pytest.raises(AttributeError):
+        args.greater_than
+
+    assert args.originals == commands.OriginalsHandlingEnum.DELETE
+    assert args.imagemagick_quality == images.JpegifyCommand.JPEGIFY_QUALITY
+    assert args.imagemagick_additional is None
+    assert not args.verbose
+
+
+def test_JpegifyCommand_dry_run():
+    c = images.JpegifyCommand()
+    s = c(
+        argparse.Namespace(
+            FOLDER=str(IMAGE_FOLDER),
+            dry_run=True,
+            extension=images.JpegifyCommand.JPEGIFY_EXTENSION,
+            originals=commands.OriginalsHandlingEnum.LEAVE,
+            imagemagick_quality=images.JpegifyCommand.JPEGIFY_QUALITY,
+            imagemagick_additional=None,
+            verbose=True,
+        )
+    )
+
+    assert s is not None
+    assert len(s.processed_files_stats) == 5
+    assert s.skipped_files_count == 0
+    assert s.total_delta_size == 0
+
+
+def test_JpegifyCommand_core_logic():
+    c = images.JpegifyCommand()
+    s = c(
+        argparse.Namespace(
+            FOLDER=str(IMAGE_FOLDER),
+            dry_run=False,
+            extension=images.JpegifyCommand.JPEGIFY_EXTENSION,
+            originals=commands.OriginalsHandlingEnum.LEAVE,
+            imagemagick_quality=images.JpegifyCommand.JPEGIFY_QUALITY,
+            imagemagick_additional=None,
+            verbose=True,
+        )
+    )
+
+    assert s is not None
+    assert len(s.processed_files_stats) == 5
+    assert s.skipped_files_count == 0
+
+    cleanup_processed_files(s)

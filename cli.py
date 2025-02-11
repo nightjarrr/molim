@@ -1,5 +1,6 @@
 import argparse
 import commands
+import images
 import show
 import sys
 import video
@@ -23,7 +24,7 @@ def create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
 
 if __name__ == "__main__":
     try:
-        parser = create_parser(video.VideoFfmpegCommand())
+        parser = create_parser(video.VideoFfmpegCommand(), images.JpegifyCommand())
         args = parser.parse_args()
 
         show.set_verbose(args.verbose)

@@ -1,3 +1,4 @@
+import pathlib
 import processing
 import pytest
 import random
@@ -11,10 +12,16 @@ PROCESSED_FILES_COUNT = 23
 SKIPPED_FILES_COUNT = 7
 
 
-def create_file(dir, index, ext):
+def create_file(dir: pathlib.Path, index: int, ext: str) -> pathlib.Path:
     f = dir / f"file_{index}.{ext}"
     f.write_bytes(random.randbytes(random.randint(100, 200)))
     return f
+
+
+def f(tmp_path: pathlib.Path, name: str) -> pathlib.Path:
+    _ = tmp_path / name
+    _.touch()
+    return _
 
 
 @pytest.fixture(scope="module")
@@ -26,8 +33,44 @@ def prepared_folder(tmp_path_factory):
         create_file(dir, i, "mp4")
     for i in range(SKIPPED_FILES_COUNT):
         create_file(dir, i, "min.mp4")
-    print([x for x in dir.iterdir()])
     return dir
+
+
+# ByExtensionFileMatchStrategy tests
+
+
+def test_ByExtensionFileMatchStrategy_input_validation():
+    with pytest.raises(ValueError):
+        processing.ByExtensionFileMatchStrategy(None)
+    with pytest.raises(TypeError):
+        processing.ByExtensionFileMatchStrategy(12)
+    with pytest.raises(ValueError):
+        processing.ByExtensionFileMatchStrategy("jpg")
+    with pytest.raises(ValueError):
+        processing.ByExtensionFileMatchStrategy(".jpg,png")
+    with pytest.raises(ValueError):
+        processing.ByExtensionFileMatchStrategy(".jpg, some other .png")
+
+
+def test_ByExtensionFileMatchStrategy_core_logic(tmp_path):
+    m = processing.ByExtensionFileMatchStrategy(".cpp")
+
+    assert m.match(f(tmp_path, "data.min.cpp"))
+    assert m.match(f(tmp_path, "data_.cpp"))
+    assert not m.match(f(tmp_path, "data.jpg"))
+    assert not m.match(f(tmp_path, "data.cpp.txt"))
+    assert not m.match(f(tmp_path, "data.cppp"))
+
+
+def test_ByExtensionFileMatchStrategy_core_logic_multiple(tmp_path):
+    m = processing.ByExtensionFileMatchStrategy(".docx,.pdf,.ppt")
+
+    assert m.match(f(tmp_path, "data.min.docx"))
+    assert m.match(f(tmp_path, "data.pdf.ppt"))
+    assert m.match(f(tmp_path, "data.pdf"))
+    assert not m.match(f(tmp_path, "data.jpg"))
+    assert not m.match(f(tmp_path, "data.pdf.txt"))
+    assert not m.match(f(tmp_path, "data,pdf"))
 
 
 # BySuffixFileSkipStrategy tests
@@ -132,10 +175,12 @@ def test_MultiFileSkipStrategy_empty(tmp_path):
 
 
 def test_MultiFileSkipStrategy_core_logic(tmp_path):
-    s = processing.MultiFileSkipStrategy([
-        processing.BySuffixFileSkipStrategy(".min"),
-        processing.BySizeFileSkipStrategy(120),
-    ])
+    s = processing.MultiFileSkipStrategy(
+        [
+            processing.BySuffixFileSkipStrategy(".min"),
+            processing.BySizeFileSkipStrategy(120),
+        ]
+    )
 
     path = tmp_path / "data.min.txt"
     path.write_bytes(random.randbytes(150))
@@ -147,6 +192,7 @@ def test_MultiFileSkipStrategy_core_logic(tmp_path):
 
     path.write_bytes(random.randbytes(150))
     assert not s.skip(path)
+
 
 # FolderProcessor tests
 
