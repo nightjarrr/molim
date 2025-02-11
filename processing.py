@@ -252,17 +252,21 @@ class FolderProcessor(object):
                     show.normal("No files were skipped.")
                 if files_to_process:
                     show.normal(f"Processing {len(files_to_process)} files...")
-                    i = 1
-                    for f in files_to_process:
-                        show.verbose(f"Starting to process {f.name}...")
-                        with show.status(
-                            f" {i}/{len(files_to_process)} {f.name} ({show.human_size(f.stat().st_size)})"
-                        ):
+                    with show.progress(len(files_to_process)) as p:
+                        i = 1
+                        for f in files_to_process:
+                            show.verbose(f"Starting to process {f.name}...")
+                            show.progress_update(p, f.name)
+                            # with show.status(
+                            #     f" {i}/{len(files_to_process)} {f.name} ({show.human_size(f.stat().st_size)})"
+                            # ):
                             s = self.__file_processor.process(f, dry_run)
+                            show.progress_advance(p)
                             statistics.add_processed_file_stats(s)
-                        show.file_stats(s)
-                        i += 1
-                        show.verbose("")
+                            show.file_stats(s)
+                            i += 1
+                            show.verbose("")
+                        show.progress_update(p, "")
                 else:
                     show.normal("No files to process, done here.", new_line=True)
             else:

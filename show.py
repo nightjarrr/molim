@@ -71,8 +71,28 @@ def file_stats(s):
     __CONSOLE__.print(cols, highlight=False)
 
 
-def status(message: str):
-    return __CONSOLE__.status(message, refresh_per_second=5)
+def progress(total: int) -> object:
+    p = rich.progress.Progress(
+        rich.progress.TextColumn(""),
+        rich.progress.SpinnerColumn(),
+        rich.progress.TimeElapsedColumn(),
+        rich.progress.TextColumn("{task.description}"),
+        rich.progress.BarColumn(),
+        rich.progress.MofNCompleteColumn(),
+        console=__CONSOLE__,
+    )
+    p.add_task(total=total, description="")
+    return p
+
+
+def progress_update(progress: object, description: str) -> None:
+    task = progress.task_ids[0]
+    progress.update(task, description=description)
+
+
+def progress_advance(progress: object) -> None:
+    task = progress.task_ids[0]
+    progress.advance(task)
 
 
 def verbose(message: str, new_line=False) -> None:
