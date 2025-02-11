@@ -16,7 +16,9 @@ def ensure_type(obj, type):
 def ensure_str_startswith(obj, start):
     ensure_type(obj, str)
     if not obj.startswith(start):
-        raise ValueError(f"A string value that starts with '{start}' is required (provided: {obj}).")
+        raise ValueError(
+            f"A string value that starts with '{start}' is required (provided: {obj})."
+        )
 
 
 def ensure_int_positive(obj):
@@ -28,7 +30,9 @@ def ensure_int_positive(obj):
 def ensure_int_between(obj, min, max):
     ensure_type(obj, int)
     if obj < min or obj > max:
-        raise ValueError(f"An integer value between {min} and {max} is required (provided: {obj}).")
+        raise ValueError(
+            f"An integer value between {min} and {max} is required (provided: {obj})."
+        )
 
 
 def ensure_list_non_empty(obj):

@@ -100,7 +100,7 @@ class ImageMagickFileProcessor(processing.FileProcessor):
 
     def __init__(
         self,
-        *imagemagick_args: str, # All args except for input and output file.
+        *imagemagick_args: str,  # All args except for input and output file.
         output_strategy: processing.OutputFilePathStrategy,
         post_processor: processing.PostProcessingStrategy,
     ):
