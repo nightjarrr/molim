@@ -7,18 +7,18 @@ import sh
 import show
 
 
-class JpegifyCommand(commands.Command):
-    JPEGIFY_EXTENSION = ".png,.webp"
-    JPEGIFY_ORIGINALS = "delete"
-    JPEGIFY_PROCESSED_EXTENSION = ".jpg"
-    JPEGIFY_QUALITY = 95
+JPEG_EXTENSION = ".jpg,.jpeg,.JPG"
+JPEG_QUALITY = 95
+JPEG_PROCESSED_EXTENSION = ".jpg"
 
+
+class ImageMagickMixin(object):
     def _add_arguments(
         self, parser: argparse.ArgumentParser
     ) -> argparse.ArgumentParser:
         parser.add_argument(
             "--imagemagick-quality",
-            default=JpegifyCommand.JPEGIFY_QUALITY,
+            default=JPEG_QUALITY,
             type=int,
             help="ImageMagick quality for output JPEG image.",
         )
@@ -29,7 +29,40 @@ class JpegifyCommand(commands.Command):
         )
         return parser
 
-    def _get_common_arguments_defaults(self) -> tuple[str, str, str]:
+    def _get_imagemagick_args(self, args: argparse.Namespace) -> list[str]:
+        check.ensure_int_between(args.imagemagick_quality, 1, 100)
+        if args.imagemagick_additional is not None:
+            check.ensure_type(args.imagemagick_additional, str)
+        cmdline = ["-quality", str(args.imagemagick_quality)]
+        if args.imagemagick_additional is not None:
+            cmdline += args.imagemagick_additional.split(" ")
+        return cmdline
+
+    def _get_file_processor(
+        self,
+        args: argparse.Namespace,
+        output_namer: processing.OutputFilePathStrategy,
+        post_processor: processing.PostProcessingStrategy,
+    ) -> processing.FileProcessor:
+        cmdline = self._get_imagemagick_args(args)
+        file_processor = ImageMagickFileProcessor(
+            *cmdline,
+            output_strategy=output_namer,
+            post_processor=post_processor,
+        )
+        return file_processor
+
+
+class JpegifyCommand(commands.Command, ImageMagickMixin):
+    JPEGIFY_EXTENSION = ".png,.webp"
+    JPEGIFY_ORIGINALS = "delete"
+
+    def _add_arguments(
+        self, parser: argparse.ArgumentParser
+    ) -> argparse.ArgumentParser:
+        return ImageMagickMixin._add_arguments(self, parser)
+
+    def _get_common_arguments_defaults(self) -> tuple[str, str, bool, str]:
         return (
             JpegifyCommand.JPEGIFY_EXTENSION,
             None,  # Suppress greater-than parameter
@@ -42,7 +75,7 @@ class JpegifyCommand(commands.Command):
     ) -> processing.OutputFilePathStrategy:
         output_namer = processing.ChangeExtOutputFilePathStrategy(
             # Force output extension.
-            JpegifyCommand.JPEGIFY_PROCESSED_EXTENSION
+            JPEG_PROCESSED_EXTENSION
         )
         return output_namer
 
@@ -52,19 +85,9 @@ class JpegifyCommand(commands.Command):
         output_namer: processing.OutputFilePathStrategy,
         post_processor: processing.PostProcessingStrategy,
     ) -> processing.FileProcessor:
-        print(args)
-        check.ensure_int_between(args.imagemagick_quality, 1, 100)
-        if args.imagemagick_additional is not None:
-            check.ensure_type(args.imagemagick_additional, str)
-        cmdline = ["-quality", str(args.imagemagick_quality)]
-        if args.imagemagick_additional is not None:
-            cmdline += args.imagemagick_additional.split(" ")
-        file_processor = ImageMagickFileProcessor(
-            *cmdline,
-            output_strategy=output_namer,
-            post_processor=post_processor,
+        return ImageMagickMixin._get_file_processor(
+            self, args, output_namer, post_processor
         )
-        return file_processor
 
     def _get_file_skip_strategy(
         self, args: argparse.Namespace
@@ -75,6 +98,127 @@ class JpegifyCommand(commands.Command):
     @property
     def name(self) -> str:
         return "jpegify"
+
+
+class ResizeCommand(commands.Command, ImageMagickMixin):
+    RESIZE_ORIGINALS = "delete"
+
+    def _add_common_arguments(
+        self,
+        parser: argparse.ArgumentParser,
+        default_extension: str,
+        default_greater_than: str,
+        default_no_skip_processed: bool,
+        default_originals: str,
+    ) -> argparse.ArgumentParser:
+        parser.add_argument(
+            "SIZE",
+            help="Resize images to this size. Size can be an integer value or a percent value. Only images larger than specified size will be resized.",
+        )
+        return super()._add_common_arguments(
+            parser,
+            default_extension,
+            default_greater_than,
+            default_no_skip_processed,
+            default_originals,
+        )
+
+    def _add_arguments(
+        self, parser: argparse.ArgumentParser
+    ) -> argparse.ArgumentParser:
+        parser = ImageMagickMixin._add_arguments(self, parser)
+        return parser
+
+    def _get_common_arguments_defaults(self) -> tuple[str, str, bool, str]:
+        return (
+            JPEG_EXTENSION,
+            None,  # Suppress greater-than parameter
+            None,  # Suppress no-skip-processed parameter
+            ResizeCommand.RESIZE_ORIGINALS,
+        )
+
+    def _get_post_processing_strategy(
+        self,
+        originals: commands.OriginalsHandlingEnum,
+        move_to: pathlib.Path,
+        dry_run: bool,
+    ) -> processing.PostProcessingStrategy:
+        originals_post_processor = super()._get_post_processing_strategy(
+            originals, move_to, dry_run
+        )
+        if originals == commands.OriginalsHandlingEnum.LEAVE:
+            return originals_post_processor
+        else:
+            return processing.ReplaceOriginalPostProcessignStrategy(
+                originals_post_processor
+            )
+
+    def _get_resized_subfolder(self, args: argparse.Namespace) -> pathlib.Path:
+        check.ensure_type(args.SIZE, str)
+        original_path = pathlib.Path(args.FOLDER)
+        original_path = original_path.absolute()
+        if "%" in args.SIZE:
+            subfolder = "w" + args.SIZE.replace("%", "percent")
+        else:
+            subfolder = f"w{args.SIZE}"
+        return original_path / subfolder
+
+    def _get_output_file_path_strategy(
+        self, args: argparse.Namespace
+    ) -> processing.OutputFilePathStrategy:
+        out = [processing.ChangeExtOutputFilePathStrategy(JPEG_PROCESSED_EXTENSION)]
+        if args.originals == commands.OriginalsHandlingEnum.LEAVE:
+            # If original files stay as is, the resized files must go to subfolder.
+            resized_subfolder = self._get_resized_subfolder(args)
+            out.append(
+                processing.FolderOutputFilePathStrategy(resized_subfolder, args.dry_run)
+            )
+        else:
+            # For MOVE and DELETE handling of original files, create a temp name for processed file.
+            # At post-processing stage it will be renamed back to the original name by post-processing strategy.
+            out.append(processing.SuffixOutputFilePathStrategy(".temp"))
+        return processing.MultiOutputFilePathStrategy(out)
+
+    def _get_imagemagick_args(self, args: argparse.Namespace) -> list[str]:
+        imagemagick_args = ImageMagickMixin._get_imagemagick_args(self, args)
+
+        s = args.SIZE
+        check.ensure_type(s, str)
+
+        imagemagick_args.append("-resize")
+        if s.endswith("%"):
+            # Basic validation of supplied % value.
+            percent = int(s[:-1])
+            check.ensure_int_positive(percent)
+            # If the size value is % (e.g., '50%'), just pass it through to ImageMagick.
+            imagemagick_args.append(s)
+        else:
+            size = int(s)  # Otherwise expecting a valid integer value.
+            check.ensure_int_positive(size)
+            # Set the width and height boundary equal to SIZE and use > modifier to only resize if the image is bigger.
+            arg = f"{size}x{size}>"
+            imagemagick_args.append(arg)
+        return imagemagick_args
+
+    def _get_file_processor(
+        self,
+        args: argparse.Namespace,
+        output_namer: processing.OutputFilePathStrategy,
+        post_processor: processing.PostProcessingStrategy,
+    ) -> processing.FileProcessor:
+        return ImageMagickMixin._get_file_processor(
+            self, args, output_namer, post_processor
+        )
+
+    def _get_file_skip_strategy(
+        self, args: argparse.Namespace
+    ) -> processing.FileSkipStrategy:
+        # Skipping is not applicable for image conversion.
+        return processing.NoFileSkipStrategy()
+
+    @property
+    def name(self):
+        return "resize"
 
 
 class ImageMagickNotFoundError(Exception):

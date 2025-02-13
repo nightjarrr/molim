@@ -94,6 +94,7 @@ class Command(object):
             default_no_skip_processed (bool): The default flag to indicate whether to skip previously processed files.
                                               None can be passed to suppress this parameter.
             default_originals (str): The default handling method for original files after processing.
+                                     None can be passed to suppress this parameter.
 
         Returns:
             argparse.ArgumentParser: The parser with the added arguments.
@@ -131,12 +132,13 @@ class Command(object):
                 action="store_true",
                 help="Do not skip previously processed files (detect by suffix) and re-process them again.",
             )
-        parser.add_argument(
-            "--originals",
-            default=default_originals,
-            type=OriginalsHandlingArgType(),
-            help=f"How to handle original files after processing. Available choices: {OriginalsHandlingArgType.ORIGINALS_HANDLING_OPTIONS}",
-        )
+        if default_originals is not None:
+            parser.add_argument(
+                "--originals",
+                default=default_originals,
+                type=OriginalsHandlingArgType(),
+                help=f"How to handle original files after processing. Available choices: {OriginalsHandlingArgType.ORIGINALS_HANDLING_OPTIONS}",
+            )
         return parser
 
     @property

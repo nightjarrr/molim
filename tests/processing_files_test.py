@@ -60,7 +60,36 @@ def test_ChangeExtOutputFilePathStrategy_core_logic(tmp_path):
     assert output_path.name == "data.zip"
 
 
-# MultiOutputFilePathStrategy
+# FolderOutputFilePathStrategy tests
+
+
+def test_FolderOutputFilePathStrategy_input_validation(tmp_path):
+    with pytest.raises(ValueError):
+        processing.FolderOutputFilePathStrategy(None, False)
+    with pytest.raises(TypeError):
+        processing.FolderOutputFilePathStrategy("/tmp/folder", False)
+
+    s = processing.FolderOutputFilePathStrategy(tmp_path, True)
+    with pytest.raises(TypeError):
+        s.get_output_path("/tmp/path")
+    with pytest.raises(ValueError):
+        s.get_output_path(None)
+
+
+def test_FolderOutputFilePathStrategy_core_logic(tmp_path):
+    input_path = tmp_path / "data.txt"
+    output_folder = tmp_path / "out"
+
+    s = processing.FolderOutputFilePathStrategy(output_folder, False)
+    output_path = s.get_output_path(input_path)
+
+    # Input and output in the same folder
+    assert output_path.parent == output_folder
+    # Output filename is input with a changed extension
+    assert output_path.name == input_path.name
+
+
+# MultiOutputFilePathStrategy tests
 
 
 def test_MultiOutputFilePathStrategy_input_validation():
@@ -188,6 +217,60 @@ def test_DeleteOriginalPostProcessingStrategy_core_logic(tmp_path):
     m.process(input_path, output_path, False)
 
     assert not input_path.exists()
+
+
+# ReplaceOriginalPostProcessignStrategy tests
+
+
+def test_ReplaceOriginalPostProcessignStrategy_input_validation(tmp_path):
+    with pytest.raises(ValueError):
+        processing.ReplaceOriginalPostProcessignStrategy(None)
+    with pytest.raises(TypeError):
+        processing.ReplaceOriginalPostProcessignStrategy(17)
+
+    input_path = tmp_path / "data.txt"
+    input_path.touch()
+
+    m = processing.ReplaceOriginalPostProcessignStrategy(
+        processing.DeleteOriginalPostProcessingStrategy()
+    )
+    with pytest.raises(ValueError):
+        m.process(None, input_path, True)
+    with pytest.raises(ValueError):
+        m.process(input_path, None, False)
+
+
+def test_ReplaceOriginalPostProcessignStrategy_dry_run(tmp_path):
+    input_path = tmp_path / "data.txt"
+    input_path.touch()
+
+    m = processing.ReplaceOriginalPostProcessignStrategy(
+        processing.DeleteOriginalPostProcessingStrategy()
+    )
+    m.process(input_path, tmp_path / "data.zip", True)
+
+    assert input_path.exists()
+    assert input_path == (tmp_path / "data.txt")
+
+
+def test_ReplaceOriginalPostProcessignStrategy_core_logic(tmp_path):
+    input_path = tmp_path / "data.txt"
+    input_path.touch()
+
+    output_path = tmp_path / "data.zip"
+    output_path.touch()
+
+    orig_folder = tmp_path / "_orig"
+
+    m = processing.ReplaceOriginalPostProcessignStrategy(
+        processing.MoveOriginalPostProcessingStrategy(orig_folder, False)
+    )
+    m.process(input_path, output_path, False)
+
+    assert orig_folder.exists()
+    assert (orig_folder / input_path.name).exists() # Moved original file
+    assert not output_path.exists() # Output original name does not exist because it was renamed
+    assert input_path.exists() # Input original name exists because output was renamed to this name
 
 
 # FileProcessor tests

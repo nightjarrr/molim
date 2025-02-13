@@ -24,7 +24,9 @@ def create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
 
 if __name__ == "__main__":
     try:
-        parser = create_parser(video.VideoFfmpegCommand(), images.JpegifyCommand())
+        parser = create_parser(
+            video.VideoFfmpegCommand(), images.JpegifyCommand(), images.ResizeCommand()
+        )
         args = parser.parse_args()
 
         show.set_verbose(args.verbose)
