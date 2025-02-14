@@ -268,9 +268,13 @@ def test_ReplaceOriginalPostProcessignStrategy_core_logic(tmp_path):
     m.process(input_path, output_path, False)
 
     assert orig_folder.exists()
-    assert (orig_folder / input_path.name).exists() # Moved original file
-    assert not output_path.exists() # Output original name does not exist because it was renamed
-    assert input_path.exists() # Input original name exists because output was renamed to this name
+    assert (orig_folder / input_path.name).exists()  # Moved original file
+    assert (
+        not output_path.exists()
+    )  # Output original name does not exist because it was renamed
+    assert (
+        input_path.exists()
+    )  # Input original name exists because output was renamed to this name
 
 
 # FileProcessor tests

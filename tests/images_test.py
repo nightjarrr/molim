@@ -25,10 +25,12 @@ def cleanup_processed_files(s: stats.FolderStats):
     for ss in s.processed_files_stats:
         ss.processed_file.unlink(missing_ok=True)
 
+
 def cleanup_processed_folder(folder: pathlib.Path):
     for f in folder.iterdir():
         f.unlink()
     folder.rmdir()
+
 
 # ImageMagickFileProcessor tests
 
@@ -232,6 +234,7 @@ def test_JpegifyCommand_core_logic():
 
 # ResizeCommand tests
 
+
 def test_ResizeCommand_name():
     cmd = images.ResizeCommand()
     assert cmd.name == "resize"
@@ -370,6 +373,7 @@ def test_ResizeCommand_args_validation():
             )
         )
 
+
 def test_ResizeCommand_dry_run():
     c = images.ResizeCommand()
     s = c(
@@ -441,7 +445,7 @@ def test_ResizeCommand_core_logic_size_percent():
     assert s is not None
     assert len(s.processed_files_stats) == 5
     assert s.skipped_files_count == 0
-    assert s.total_delta_size > 0 # With % resize, every file should get smaller.
+    assert s.total_delta_size > 0  # With % resize, every file should get smaller.
 
     target_folder = RESIZE_FOLDER / "w70percent"
     assert target_folder.exists()
