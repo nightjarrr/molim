@@ -23,7 +23,7 @@ def create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
     return parser
 
 
-def run() -> int:
+def run() -> None:
     try:
         parser = create_parser(
             video.VideoFfmpegCommand(),

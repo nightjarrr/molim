@@ -10,7 +10,7 @@ dependencies = [
 ]
 
 [project.scripts]
-molim = "molim:cli.run"
+molim = "molim:main"
 
 [dependency-groups]
 dev = [
