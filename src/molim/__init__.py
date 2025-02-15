@@ -1,10 +1,13 @@
+import sys
+
 from . import cli
 from . import show
 
 
 def main() -> int:
     try:
-        cli.run()
+        args = sys.argv[1:]
+        cli.run(args)
         return 0
     except KeyboardInterrupt:
         show.important("")

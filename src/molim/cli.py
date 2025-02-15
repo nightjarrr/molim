@@ -1,5 +1,6 @@
 import argparse
 
+from . import check
 from . import commands
 from . import images
 from . import rename
@@ -23,29 +24,19 @@ def create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
     return parser
 
 
-def run() -> None:
-    try:
-        parser = create_parser(
-            video.VideoFfmpegCommand(),
-            images.JpegifyCommand(),
-            images.ResizeCommand(),
-            rename.SuffixCommand(),
-        )
-        args = parser.parse_args()
+def run(cmdline: list[str]) -> None:
+    check.ensure_type(cmdline, list)
+    parser = create_parser(
+        video.VideoFfmpegCommand(),
+        images.JpegifyCommand(),
+        images.ResizeCommand(),
+        rename.SuffixCommand(),
+    )
+    args = parser.parse_args(cmdline)
 
-        show.set_verbose(args.verbose)
-        show.verbose("Launched with the following parameters:")
-        show.verbose_args(args, new_line=True)
+    show.set_verbose(args.verbose)
+    show.verbose("Launched with the following parameters:")
+    show.verbose_args(args, new_line=True)
 
-        args.command(args)
-        show.important("FINISHED.")
-        return 0
-
-    except KeyboardInterrupt:
-        show.important("")
-        show.rule()
-        show.important("Processing interrupted with Ctrl+C, exiting.")
-        return 130  # Return code for keyboard interrupt
-    except Exception as e:
-        show.error("A fatal error occurred during execution.", e)
-        return 1
+    args.command(args)
+    show.important("FINISHED.")
