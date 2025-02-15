@@ -99,6 +99,10 @@ class VideoFfmpegCommand(commands.Command):
     def name(self) -> str:
         return "video"
 
+    @property
+    def help(self) -> str:
+        return "Process and optimize video files using FFMpeg."
+
 
 class FfmpegNotFoundError(Exception):
     DEFAULT_MESSAGE = "Could not run ffmpeg command. Check whether FFMpeg is installed on your system and is available on PATH."

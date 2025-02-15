@@ -254,6 +254,10 @@ class Command(object):
     def name(self) -> str:
         raise NotImplementedError()
 
+    @property
+    def help(self) -> str:
+        raise NotImplementedError()
+
     # String representation
 
     def __str__(self) -> str:

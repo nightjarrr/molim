@@ -53,6 +53,10 @@ class SuffixCommand(commands.Command):
     def name(self) -> str:
         return "suffix"
 
+    @property
+    def help(self) -> str:
+        return "Add a suffix to file names."
+
 
 class RenameFileProcessor(processing.FileProcessor):
     def __init__(

@@ -100,6 +100,10 @@ class JpegifyCommand(commands.Command, ImageMagickMixin):
     def name(self) -> str:
         return "jpegify"
 
+    @property
+    def help(self) -> str:
+        return "Convert images of other formats into JPEG using ImageMagick."
+
 
 class ResizeCommand(commands.Command, ImageMagickMixin):
     RESIZE_ORIGINALS = "delete"
@@ -222,6 +226,10 @@ class ResizeCommand(commands.Command, ImageMagickMixin):
     @property
     def name(self):
         return "resize"
+
+    @property
+    def help(self) -> str:
+        return "Resize images using ImageMagick."
 
 
 class ImageMagickNotFoundError(Exception):

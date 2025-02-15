@@ -14,10 +14,16 @@ def _create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
         description="Processing of files for different use cases by commands.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    s = parser.add_subparsers(title="Commands", required=True, dest="command")
-    for cmd in cmds:
+    sorted_cmds = sorted(cmds, key=lambda c: c.name)
+    metavar = "[ " + " | ".join([c.name for c in sorted_cmds]) + " ]"
+    s = parser.add_subparsers(
+        title="Supported commands", required=True, dest="command", metavar=metavar
+    )
+    for cmd in sorted_cmds:
         p = s.add_parser(
-            cmd.name, formatter_class=argparse.ArgumentDefaultsHelpFormatter
+            cmd.name,
+            help=cmd.help,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
         cmd.configure_parser(parser=p)
 
