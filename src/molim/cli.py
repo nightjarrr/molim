@@ -23,6 +23,7 @@ def _create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
         p = s.add_parser(
             cmd.name,
             help=cmd.help,
+            description=cmd.help,
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
         cmd.configure_parser(parser=p)
