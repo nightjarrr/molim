@@ -211,6 +211,10 @@ class ResizeCommand(commands.Command, ImageMagickMixin):
     def _get_file_skip_strategy(
         self, args: argparse.Namespace
     ) -> processing.FileSkipStrategy:
+        if args.suffix:
+            return processing.BySuffixFileSkipStrategy(
+                "." + self._get_size_name(args.SIZE)
+            )
         # Skipping is not applicable for image conversion.
         return processing.NoFileSkipStrategy()
 
