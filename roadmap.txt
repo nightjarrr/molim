@@ -7,6 +7,8 @@
  * move runnable part of CLI to __init__.py of the package
  * cover functional CLI part with unit tests
  * truncate very long filenames for progress bar
+ * add 'suffix' parameter for resize
+ * add 'suffix' command to add suffixes to files
  * implement 'rawtherapee' command 
  * investigate Python build systems to create distributable package
  * investigate Python distribution channels (PyPi, custom index, etc)
