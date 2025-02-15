@@ -10,6 +10,7 @@
  * implement 'rawtherapee' command 
  * make decent help for commands
  * refactor unit tests for images, reduce code duplication
+ * handle KeyboardInterrupt with proper graceful output
  * move all modules to Python package
  * move runnable part of CLI to __init__.py of the package
  * investigate Python build systems to create distributable package
