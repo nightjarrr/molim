@@ -250,15 +250,51 @@ def test_ResizeCommand_get_common_arguments_defaults():
     assert d == images.ResizeCommand.RESIZE_ORIGINALS
 
 
+def test_ResizeCommand_get_post_processing_strategy(tmp_path):
+    cmd = images.ResizeCommand()
+    args = argparse.Namespace(
+        originals=commands.OriginalsHandlingEnum.LEAVE, suffix=False, dry_run=False
+    )
+
+    # No suffix verification
+
+    p = cmd._get_post_processing_strategy(tmp_path, args)
+    assert isinstance(p, processing.NoopPostProcessingStrategy)
+
+    args.originals = commands.OriginalsHandlingEnum.DELETE
+    p = cmd._get_post_processing_strategy(tmp_path, args)
+    assert isinstance(p, processing.ReplaceOriginalPostProcessignStrategy)
+
+    args.originals = commands.OriginalsHandlingEnum.MOVE
+    p = cmd._get_post_processing_strategy(tmp_path, args)
+    assert isinstance(p, processing.ReplaceOriginalPostProcessignStrategy)
+
+    # Suffix verification
+    args.suffix = True
+
+    args.originals = commands.OriginalsHandlingEnum.LEAVE
+    p = cmd._get_post_processing_strategy(tmp_path, args)
+    assert isinstance(p, processing.NoopPostProcessingStrategy)
+
+    args.originals = commands.OriginalsHandlingEnum.DELETE
+    p = cmd._get_post_processing_strategy(tmp_path, args)
+    assert isinstance(p, processing.DeleteOriginalPostProcessingStrategy)
+
+    args.originals = commands.OriginalsHandlingEnum.MOVE
+    p = cmd._get_post_processing_strategy(tmp_path, args)
+    assert isinstance(p, processing.MoveOriginalPostProcessingStrategy)
+
+
 def test_ResizeCommand_create_parser():
     parser = argparse.ArgumentParser()
     cmd = images.ResizeCommand()
     cmd.configure_parser(parser)
-    args = parser.parse_args(["--dry-run", "1600", "."])
+    args = parser.parse_args(["--dry-run", "--suffix", "1600", "."])
 
     assert args.FOLDER == "."
     assert args.SIZE == "1600"
     assert args.dry_run
+    assert args.suffix
     assert args.extension == images.JPEG_EXTENSION
 
     # Ensure some common args are suppressed
@@ -281,6 +317,7 @@ def test_ResizeCommand_args_validation():
             argparse.Namespace(
                 FOLDER=str(RESIZE_FOLDER),
                 dry_run=True,
+                suffix=False,
                 extension=images.JPEG_EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
                 imagemagick_quality=57,
@@ -295,6 +332,7 @@ def test_ResizeCommand_args_validation():
                 FOLDER=str(RESIZE_FOLDER),
                 SIZE=None,
                 dry_run=True,
+                suffix=False,
                 extension=images.JPEG_EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
                 imagemagick_quality=80,
@@ -309,6 +347,7 @@ def test_ResizeCommand_args_validation():
                 FOLDER=str(RESIZE_FOLDER),
                 SIZE=1280,
                 dry_run=True,
+                suffix=False,
                 extension=images.JPEG_EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
                 imagemagick_quality=90,
@@ -323,6 +362,7 @@ def test_ResizeCommand_args_validation():
                 FOLDER=str(RESIZE_FOLDER),
                 SIZE="half",
                 dry_run=True,
+                suffix=False,
                 extension=images.JPEG_EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
                 imagemagick_quality=80,
@@ -338,6 +378,7 @@ def test_ResizeCommand_args_validation():
                 SIZE="-1800",
                 dry_run=True,
                 extension=images.JPEG_EXTENSION,
+                suffix=False,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
                 imagemagick_quality=80,
                 imagemagick_additional=None,
@@ -350,6 +391,7 @@ def test_ResizeCommand_args_validation():
             argparse.Namespace(
                 FOLDER=str(RESIZE_FOLDER),
                 SIZE="5%%",
+                suffix=False,
                 dry_run=True,
                 extension=images.JPEG_EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
@@ -365,6 +407,7 @@ def test_ResizeCommand_args_validation():
                 FOLDER=str(RESIZE_FOLDER),
                 SIZE="-5%",
                 dry_run=True,
+                suffix=False,
                 extension=images.JPEG_EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
                 imagemagick_quality=80,
@@ -374,13 +417,38 @@ def test_ResizeCommand_args_validation():
         )
 
 
-def test_ResizeCommand_dry_run():
+def test_ResizeCommand_dry_run_suffix():
     c = images.ResizeCommand()
     s = c(
         argparse.Namespace(
             FOLDER=str(RESIZE_FOLDER),
             SIZE="50%",
             dry_run=True,
+            suffix=True,
+            extension=images.JPEG_EXTENSION,
+            originals=commands.OriginalsHandlingEnum.MOVE,
+            imagemagick_quality=images.JPEG_QUALITY,
+            imagemagick_additional=None,
+            verbose=True,
+        )
+    )
+
+    assert s is not None
+    assert len(s.processed_files_stats) == 5
+    for f in s.processed_files_stats:
+        assert f.processed_file.name.endswith(".w50percent.jpg")
+    assert s.skipped_files_count == 0
+    assert s.total_delta_size == 0
+
+
+def test_ResizeCommand_dry_run_nosuffix():
+    c = images.ResizeCommand()
+    s = c(
+        argparse.Namespace(
+            FOLDER=str(RESIZE_FOLDER),
+            SIZE="50%",
+            dry_run=True,
+            suffix=False,
             extension=images.JPEG_EXTENSION,
             originals=commands.OriginalsHandlingEnum.MOVE,
             imagemagick_quality=images.JPEG_QUALITY,
@@ -403,6 +471,7 @@ def test_ResizeCommand_core_logic_size_value():
         argparse.Namespace(
             FOLDER=str(RESIZE_FOLDER),
             SIZE="900",
+            suffix=True,
             dry_run=False,
             extension=images.JPEG_EXTENSION,
             originals=commands.OriginalsHandlingEnum.LEAVE,
@@ -420,7 +489,7 @@ def test_ResizeCommand_core_logic_size_value():
     assert target_folder.exists()
     assert len([f for f in target_folder.iterdir()]) == 5
     for fs in s.processed_files_stats:
-        assert fs.original_file.stem == fs.processed_file.stem
+        assert fs.processed_file.stem == fs.original_file.stem + ".w900"
         assert fs.processed_file.parent == target_folder
 
     cleanup_processed_folder(target_folder)
@@ -434,6 +503,7 @@ def test_ResizeCommand_core_logic_size_percent():
             FOLDER=str(RESIZE_FOLDER),
             SIZE="70%",
             dry_run=False,
+            suffix=False,
             extension=images.JPEG_EXTENSION,
             originals=commands.OriginalsHandlingEnum.LEAVE,
             imagemagick_quality=images.JPEG_QUALITY,

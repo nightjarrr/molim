@@ -127,6 +127,12 @@ class ResizeCommand(commands.Command, ImageMagickMixin):
         self, parser: argparse.ArgumentParser
     ) -> argparse.ArgumentParser:
         parser = ImageMagickMixin._add_arguments(self, parser)
+        parser.add_argument(
+            "--suffix",
+            default=False,
+            action="store_true",
+            help="Add size-based suffix to processed files and skip files that already have this suffix.",
+        )
         return parser
 
     def _get_common_arguments_defaults(self) -> tuple[str, str, bool, str]:
@@ -138,35 +144,42 @@ class ResizeCommand(commands.Command, ImageMagickMixin):
         )
 
     def _get_post_processing_strategy(
-        self,
-        originals: commands.OriginalsHandlingEnum,
-        move_to: pathlib.Path,
-        dry_run: bool,
+        self, folder_path: pathlib.Path, args: argparse.Namespace
     ) -> processing.PostProcessingStrategy:
         originals_post_processor = super()._get_post_processing_strategy(
-            originals, move_to, dry_run
+            folder_path, args
         )
-        if originals == commands.OriginalsHandlingEnum.LEAVE:
+        if (args.originals == commands.OriginalsHandlingEnum.LEAVE) or args.suffix:
+            # If a suffix will be added, do not rename the processed file back to original name.
             return originals_post_processor
         else:
             return processing.ReplaceOriginalPostProcessignStrategy(
                 originals_post_processor
             )
 
+    def _get_size_name(self, size: str) -> str:
+        check.ensure_type(size, str)
+        if "%" in size:
+            return "w" + size.replace("%", "percent")
+        else:
+            return f"w{size}"
+
     def _get_resized_subfolder(self, args: argparse.Namespace) -> pathlib.Path:
-        check.ensure_type(args.SIZE, str)
         original_path = pathlib.Path(args.FOLDER)
         original_path = original_path.absolute()
-        if "%" in args.SIZE:
-            subfolder = "w" + args.SIZE.replace("%", "percent")
-        else:
-            subfolder = f"w{args.SIZE}"
+        subfolder = self._get_size_name(args.SIZE)
         return original_path / subfolder
 
     def _get_output_file_path_strategy(
         self, args: argparse.Namespace
     ) -> processing.OutputFilePathStrategy:
         out = [processing.ChangeExtOutputFilePathStrategy(JPEG_PROCESSED_EXTENSION)]
+        if args.suffix:
+            out.append(
+                processing.SuffixOutputFilePathStrategy(
+                    "." + self._get_size_name(args.SIZE)
+                )
+            )
         if args.originals == commands.OriginalsHandlingEnum.LEAVE:
             # If original files stay as is, the resized files must go to subfolder.
             resized_subfolder = self._get_resized_subfolder(args)
@@ -174,9 +187,10 @@ class ResizeCommand(commands.Command, ImageMagickMixin):
                 processing.FolderOutputFilePathStrategy(resized_subfolder, args.dry_run)
             )
         else:
-            # For MOVE and DELETE handling of original files, create a temp name for processed file.
-            # At post-processing stage it will be renamed back to the original name by post-processing strategy.
-            out.append(processing.SuffixOutputFilePathStrategy(".temp"))
+            if not args.suffix:
+                # For MOVE and DELETE handling of original files, create a temp name for processed file.
+                # At post-processing stage it will be renamed back to the original name by post-processing strategy.
+                out.append(processing.SuffixOutputFilePathStrategy(".temp"))
         return processing.MultiOutputFilePathStrategy(out)
 
     def _get_imagemagick_args(self, args: argparse.Namespace) -> list[str]:

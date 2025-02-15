@@ -13,6 +13,7 @@ class SuffixOutputFilePathStrategy(OutputFilePathStrategy):
     def __init__(self, suffix: str):
         check.ensure_str_startswith(suffix, ".")
         self.__suffix = suffix
+        show.normal(f"Processed files will get suffix '{suffix}'.")
 
     def get_output_path(self, input_path: pathlib.Path) -> pathlib.Path:
         check.ensure_path(input_path)
@@ -24,6 +25,7 @@ class ChangeExtOutputFilePathStrategy(OutputFilePathStrategy):
     def __init__(self, ext: str):
         check.ensure_str_startswith(ext, ".")
         self.__ext = ext
+        show.normal(f"Processed files will have extension '{ext}'.")
 
     def get_output_path(self, input_path: pathlib.Path) -> pathlib.Path:
         check.ensure_path(input_path)

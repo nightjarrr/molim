@@ -146,15 +146,16 @@ class Command(object):
         return "_orig"
 
     def _get_post_processing_strategy(
-        self, originals: OriginalsHandlingEnum, move_to: pathlib.Path, dry_run: bool
+        self, folder_path: pathlib.Path, args: argparse.Namespace
     ) -> processing.PostProcessingStrategy:
-        if originals == OriginalsHandlingEnum.LEAVE:
+        if args.originals == OriginalsHandlingEnum.LEAVE:
             return processing.NoopPostProcessingStrategy()
-        elif originals == OriginalsHandlingEnum.MOVE:
-            return processing.MoveOriginalPostProcessingStrategy(move_to, dry_run)
-        elif originals == OriginalsHandlingEnum.DELETE:
+        elif args.originals == OriginalsHandlingEnum.MOVE:
+            move_to = folder_path / self._move_to_subfolder_name
+            return processing.MoveOriginalPostProcessingStrategy(move_to, args.dry_run)
+        elif args.originals == OriginalsHandlingEnum.DELETE:
             return processing.DeleteOriginalPostProcessingStrategy()
-        raise ValueError(originals)
+        raise ValueError(args.originals)
 
     def _get_file_match_strategy(self, args: argparse.Namespace):
         return processing.ByExtensionFileMatchStrategy(args.extension)
@@ -172,12 +173,7 @@ class Command(object):
             show.normal("Dry run mode, no real modifications will be made.")
 
         output_namer = self._get_output_file_path_strategy(args)
-
-        move_to = folder_path / self._move_to_subfolder_name
-        post_processor = self._get_post_processing_strategy(
-            args.originals, move_to, args.dry_run
-        )
-
+        post_processor = self._get_post_processing_strategy(folder_path, args)
         file_processor = self._get_file_processor(args, output_namer, post_processor)
 
         matcher = self._get_file_match_strategy(args)

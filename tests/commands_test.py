@@ -1,3 +1,4 @@
+import argparse
 import commands
 import processing
 import pytest
@@ -52,18 +53,18 @@ def test_OriginalsHandlingArgType_input_validation():
 
 def test_Command_get_post_processing_strategy(tmp_path):
     c = commands.Command()
-
-    p = c._get_post_processing_strategy(
-        commands.OriginalsHandlingEnum.LEAVE, tmp_path, False
+    args = argparse.Namespace(
+        originals=commands.OriginalsHandlingEnum.LEAVE,
+        dry_run=False
     )
+
+    p = c._get_post_processing_strategy(tmp_path, args)
     assert isinstance(p, processing.NoopPostProcessingStrategy)
 
-    p = c._get_post_processing_strategy(
-        commands.OriginalsHandlingEnum.DELETE, tmp_path, False
-    )
+    args.originals = commands.OriginalsHandlingEnum.DELETE
+    p = c._get_post_processing_strategy(tmp_path, args)
     assert isinstance(p, processing.DeleteOriginalPostProcessingStrategy)
 
-    p = c._get_post_processing_strategy(
-        commands.OriginalsHandlingEnum.MOVE, tmp_path, False
-    )
+    args.originals = commands.OriginalsHandlingEnum.MOVE
+    p = c._get_post_processing_strategy(tmp_path, args)
     assert isinstance(p, processing.MoveOriginalPostProcessingStrategy)
