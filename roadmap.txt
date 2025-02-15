@@ -2,15 +2,16 @@
 *** ROADMAP ***
 ***************
 
- * move all modules to Python package
  * split cli.py into functional part and runnable part
- * move runnable part of CLI to __init__.py of the package
  * cover functional CLI part with unit tests
  * add '.molimignore' file that will be used by a skip strategy.
     ** define location for it (must be preserved across reinstalls). config folder?
  * add 'ignore' command that can manage .molimignore list
  * implement 'rawtherapee' command 
+ * make decent help for commands
  * refactor unit tests for images, reduce code duplication
+ * move all modules to Python package
+ * move runnable part of CLI to __init__.py of the package
  * investigate Python build systems to create distributable package
  * investigate Python distribution channels (PyPi, custom index, etc)
 
