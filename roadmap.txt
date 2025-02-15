@@ -13,6 +13,7 @@
     ** define location for it (must be preserved across reinstalls). config folder?
  * add 'ignore' command that can manage .molimignore list
  * implement 'rawtherapee' command 
+ * refactor unit tests for images, reduce code duplication
  * investigate Python build systems to create distributable package
  * investigate Python distribution channels (PyPi, custom index, etc)
 
