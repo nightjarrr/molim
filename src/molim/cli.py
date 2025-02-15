@@ -8,7 +8,7 @@ from . import show
 from . import video
 
 
-def create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
+def _create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="molim",
         description="Processing of files for different use cases by commands.",
@@ -26,7 +26,7 @@ def create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
 
 def run(cmdline: list[str]) -> None:
     check.ensure_type(cmdline, list)
-    parser = create_parser(
+    parser = _create_parser(
         video.VideoFfmpegCommand(),
         images.JpegifyCommand(),
         images.ResizeCommand(),
