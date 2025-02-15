@@ -103,30 +103,14 @@ class JpegifyCommand(commands.Command, ImageMagickMixin):
 class ResizeCommand(commands.Command, ImageMagickMixin):
     RESIZE_ORIGINALS = "delete"
 
-    def _add_common_arguments(
-        self,
-        parser: argparse.ArgumentParser,
-        default_extension: str,
-        default_greater_than: str,
-        default_no_skip_processed: bool,
-        default_originals: str,
-    ) -> argparse.ArgumentParser:
-        parser.add_argument(
-            "SIZE",
-            help="Resize images to this size. Size can be an integer value or a percent value. Only images larger than specified size will be resized.",
-        )
-        return super()._add_common_arguments(
-            parser,
-            default_extension,
-            default_greater_than,
-            default_no_skip_processed,
-            default_originals,
-        )
-
     def _add_arguments(
         self, parser: argparse.ArgumentParser
     ) -> argparse.ArgumentParser:
         parser = ImageMagickMixin._add_arguments(self, parser)
+        parser.add_argument(
+            "SIZE",
+            help="Resize images to this size. Size can be an integer value or a percent value. Only images larger than specified size will be resized.",
+        )
         parser.add_argument(
             "--suffix",
             default=False,

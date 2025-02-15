@@ -50,6 +50,10 @@ class OriginalsHandlingArgType(object):
         )
 
 
+# Special value of --extension argument that will match any file.
+ANY_MATCH_EXTENSION = "ALL"
+
+
 class Command(object):
     """
     Base class for defining command-line interface (CLI) commands.
@@ -158,6 +162,8 @@ class Command(object):
         raise ValueError(args.originals)
 
     def _get_file_match_strategy(self, args: argparse.Namespace):
+        if args.extension == ANY_MATCH_EXTENSION:
+            return processing.AnyFileMatchStrategy()
         return processing.ByExtensionFileMatchStrategy(args.extension)
 
     def _execute(self, args: argparse.Namespace) -> stats.FolderStats:
@@ -198,8 +204,8 @@ class Command(object):
         ext, gt_than, no_skip_processed, originals = (
             self._get_common_arguments_defaults()
         )
-        self._add_common_arguments(parser, ext, gt_than, no_skip_processed, originals)
         self._add_arguments(parser)
+        self._add_common_arguments(parser, ext, gt_than, no_skip_processed, originals)
         # Set the command as a value to be available in the resulting args object
         parser.set_defaults(command=self)
         return parser
@@ -247,8 +253,10 @@ class Command(object):
     def name(self) -> str:
         raise NotImplementedError()
 
+    # String representation
+
     def __str__(self) -> str:
-        return f"<Command: {self.name}>"
+        return f"Command: {self.name}"
 
     # Callable
 

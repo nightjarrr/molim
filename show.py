@@ -28,6 +28,8 @@ def human_size(size: int) -> str:
 
 
 def ext(value: str) -> str:
+    if value.isupper():
+        return value.lower()
     ex = value.split(",")
     return ", ".join(f"*{e}" for e in ex)
 

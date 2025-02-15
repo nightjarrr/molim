@@ -112,7 +112,7 @@ class FileStats(Stats):
     ):
         if self.__processed_file:
             raise FileStatsAlreadyHaveProcessedFileError()
-        if processed_file_size:
+        if processed_file_size is not None:
             self.__processed_file_size = processed_file_size
         else:
             check.ensure_file(processed_file)
@@ -121,7 +121,7 @@ class FileStats(Stats):
 
     def finish(self):
         super().finish()
-        if self.__processed_file_size:
+        if self.__processed_file_size is not None:
             self.__delta_size = self.__original_file_size - self.__processed_file_size
 
     # Properties
