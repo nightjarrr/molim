@@ -7,7 +7,6 @@
  * move runnable part of CLI to __init__.py of the package
  * cover functional CLI part with unit tests
  * truncate very long filenames for progress bar
- * add 'suffix' parameter for resize
  * add 'suffix' command to add suffixes to files
  * add '.molimignore' file that will be used by a skip strategy.
     ** define location for it (must be preserved across reinstalls). config folder?
@@ -21,3 +20,4 @@
 ***  DONE   ***
 ***************
 
+ * add 'suffix' parameter for resize
