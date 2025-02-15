@@ -34,6 +34,14 @@ def ext(value: str) -> str:
     return ", ".join(f"*{e}" for e in ex)
 
 
+def ellipsis(value: str) -> str:
+    if len(value) > 30:
+        ending = value[-10:]
+        start = value[:15]
+        return f"{start}(...){ending}"
+    return value
+
+
 # Output helpers
 
 __CONSOLE__ = rich.console.Console()
@@ -112,7 +120,7 @@ def progress(total: int) -> object:
 
 def progress_update(progress: object, description: str) -> None:
     task = progress.task_ids[0]
-    progress.update(task, description=description)
+    progress.update(task, description=ellipsis(description))
 
 
 def progress_advance(progress: object) -> None:
