@@ -1,5 +1,4 @@
 import argparse
-import time
 
 from . import commands
 from . import images
@@ -39,7 +38,6 @@ def run() -> int:
         show.verbose_args(args, new_line=True)
 
         args.command(args)
-        time.sleep(20)
         show.important("FINISHED.")
         return 0
 
