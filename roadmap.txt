@@ -9,6 +9,9 @@
  * truncate very long filenames for progress bar
  * add 'suffix' parameter for resize
  * add 'suffix' command to add suffixes to files
+ * add '.molimignore' file that will be used by a skip strategy.
+    ** define location for it (must be preserved across reinstalls). config folder?
+ * add 'ignore' command that can manage .molimignore list
  * implement 'rawtherapee' command 
  * investigate Python build systems to create distributable package
  * investigate Python distribution channels (PyPi, custom index, etc)
