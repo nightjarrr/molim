@@ -43,7 +43,7 @@ def test_RenameFileProcessor_core_logic(tmp_path):
 
     i = tmp_path / "data_file.txt"
     i.touch()
-    s = r.process(i)
+    r.process(i)
 
     assert not i.exists()
     assert (tmp_path / "data_file.min.txt").exists()
