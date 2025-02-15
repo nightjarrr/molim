@@ -1,10 +1,11 @@
 import argparse
-import check
-import commands
 import pathlib
-import processing
 import sh
-import show
+
+from . import check
+from . import commands
+from . import processing
+from . import show
 
 
 JPEG_EXTENSION = ".jpg,.jpeg,.JPG"

@@ -1,11 +1,13 @@
 import argparse
-import commands
 import os.path
 import pathlib
-import processing
 import pytest
-import show
-import video
+
+from molim import commands
+from molim import processing
+from molim import show
+from molim import video
+
 
 # Set verbose output
 show.set_verbose(True)

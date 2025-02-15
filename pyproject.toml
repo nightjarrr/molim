@@ -1,13 +1,16 @@
 [project]
-name = "scripts"
-version = "0.1.0"
-description = "A collection of utility scripts to process and optimize files."
+name = "molim"
+version = "0.2.0"
+description = "A collection of utility commands to process and optimize files."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "rich>=13.9.4",
     "sh>=2.2.1",
 ]
+
+[project.scripts]
+molim = "molim:cli.run"
 
 [dependency-groups]
 dev = [
@@ -17,3 +20,7 @@ dev = [
 
 [tool.pytest.ini_options]
 addopts = "--cov=. --cov-config=.coveragerc --cov-report html"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

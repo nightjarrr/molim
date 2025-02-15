@@ -1,7 +1,8 @@
 import pytest
-import processing
 import random
-import stats
+
+from molim import processing
+from molim import stats
 
 
 # SuffixOutputFilePathStrategy tests

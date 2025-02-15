@@ -1,7 +1,8 @@
 import pathlib
-import processing
 import pytest
 import random
+
+from molim import processing
 
 
 # Fixtures

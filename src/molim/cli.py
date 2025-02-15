@@ -1,10 +1,10 @@
 import argparse
-import commands
-import images
-import rename
-import show
-import sys
-import video
+
+from . import commands
+from . import images
+from . import rename
+from . import show
+from . import video
 
 
 def create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
@@ -23,7 +23,7 @@ def create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
     return parser
 
 
-if __name__ == "__main__":
+def run() -> int:
     try:
         parser = create_parser(
             video.VideoFfmpegCommand(),
@@ -39,7 +39,8 @@ if __name__ == "__main__":
 
         args.command(args)
         show.important("FINISHED.")
+        return 0
 
     except Exception as e:
         show.error("A fatal error occurred during execution.", e)
-        sys.exit(1)
+        return 1

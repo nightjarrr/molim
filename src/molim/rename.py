@@ -1,8 +1,9 @@
 import argparse
-import commands
 import pathlib
-import processing
-import show
+
+from . import commands
+from . import processing
+from . import show
 
 
 class SuffixCommand(commands.Command):

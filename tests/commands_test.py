@@ -1,7 +1,9 @@
 import argparse
-import commands
-import processing
 import pytest
+
+from molim import commands
+from molim import processing
+
 
 # HumanReadableSizeType tests
 

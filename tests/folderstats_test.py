@@ -1,6 +1,7 @@
 import pytest
 import random
-import stats
+
+from molim import stats
 
 
 def test_FolderStats_expects_folder(tmp_path):

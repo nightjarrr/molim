@@ -1,12 +1,14 @@
 import argparse
-import commands
-import images
 import os.path
 import pathlib
-import processing
 import pytest
-import show
-import stats
+
+from molim import commands
+from molim import images
+from molim import processing
+from molim import show
+from molim import stats
+
 
 JPEGIFY_FOLDER = pathlib.Path(os.path.dirname(__file__)) / "data/jpegify"
 RESIZE_FOLDER = pathlib.Path(os.path.dirname(__file__)) / "data/resize"

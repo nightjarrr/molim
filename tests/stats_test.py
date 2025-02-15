@@ -1,5 +1,6 @@
 import pytest
-import stats
+
+from molim import stats
 
 
 def test_Stats():

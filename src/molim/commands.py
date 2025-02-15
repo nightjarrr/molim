@@ -1,10 +1,11 @@
 import argparse
-import check
 import enum
 import pathlib
-import processing
-import show
-import stats
+
+from . import check
+from . import processing
+from . import show
+from . import stats
 
 
 class HumanReadableSizeType(object):

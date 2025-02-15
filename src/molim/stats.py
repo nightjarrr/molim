@@ -1,7 +1,8 @@
-import check
 import pathlib
-import show
 import time
+
+from . import check
+from . import show
 
 
 class StatsNotFinishedError(Exception):

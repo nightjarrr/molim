@@ -1,7 +1,8 @@
-import check
 import pathlib
-import show
-import stats
+
+from . import check
+from . import show
+from . import stats
 
 
 class OutputFilePathStrategy(object):

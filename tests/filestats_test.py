@@ -1,6 +1,7 @@
 import pytest
 import random
-import stats
+
+from molim import stats
 
 
 SOURCE_SIZE = 200
