@@ -151,6 +151,6 @@ class FfmpegFileProcessor(shell.ShellCommandFileProcessor):
     ) -> list[str]:
         args = ["-y", "-i", str(file_path)]
         args += initial_args
-        args.append(f"{output_file_path}")  # Output
+        args.append(str(output_file_path))  # Output
         # ffmpeg -i "$fullpath" -vcodec libx265 -crf 26 "$newpath"
         return args

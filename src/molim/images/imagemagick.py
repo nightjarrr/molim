@@ -77,5 +77,5 @@ class ImageMagickFileProcessor(shell.ShellCommandFileProcessor):
     ) -> list[str]:
         args = [str(file_path)]
         args += initial_args
-        args.append(f"{output_file_path}")  # Output
+        args.append(str(output_file_path))  # Output
         return args
