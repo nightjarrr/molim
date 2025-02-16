@@ -8,6 +8,7 @@ from . import video
 
 from .images import resize
 from .images import jpegify
+from .images import rawtherapee
 
 
 def _create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
@@ -40,6 +41,8 @@ def run(cmdline: list[str]) -> None:
         jpegify.JpegifyCommand(),
         resize.ResizeCommand(),
         rename.SuffixCommand(),
+        rawtherapee.RawTherapeeCommand(),
+        rawtherapee.RawTherapeeHQCommand()
     )
     args = parser.parse_args(cmdline)
 
