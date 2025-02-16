@@ -88,7 +88,7 @@ class VideoFfmpegCommand(commands.Command):
     ) -> processing.FileSkipStrategy:
         skips = []
         if not args.no_skip_processed:
-            skips.append(processing.BySuffixFileSkipStrategy(".min"))
+            skips.append(processing.BySuffixFileSkipStrategy(VIDEO_PROCESSED_SUFFIX))
         if args.greater_than:
             skips.append(processing.BySizeFileSkipStrategy(args.greater_than))
         skipper = processing.MultiFileSkipStrategy(skips)
