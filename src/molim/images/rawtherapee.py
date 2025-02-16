@@ -5,6 +5,7 @@ from .. import check
 from .. import commands
 from .. import processing
 from .. import shell
+from .. import show
 
 from . import JPEG_EXTENSION, JPEG_PROCESSED_EXTENSION, JPEG_QUALITY
 
@@ -112,6 +113,7 @@ class RawTherapeeCommand(commands.Command):
         profile_name = f"{args.profile}{RAWTHERAPEE_PROFILE_EXTENSION}"
         profile_path = profile_folder / profile_name
         check.ensure_file(profile_path)
+        show.normal(f"Using RawTherapee profile {profile_path}")
 
         file_processor = RawTherapeeFileProcessor(
             profile_path,
