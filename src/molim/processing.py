@@ -291,7 +291,7 @@ class FolderProcessor(object):
         self.__file_skiper = file_skiper
         self.__file_processor = file_processor
 
-    def process(self, dry_run=False) -> stats.FolderStats:
+    def process(self, dry_run=False, show_size=True) -> stats.FolderStats:
         with stats.FolderStats(self.__folder_path) as statistics:
             files_list = []
             for f in self.__folder_path.iterdir():
@@ -322,7 +322,7 @@ class FolderProcessor(object):
                             s = self.__file_processor.process(f, dry_run)
                             show.progress_advance(p)
                             statistics.add_processed_file_stats(s)
-                            show.file_stats(s)
+                            show.file_stats(s, show_size)
                             i += 1
                             show.verbose("")
                         show.progress_update(p, "")

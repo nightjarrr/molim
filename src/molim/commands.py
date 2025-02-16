@@ -167,6 +167,10 @@ class Command(object):
             return processing.AnyFileMatchStrategy()
         return processing.ByExtensionFileMatchStrategy(args.extension)
 
+    @property
+    def _show_size(self):
+        return True
+
     def _execute(self, args: argparse.Namespace) -> stats.FolderStats:
         folder_path = pathlib.Path(args.FOLDER)
         check.ensure_folder(folder_path)
@@ -191,9 +195,9 @@ class Command(object):
         )
 
         show.rule()
-        s = processor.process(dry_run=args.dry_run)
+        s = processor.process(dry_run=args.dry_run, show_size=self._show_size)
         show.rule()
-        show.folder_stats(s)
+        show.folder_stats(s, self._show_size)
 
         return s
 

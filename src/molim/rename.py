@@ -50,6 +50,10 @@ class SuffixCommand(commands.Command):
         return processing.BySuffixFileSkipStrategy(args.SUFFIX)
 
     @property
+    def _show_size(self):
+        return False
+
+    @property
     def name(self) -> str:
         return "suffix"
 

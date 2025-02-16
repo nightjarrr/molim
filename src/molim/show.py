@@ -76,12 +76,13 @@ def __delta(delta: int) -> str:
         return f"saved {human_size(delta)}"
 
 
-def file_stats(s):
-    t = rich.text.Text(f"{s.original_file.name}\n")
-    t.append(
-        f"{human_size(s.original_file_size)} \u2192 {human_size(s.processed_file_size)}, {__delta(s.delta_size)}",
-        style="grey50",
-    )
+def file_stats(s, show_size: bool):
+    t = rich.text.Text(f"{s.original_file.name}")
+    if show_size:
+        t.append(
+            f"\n{human_size(s.original_file_size)} \u2192 {human_size(s.processed_file_size)}, {__delta(s.delta_size)}",
+            style="grey50",
+        )
 
     cols = rich.columns.Columns(
         [
@@ -93,15 +94,17 @@ def file_stats(s):
     __CONSOLE__.print(cols, highlight=False)
 
 
-def folder_stats(s):
+def folder_stats(s, show_size: bool):
     if s.processed_files_stats:
         important(
-            f"Processed {len(s.processed_files_stats)} files in {elapsed(s.elapsed)}"
+            f"Processed {len(s.processed_files_stats)} files in {elapsed(s.elapsed)}",
+            new_line=not show_size
         )
-        important(
-            f"{human_size(s.total_original_size)} \u2192 {human_size(s.total_processed_size)}, new size {percent(s.total_original_size, s.total_processed_size)} of original, {__delta(s.total_delta_size)}",
-            new_line=True,
-        )
+        if show_size:
+            important(
+                f"{human_size(s.total_original_size)} \u2192 {human_size(s.total_processed_size)}, new size {percent(s.total_original_size, s.total_processed_size)} of original, {__delta(s.total_delta_size)}",
+                new_line=True,
+            )
 
 
 def progress(total: int) -> object:
