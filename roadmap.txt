@@ -8,6 +8,7 @@
  * implement 'rawtherapee' command 
  * add a way to suppress size-oriented stats display (and maybe gathering)
     ** suppress it for 'suffix' command
+ * add ability of result evaluation: whether to accept the processed file or revert back to original
  * refactor unit tests for images, reduce code duplication
  * investigate Python build systems to create distributable package
  * investigate Python distribution channels (PyPi, custom index, etc)
