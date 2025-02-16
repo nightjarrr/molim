@@ -5,6 +5,7 @@ import pytest
 
 from molim import commands
 from molim import processing
+from molim import shell
 from molim import show
 from molim import stats
 from molim import images
@@ -110,7 +111,7 @@ def test_ImageMagickFileProcessor_real_run():
     show.set_verbose(True)
     real_run("file_example_PNG_1MB.png")
     real_run("file example WEBP_500kB.webp")  # Test name with spaces
-    with pytest.raises(imagemagick.ImageMagickRuntimeError):
+    with pytest.raises(shell.ShellCommandRuntimeError):
         real_run("file_example_PNG_1MB.png", "---non -existent ARGUMENT!!!")
 
 
