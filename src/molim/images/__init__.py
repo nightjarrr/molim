@@ -1,0 +1,5 @@
+# JPEG defaults.
+
+JPEG_EXTENSION = ".jpg,.jpeg,.JPG"
+JPEG_QUALITY = 95
+JPEG_PROCESSED_EXTENSION = ".jpg"

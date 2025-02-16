@@ -2,10 +2,12 @@ import argparse
 
 from . import check
 from . import commands
-from . import images
 from . import rename
 from . import show
 from . import video
+
+from .images import resize
+from .images import jpegify
 
 
 def _create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
@@ -24,7 +26,7 @@ def _create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
             cmd.name,
             help=cmd.help,
             description=cmd.help,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
         cmd.configure_parser(parser=p)
 
@@ -35,8 +37,8 @@ def run(cmdline: list[str]) -> None:
     check.ensure_type(cmdline, list)
     parser = _create_parser(
         video.VideoFfmpegCommand(),
-        images.JpegifyCommand(),
-        images.ResizeCommand(),
+        jpegify.JpegifyCommand(),
+        resize.ResizeCommand(),
         rename.SuffixCommand(),
     )
     args = parser.parse_args(cmdline)

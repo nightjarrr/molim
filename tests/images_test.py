@@ -4,10 +4,13 @@ import pathlib
 import pytest
 
 from molim import commands
-from molim import images
 from molim import processing
 from molim import show
 from molim import stats
+from molim import images
+from molim.images import resize
+from molim.images import jpegify
+from molim.images import imagemagick
 
 
 JPEGIFY_FOLDER = pathlib.Path(os.path.dirname(__file__)) / "data/jpegify"
@@ -43,24 +46,24 @@ def test_ImageMagickFileProcessor_input_validation():
 
     # Null checks
     with pytest.raises(ValueError):
-        images.ImageMagickFileProcessor(
+        imagemagick.ImageMagickFileProcessor(
             None, "None", output_strategy=o, post_processor=p
         )
     with pytest.raises(ValueError):
-        images.ImageMagickFileProcessor("78", output_strategy=None, post_processor=p)
+        imagemagick.ImageMagickFileProcessor("78", output_strategy=None, post_processor=p)
     with pytest.raises(ValueError):
-        images.ImageMagickFileProcessor("90", output_strategy=o, post_processor=None)
+        imagemagick.ImageMagickFileProcessor("90", output_strategy=o, post_processor=None)
     # Type checks
     with pytest.raises(TypeError):
-        images.ImageMagickFileProcessor(90, output_strategy=o, post_processor=p)
+        imagemagick.ImageMagickFileProcessor(90, output_strategy=o, post_processor=p)
     with pytest.raises(TypeError):
-        images.ImageMagickFileProcessor("90", True, output_strategy=o, post_processor=p)
+        imagemagick.ImageMagickFileProcessor("90", True, output_strategy=o, post_processor=p)
     with pytest.raises(TypeError):
-        images.ImageMagickFileProcessor("90", output_strategy=87, post_processor=p)
+        imagemagick.ImageMagickFileProcessor("90", output_strategy=87, post_processor=p)
     with pytest.raises(TypeError):
-        images.ImageMagickFileProcessor("90", output_strategy=o, post_processor=o)
+        imagemagick.ImageMagickFileProcessor("90", output_strategy=o, post_processor=o)
     # Method checks
-    i = images.ImageMagickFileProcessor("92", output_strategy=o, post_processor=p)
+    i = imagemagick.ImageMagickFileProcessor("92", output_strategy=o, post_processor=p)
     with pytest.raises(TypeError):
         i.process("/tmp/video.mp4")
     with pytest.raises(ValueError):
@@ -70,7 +73,7 @@ def test_ImageMagickFileProcessor_input_validation():
 def test_ImageMagickFileProcessor_dry_run():
     o = processing.ChangeExtOutputFilePathStrategy(".jpg")
     p = processing.NoopPostProcessingStrategy()
-    i = images.ImageMagickFileProcessor(
+    i = imagemagick.ImageMagickFileProcessor(
         "-quality", "92", output_strategy=o, post_processor=p
     )
 
@@ -88,7 +91,7 @@ def real_run(name: str, addl=None):
     cmdln = ["-quality", "92"]
     if addl:
         cmdln.append(addl)
-    i = images.ImageMagickFileProcessor(*cmdln, output_strategy=o, post_processor=p)
+    i = imagemagick.ImageMagickFileProcessor(*cmdln, output_strategy=o, post_processor=p)
 
     ii = get_input_file(name)
     assert ii.exists()
@@ -107,7 +110,7 @@ def test_ImageMagickFileProcessor_real_run():
     show.set_verbose(True)
     real_run("file_example_PNG_1MB.png")
     real_run("file example WEBP_500kB.webp")  # Test name with spaces
-    with pytest.raises(images.ImageMagickRuntimeError):
+    with pytest.raises(imagemagick.ImageMagickRuntimeError):
         real_run("file_example_PNG_1MB.png", "---non -existent ARGUMENT!!!")
 
 
@@ -115,29 +118,29 @@ def test_ImageMagickFileProcessor_real_run():
 
 
 def test_JpegifyCommand_name():
-    j = images.JpegifyCommand()
+    j = jpegify.JpegifyCommand()
     assert j.name == "jpegify"
 
 
 def test_JpegifyCommand_get_common_arguments_defaults():
-    j = images.JpegifyCommand()
+    j = jpegify.JpegifyCommand()
     a, b, c, d = j._get_common_arguments_defaults()
 
-    assert a == images.JpegifyCommand.JPEGIFY_EXTENSION
+    assert a == jpegify.JpegifyCommand.JPEGIFY_EXTENSION
     assert b is None
     assert c is None
-    assert d == images.JpegifyCommand.JPEGIFY_ORIGINALS
+    assert d == jpegify.JpegifyCommand.JPEGIFY_ORIGINALS
 
 
 def test_JpegifyCommand_create_parser():
     parser = argparse.ArgumentParser()
-    j = images.JpegifyCommand()
+    j = jpegify.JpegifyCommand()
     j.configure_parser(parser)
     args = parser.parse_args(["--dry-run", "."])
 
     assert args.FOLDER == "."
     assert args.dry_run
-    assert args.extension == images.JpegifyCommand.JPEGIFY_EXTENSION
+    assert args.extension == jpegify.JpegifyCommand.JPEGIFY_EXTENSION
 
     # Ensure some common args are suppressed
     with pytest.raises(AttributeError):
@@ -153,12 +156,12 @@ def test_JpegifyCommand_create_parser():
 
 def test_JpegifyCommand_args_validation():
     with pytest.raises(ValueError):
-        c = images.JpegifyCommand()
+        c = jpegify.JpegifyCommand()
         c(
             argparse.Namespace(
                 FOLDER=str(JPEGIFY_FOLDER),
                 dry_run=True,
-                extension=images.JpegifyCommand.JPEGIFY_EXTENSION,
+                extension=jpegify.JpegifyCommand.JPEGIFY_EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
                 imagemagick_quality=-5,
                 imagemagick_additional=None,
@@ -166,12 +169,12 @@ def test_JpegifyCommand_args_validation():
             )
         )
     with pytest.raises(ValueError):
-        c = images.JpegifyCommand()
+        c = jpegify.JpegifyCommand()
         c(
             argparse.Namespace(
                 FOLDER=str(JPEGIFY_FOLDER),
                 dry_run=True,
-                extension=images.JpegifyCommand.JPEGIFY_EXTENSION,
+                extension=jpegify.JpegifyCommand.JPEGIFY_EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
                 imagemagick_quality=120,
                 imagemagick_additional=None,
@@ -179,12 +182,12 @@ def test_JpegifyCommand_args_validation():
             )
         )
     with pytest.raises(TypeError):
-        c = images.JpegifyCommand()
+        c = jpegify.JpegifyCommand()
         c(
             argparse.Namespace(
                 FOLDER=str(JPEGIFY_FOLDER),
                 dry_run=True,
-                extension=images.JpegifyCommand.JPEGIFY_EXTENSION,
+                extension=jpegify.JpegifyCommand.JPEGIFY_EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
                 imagemagick_quality=90,
                 imagemagick_additional=True,
@@ -194,12 +197,12 @@ def test_JpegifyCommand_args_validation():
 
 
 def test_JpegifyCommand_dry_run():
-    c = images.JpegifyCommand()
+    c = jpegify.JpegifyCommand()
     s = c(
         argparse.Namespace(
             FOLDER=str(JPEGIFY_FOLDER),
             dry_run=True,
-            extension=images.JpegifyCommand.JPEGIFY_EXTENSION,
+            extension=jpegify.JpegifyCommand.JPEGIFY_EXTENSION,
             originals=commands.OriginalsHandlingEnum.LEAVE,
             imagemagick_quality=images.JPEG_QUALITY,
             imagemagick_additional=None,
@@ -214,12 +217,12 @@ def test_JpegifyCommand_dry_run():
 
 
 def test_JpegifyCommand_core_logic():
-    c = images.JpegifyCommand()
+    c = jpegify.JpegifyCommand()
     s = c(
         argparse.Namespace(
             FOLDER=str(JPEGIFY_FOLDER),
             dry_run=False,
-            extension=images.JpegifyCommand.JPEGIFY_EXTENSION,
+            extension=jpegify.JpegifyCommand.JPEGIFY_EXTENSION,
             originals=commands.OriginalsHandlingEnum.LEAVE,
             imagemagick_quality=images.JPEG_QUALITY,
             imagemagick_additional=None,
@@ -238,22 +241,22 @@ def test_JpegifyCommand_core_logic():
 
 
 def test_ResizeCommand_name():
-    cmd = images.ResizeCommand()
+    cmd = resize.ResizeCommand()
     assert cmd.name == "resize"
 
 
 def test_ResizeCommand_get_common_arguments_defaults():
-    cmd = images.ResizeCommand()
+    cmd = resize.ResizeCommand()
     a, b, c, d = cmd._get_common_arguments_defaults()
 
     assert a == images.JPEG_EXTENSION
     assert b is None
     assert c is None
-    assert d == images.ResizeCommand.RESIZE_ORIGINALS
+    assert d == resize.ResizeCommand.RESIZE_ORIGINALS
 
 
 def test_ResizeCommand_get_post_processing_strategy(tmp_path):
-    cmd = images.ResizeCommand()
+    cmd = resize.ResizeCommand()
     args = argparse.Namespace(
         originals=commands.OriginalsHandlingEnum.LEAVE, suffix=False, dry_run=False
     )
@@ -289,7 +292,7 @@ def test_ResizeCommand_get_post_processing_strategy(tmp_path):
 
 def test_ResizeCommand_create_parser():
     parser = argparse.ArgumentParser()
-    cmd = images.ResizeCommand()
+    cmd = resize.ResizeCommand()
     cmd.configure_parser(parser)
     args = parser.parse_args(["--dry-run", "--suffix", "1600", "."])
 
@@ -314,7 +317,7 @@ def test_ResizeCommand_create_parser():
 def test_ResizeCommand_args_validation():
     with pytest.raises(AttributeError):
         # SIZE not set
-        c = images.ResizeCommand()
+        c = resize.ResizeCommand()
         c(
             argparse.Namespace(
                 FOLDER=str(RESIZE_FOLDER),
@@ -328,7 +331,7 @@ def test_ResizeCommand_args_validation():
             )
         )
     with pytest.raises(ValueError):
-        c = images.ResizeCommand()
+        c = resize.ResizeCommand()
         c(
             argparse.Namespace(
                 FOLDER=str(RESIZE_FOLDER),
@@ -343,7 +346,7 @@ def test_ResizeCommand_args_validation():
             )
         )
     with pytest.raises(TypeError):
-        c = images.ResizeCommand()
+        c = resize.ResizeCommand()
         c(
             argparse.Namespace(
                 FOLDER=str(RESIZE_FOLDER),
@@ -358,7 +361,7 @@ def test_ResizeCommand_args_validation():
             )
         )
     with pytest.raises(ValueError):
-        c = images.ResizeCommand()
+        c = resize.ResizeCommand()
         c(
             argparse.Namespace(
                 FOLDER=str(RESIZE_FOLDER),
@@ -373,7 +376,7 @@ def test_ResizeCommand_args_validation():
             )
         )
     with pytest.raises(ValueError):
-        c = images.ResizeCommand()
+        c = resize.ResizeCommand()
         c(
             argparse.Namespace(
                 FOLDER=str(RESIZE_FOLDER),
@@ -388,7 +391,7 @@ def test_ResizeCommand_args_validation():
             )
         )
     with pytest.raises(ValueError):
-        c = images.ResizeCommand()
+        c = resize.ResizeCommand()
         c(
             argparse.Namespace(
                 FOLDER=str(RESIZE_FOLDER),
@@ -403,7 +406,7 @@ def test_ResizeCommand_args_validation():
             )
         )
     with pytest.raises(ValueError):
-        c = images.ResizeCommand()
+        c = resize.ResizeCommand()
         c(
             argparse.Namespace(
                 FOLDER=str(RESIZE_FOLDER),
@@ -420,7 +423,7 @@ def test_ResizeCommand_args_validation():
 
 
 def test_ResizeCommand_dry_run_suffix():
-    c = images.ResizeCommand()
+    c = resize.ResizeCommand()
     s = c(
         argparse.Namespace(
             FOLDER=str(RESIZE_FOLDER),
@@ -444,7 +447,7 @@ def test_ResizeCommand_dry_run_suffix():
 
 
 def test_ResizeCommand_dry_run_nosuffix():
-    c = images.ResizeCommand()
+    c = resize.ResizeCommand()
     s = c(
         argparse.Namespace(
             FOLDER=str(RESIZE_FOLDER),
@@ -468,7 +471,7 @@ def test_ResizeCommand_dry_run_nosuffix():
 
 
 def test_ResizeCommand_core_logic_size_value():
-    c = images.ResizeCommand()
+    c = resize.ResizeCommand()
     s = c(
         argparse.Namespace(
             FOLDER=str(RESIZE_FOLDER),
@@ -499,7 +502,7 @@ def test_ResizeCommand_core_logic_size_value():
 
 
 def test_ResizeCommand_core_logic_size_percent():
-    c = images.ResizeCommand()
+    c = resize.ResizeCommand()
     s = c(
         argparse.Namespace(
             FOLDER=str(RESIZE_FOLDER),
