@@ -5,6 +5,7 @@ import pytest
 
 from molim import commands
 from molim import processing
+from molim import shell
 from molim import show
 from molim import video
 
@@ -109,7 +110,7 @@ def real_run(name: str, addl=None):
 def test_FfmpegFileProcessor_real_run():
     real_run("sample_720x480_1mb.mp4")
     real_run("Sample Video 1280x720 1mb.mp4")  # Test name with spaces
-    with pytest.raises(video.FfmpegRuntimeError):
+    with pytest.raises(shell.ShellCommandRuntimeError):
         real_run("sample_720x480_1mb.mp4", "---non -existent ARGUMENT!!!")
 
 
