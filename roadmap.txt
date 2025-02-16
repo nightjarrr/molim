@@ -9,9 +9,11 @@
  * add a way to suppress size-oriented stats display (and maybe gathering)
     ** suppress it for 'suffix' command
  * split modules better, maybe introduce subpackages for large components
+ * introduce a common sh-based file processor                   
  * refactor unit tests for images, reduce code duplication
  * investigate Python build systems to create distributable package
  * investigate Python distribution channels (PyPi, custom index, etc)
+    ** local index hosting
 
 ***************
 ***  DONE   ***
