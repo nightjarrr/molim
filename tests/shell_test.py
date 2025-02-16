@@ -6,10 +6,6 @@ from molim import shell
 # ShellCommandFileProcessor tests
 
 
-def test_ShellCommandFileProcessor_input_validation():
-    pass
-
-
 def test_ShellCommandFileProcessor_command_not_found():
     o = processing.SuffixOutputFilePathStrategy(".min")
     p = processing.NoopPostProcessingStrategy()
