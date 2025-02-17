@@ -2,7 +2,6 @@
 *** ROADMAP ***
 ***************
 
- * rename repository to 'molim'
  * add '.molimignore' file that will be used by a skip strategy
     ** define location for it (must be preserved across reinstalls). config folder?
  * add 'ignore' command that can manage .molimignore list
@@ -30,3 +29,4 @@
  * implement 'rawtherapee' command 
  * add a way to suppress size-oriented stats display (and maybe gathering)
     ** suppress it for 'suffix' command
+ * rename repository to 'molim'
