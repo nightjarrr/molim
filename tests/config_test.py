@@ -1,5 +1,3 @@
-import os.path
-import pathlib
 import pytest
 
 from . import common
