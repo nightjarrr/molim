@@ -12,26 +12,22 @@ def test_config_no_file():
 
 
 def test_config_none_values():
-    config.load(common.TEST_CONFIG)
-
     # Non-existent key in global section
-    c = config.reader()
+    c = config.load(common.TEST_CONFIG)
     assert c("space-shuttle") is None
 
     # Non-existent key in non-global section
-    c = config.reader("suffix")
+    c = config.load(common.TEST_CONFIG, "suffix")
     assert c("space-shuttle") is None
 
     # Non-existent section
-    c = config.reader("outer-space")
+    c = config.load(common.TEST_CONFIG,"outer-space")
     assert c("space-shuttle") is None
 
 
 def test_config_global_values():
-    config.load(common.TEST_CONFIG)
-
     # Global section
-    g = config.reader()
+    g = config.load(common.TEST_CONFIG)
     assert g("meaning_of_life") == 42
     assert g("important_text") == "Attention to everyone"
     skip = g("skip")
@@ -43,8 +39,7 @@ def test_config_global_values():
 
 
 def test_config_non_global_values():
-    config.load(common.TEST_CONFIG)
-    vid = config.reader("video")
+    vid = config.load(common.TEST_CONFIG, "video")
 
     # Non-global section values
     assert vid("command_line") == "ffmpeg"

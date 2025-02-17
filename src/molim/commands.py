@@ -78,6 +78,8 @@ class Command(object):
         __call__(args):
             Executes the command with the given arguments.
     """
+    def __init__(self):
+        self.__config = None
 
     # Private methods
 
@@ -156,6 +158,17 @@ class Command(object):
         return parser
 
     @property
+    def config(self):
+        return self.__config
+
+    def _get_config_value(self, key: str):
+        if self.config:
+            value = self.config(key)
+            show.verbose(f"Read configuration: {key} = {value}")
+            return value
+        return None
+
+    @property
     def _move_to_subfolder_name(self):
         return "_orig"
 
@@ -176,10 +189,10 @@ class Command(object):
             return processing.AnyFileMatchStrategy()
         return processing.ByExtensionFileMatchStrategy(args.extension)
 
-    def _get_config_skip_strategy(self, cfg, skip_strategy):
-        if not cfg:
+    def _get_global_skip_strategy(self, skip_strategy):
+        if not self.config:
             return skip_strategy
-        skip_glob_list = cfg("skip")
+        skip_glob_list = self._get_config_value("skip")
         if skip_glob_list is None:
             return skip_strategy
         check.ensure_type(skip_glob_list, list)
@@ -204,7 +217,7 @@ class Command(object):
         )
 
         # Load configuration if it exists.
-        config.load(args.config)
+        self.__config = config.load(args.config, self.name)
 
         if args.dry_run:
             show.normal("Dry run mode, no real modifications will be made.")
@@ -215,8 +228,7 @@ class Command(object):
 
         matcher = self._get_file_match_strategy(args)
         skipper = self._get_file_skip_strategy(args)
-        cfg = config.reader(self.name)
-        skipper = self._get_config_skip_strategy(cfg, skipper)
+        skipper = self._get_global_skip_strategy(skipper)
 
         processor = processing.FolderProcessor(
             folder_path, matcher, skipper, file_processor

@@ -33,15 +33,21 @@ class RawTherapeeCommand(commands.Command):
     ) -> argparse.ArgumentParser:
         parser.add_argument(
             "--profile-folder",
-            default=RAWTHERAPEE_PROFILE_FOLDER,
-            help="Location of RawTherapee profiles to use for processing.",
+            default=None,
+            help=(
+                "Location of RawTherapee profiles to use for processing. "
+                "If not specified as an argument or in configuration file, "
+                f"{RAWTHERAPEE_PROFILE_FOLDER} will be used."
+            ),
         )
         parser.add_argument(
             "--profile",
-            default=RAWTHERAPEE_DEFAULT_PROFILE,
+            default=None,
             help=(
                 "Name of RawTherapee profile to use for processing. "
-                "Name does not have the file extension."
+                "Name does not have the file extension, i.e., default and not default.pp3"
+                "If not specified as an argument or in configuration file, "
+                f"'{RAWTHERAPEE_DEFAULT_PROFILE}' will be used."
             ),
         )
 
@@ -107,13 +113,27 @@ class RawTherapeeCommand(commands.Command):
         post_processor: processing.PostProcessingStrategy,
     ) -> processing.FileProcessor:
         # Getting RawTherapee profile
-        profile_folder = pathlib.Path(args.profile_folder).expanduser().absolute()
+        profile_folder = (
+            pathlib.Path(
+                args.profile_folder
+                or self._get_config_value("profile-folder")
+                or RAWTHERAPEE_PROFILE_FOLDER
+            )
+            .expanduser()
+            .absolute()
+        )
         check.ensure_folder(profile_folder)
-        check.ensure_type(args.profile, str)
-        profile_name = f"{args.profile}{RAWTHERAPEE_PROFILE_EXTENSION}"
+
+        profile = (
+            args.profile
+            or self._get_config_value("profile")
+            or RAWTHERAPEE_DEFAULT_PROFILE
+        )
+        check.ensure_type(profile, str)
+        profile_name = f"{profile}{RAWTHERAPEE_PROFILE_EXTENSION}"
         profile_path = profile_folder / profile_name
-        check.ensure_file(profile_path)
         show.normal(f"Using RawTherapee profile {profile_path}")
+        check.ensure_file(profile_path)
 
         file_processor = RawTherapeeFileProcessor(
             profile_path,

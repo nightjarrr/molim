@@ -8,10 +8,9 @@ from . import show
 
 
 DEFAULT_CONFIG_PATH = pathlib.Path("~/.config/molim/config.toml")
-CONFIG = None
 
 
-def load(config_path_str: str = None):
+def load(config_path_str: str = None, section: str = None):
     if config_path_str is not None:
         config_path = pathlib.Path(config_path_str)
         check.ensure_file(config_path)
@@ -20,16 +19,11 @@ def load(config_path_str: str = None):
     if config_path.exists():
         check.ensure_file(config_path)
         cfg = tomlkit.toml_file.TOMLFile(config_path)
-        global CONFIG
-        CONFIG = cfg.read()
+        doc = cfg.read()
         show.normal(f"Loaded configuration file {config_path}")
+        return ConfigReader(doc, section)
     else:
         show.normal("No configuration file, proceeding normally without it.")
-
-
-def reader(section: str = None):
-    global CONFIG
-    return ConfigReader(CONFIG, section)
 
 
 class ConfigReader(object):
