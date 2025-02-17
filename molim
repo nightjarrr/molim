@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-
-FOLDER="$(dirname "$0")"
-uv run molim "$@"
