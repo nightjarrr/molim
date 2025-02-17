@@ -1,0 +1,18 @@
+[global]
+meaning_of_life = 42
+important_text = "Attention to everyone"
+skip = [
+    "*.pyc",
+    "ignore.*",
+    "why.me"
+]
+
+[video]
+important_text = "Attention on video"
+command_line = "ffmpeg"
+skip = [
+    "*.webm"
+]
+
+[suffix]
+

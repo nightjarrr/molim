@@ -140,6 +140,40 @@ def test_BySizeFileSkipStrategy_core_logic(tmp_path):
     assert s.skip(path)
 
 
+# GlobFileSkipStrategy tests
+
+
+def test_GlobFileSkipStrategy_input_validation():
+    with pytest.raises(ValueError):
+        processing.GlobFileSkipStrategy(None)
+
+    with pytest.raises(TypeError):
+        processing.GlobFileSkipStrategy(12)
+
+    s = processing.GlobFileSkipStrategy("*.txt")
+    with pytest.raises(TypeError):
+        s.skip("/tmp/path")
+    with pytest.raises(ValueError):
+        s.skip(None)
+
+
+def test_GlobFileSkipStrategy_core_logic(tmp_path):
+    s = processing.GlobFileSkipStrategy("*.txt")
+
+    path = tmp_path / "data.txt.pdf"
+    path.touch()
+    assert not s.skip(path)
+
+    path = tmp_path / "data.min.txt"
+    path.touch()
+    assert s.skip(path)
+
+    s = processing.GlobFileSkipStrategy("data.txt")
+    path = tmp_path / "data.txt"
+    path.touch()
+    assert s.skip(path)
+
+
 # MultiFileSkipStrategy tests
 
 

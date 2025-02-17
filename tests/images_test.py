@@ -3,6 +3,8 @@ import os.path
 import pathlib
 import pytest
 
+from . import common
+
 from molim import commands
 from molim import processing
 from molim import shell
@@ -162,6 +164,7 @@ def test_JpegifyCommand_args_validation():
             argparse.Namespace(
                 FOLDER=str(JPEGIFY_FOLDER),
                 dry_run=True,
+                config=str(common.EMPTY_CONFIG),
                 extension=jpegify.JpegifyCommand.JPEGIFY_EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
                 imagemagick_quality=-5,
@@ -175,6 +178,7 @@ def test_JpegifyCommand_args_validation():
             argparse.Namespace(
                 FOLDER=str(JPEGIFY_FOLDER),
                 dry_run=True,
+                config=str(common.EMPTY_CONFIG),
                 extension=jpegify.JpegifyCommand.JPEGIFY_EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
                 imagemagick_quality=120,
@@ -188,6 +192,7 @@ def test_JpegifyCommand_args_validation():
             argparse.Namespace(
                 FOLDER=str(JPEGIFY_FOLDER),
                 dry_run=True,
+                config=str(common.EMPTY_CONFIG),
                 extension=jpegify.JpegifyCommand.JPEGIFY_EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
                 imagemagick_quality=90,
@@ -203,6 +208,7 @@ def test_JpegifyCommand_dry_run():
         argparse.Namespace(
             FOLDER=str(JPEGIFY_FOLDER),
             dry_run=True,
+            config=str(common.EMPTY_CONFIG),
             extension=jpegify.JpegifyCommand.JPEGIFY_EXTENSION,
             originals=commands.OriginalsHandlingEnum.LEAVE,
             imagemagick_quality=images.JPEG_QUALITY,
@@ -223,6 +229,7 @@ def test_JpegifyCommand_core_logic():
         argparse.Namespace(
             FOLDER=str(JPEGIFY_FOLDER),
             dry_run=False,
+            config=str(common.EMPTY_CONFIG),
             extension=jpegify.JpegifyCommand.JPEGIFY_EXTENSION,
             originals=commands.OriginalsHandlingEnum.LEAVE,
             imagemagick_quality=images.JPEG_QUALITY,
@@ -323,6 +330,7 @@ def test_ResizeCommand_args_validation():
             argparse.Namespace(
                 FOLDER=str(RESIZE_FOLDER),
                 dry_run=True,
+                config=str(common.EMPTY_CONFIG),
                 suffix=False,
                 extension=images.JPEG_EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
@@ -338,6 +346,7 @@ def test_ResizeCommand_args_validation():
                 FOLDER=str(RESIZE_FOLDER),
                 SIZE=None,
                 dry_run=True,
+                config=str(common.EMPTY_CONFIG),
                 suffix=False,
                 extension=images.JPEG_EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
@@ -353,6 +362,7 @@ def test_ResizeCommand_args_validation():
                 FOLDER=str(RESIZE_FOLDER),
                 SIZE=1280,
                 dry_run=True,
+                config=str(common.EMPTY_CONFIG),
                 suffix=False,
                 extension=images.JPEG_EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
@@ -368,6 +378,7 @@ def test_ResizeCommand_args_validation():
                 FOLDER=str(RESIZE_FOLDER),
                 SIZE="half",
                 dry_run=True,
+                config=str(common.EMPTY_CONFIG),
                 suffix=False,
                 extension=images.JPEG_EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
@@ -383,6 +394,7 @@ def test_ResizeCommand_args_validation():
                 FOLDER=str(RESIZE_FOLDER),
                 SIZE="-1800",
                 dry_run=True,
+                config=str(common.EMPTY_CONFIG),
                 extension=images.JPEG_EXTENSION,
                 suffix=False,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
@@ -398,6 +410,7 @@ def test_ResizeCommand_args_validation():
                 FOLDER=str(RESIZE_FOLDER),
                 SIZE="5%%",
                 suffix=False,
+                config=str(common.EMPTY_CONFIG),
                 dry_run=True,
                 extension=images.JPEG_EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
@@ -413,6 +426,7 @@ def test_ResizeCommand_args_validation():
                 FOLDER=str(RESIZE_FOLDER),
                 SIZE="-5%",
                 dry_run=True,
+                config=str(common.EMPTY_CONFIG),
                 suffix=False,
                 extension=images.JPEG_EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
@@ -430,6 +444,7 @@ def test_ResizeCommand_dry_run_suffix():
             FOLDER=str(RESIZE_FOLDER),
             SIZE="50%",
             dry_run=True,
+            config=str(common.EMPTY_CONFIG),
             suffix=True,
             extension=images.JPEG_EXTENSION,
             originals=commands.OriginalsHandlingEnum.MOVE,
@@ -454,6 +469,7 @@ def test_ResizeCommand_dry_run_nosuffix():
             FOLDER=str(RESIZE_FOLDER),
             SIZE="50%",
             dry_run=True,
+            config=str(common.EMPTY_CONFIG),
             suffix=False,
             extension=images.JPEG_EXTENSION,
             originals=commands.OriginalsHandlingEnum.MOVE,
@@ -479,6 +495,7 @@ def test_ResizeCommand_core_logic_size_value():
             SIZE="900",
             suffix=True,
             dry_run=False,
+            config=str(common.EMPTY_CONFIG),
             extension=images.JPEG_EXTENSION,
             originals=commands.OriginalsHandlingEnum.LEAVE,
             imagemagick_quality=images.JPEG_QUALITY,
@@ -509,6 +526,7 @@ def test_ResizeCommand_core_logic_size_percent():
             FOLDER=str(RESIZE_FOLDER),
             SIZE="70%",
             dry_run=False,
+            config=str(common.EMPTY_CONFIG),
             suffix=False,
             extension=images.JPEG_EXTENSION,
             originals=commands.OriginalsHandlingEnum.LEAVE,

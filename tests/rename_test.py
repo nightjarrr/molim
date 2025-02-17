@@ -3,6 +3,8 @@ import pathlib
 import pytest
 import random
 
+from . import common
+
 from molim import commands
 from molim import processing
 from molim import rename
@@ -96,6 +98,7 @@ def test_ResizeCommand_core_logic(prepared_folder):
             SUFFIX=".min",
             extension=".mp4",
             dry_run=False,
+            config=str(common.EMPTY_CONFIG),
             verbose=True,
         )
     )

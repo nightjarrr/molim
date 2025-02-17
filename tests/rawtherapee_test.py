@@ -3,6 +3,8 @@ import os.path
 import pathlib
 import pytest
 
+from . import common
+
 from molim import commands
 from molim import processing
 from molim.images import rawtherapee
@@ -81,6 +83,7 @@ def test_RawTherapeeCommand_core_logic():
         argparse.Namespace(
             FOLDER=str(FOLDER),
             dry_run=False,
+            config=str(common.EMPTY_CONFIG),
             extension=".jpg",
             no_skip_processed=False,
             greater_than=1024,
@@ -116,6 +119,7 @@ def test_RawTherapeeCommand_core_logic_subfolder():
         argparse.Namespace(
             FOLDER=str(FOLDER),
             dry_run=False,
+            config=str(common.EMPTY_CONFIG),
             extension=".jpg",
             no_skip_processed=False,
             greater_than=1024,

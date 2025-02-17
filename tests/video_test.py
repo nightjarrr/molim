@@ -3,6 +3,8 @@ import os.path
 import pathlib
 import pytest
 
+from . import common
+
 from molim import commands
 from molim import processing
 from molim import shell
@@ -162,6 +164,10 @@ def test_VideoFfmpegCommand_core_logic():
         argparse.Namespace(
             FOLDER=str(VIDEO_FOLDER),
             dry_run=False,
+            config=str(
+                # Test non-empty config with glob for *.webm skipping
+                common.TEST_CONFIG
+            ),  
             extension=".mp4",
             no_skip_processed=False,
             greater_than=500 * 1024,

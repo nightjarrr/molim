@@ -261,6 +261,21 @@ class BySizeFileSkipStrategy(FileSkipStrategy):
         return res
 
 
+class GlobFileSkipStrategy(FileSkipStrategy):
+    def __init__(self, glob_pattern: str):
+        check.ensure_type(glob_pattern, str)
+        self.__glob_pattern = glob_pattern
+
+    def skip(self, file_path: pathlib.Path) -> bool:
+        check.ensure_file(file_path)
+        res = file_path.match(self.__glob_pattern)
+        if res:
+            show.verbose(
+                f" - {file_path.name} skipped as it is matches pattern '{self.__glob_pattern}'."
+            )
+        return res
+
+
 class MultiFileSkipStrategy(FileSkipStrategy):
     def __init__(self, skip_strategies: list[FileSkipStrategy]):
         check.ensure_type(skip_strategies, list)

@@ -3,6 +3,7 @@ import enum
 import pathlib
 
 from . import check
+from . import config
 from . import processing
 from . import show
 from . import stats
@@ -107,6 +108,14 @@ class Command(object):
 
         parser.add_argument("FOLDER", help="Process files in this folder.")
         parser.add_argument(
+            "--config",
+            default=None,
+            help=(
+                "Location of the configuration file. "
+                f"If not specified, {config.DEFAULT_CONFIG_PATH} will be used if exists."
+            ),
+        )
+        parser.add_argument(
             "--dry-run",
             default=False,
             action="store_true",
@@ -167,6 +176,20 @@ class Command(object):
             return processing.AnyFileMatchStrategy()
         return processing.ByExtensionFileMatchStrategy(args.extension)
 
+    def _get_config_skip_strategy(self, cfg, skip_strategy):
+        if not cfg:
+            return skip_strategy
+        skip_glob_list = cfg("skip")
+        if skip_glob_list is None:
+            return skip_strategy
+        check.ensure_type(skip_glob_list, list)
+        result = []
+        for glob in skip_glob_list:
+            check.ensure_type(glob, str)
+            result.append(processing.GlobFileSkipStrategy(glob))
+        result.append(skip_strategy)
+        return processing.MultiFileSkipStrategy(result)
+
     @property
     def _show_size(self):
         return True
@@ -180,6 +203,9 @@ class Command(object):
             f"Processing {show.ext(args.extension)} files in folder {folder_path}."
         )
 
+        # Load configuration if it exists.
+        config.load(args.config)
+
         if args.dry_run:
             show.normal("Dry run mode, no real modifications will be made.")
 
@@ -189,6 +215,8 @@ class Command(object):
 
         matcher = self._get_file_match_strategy(args)
         skipper = self._get_file_skip_strategy(args)
+        cfg = config.reader(self.name)
+        skipper = self._get_config_skip_strategy(cfg, skipper)
 
         processor = processing.FolderProcessor(
             folder_path, matcher, skipper, file_processor
