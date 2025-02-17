@@ -2,6 +2,7 @@
 *** ROADMAP ***
 ***************
 
+ * rename repository to 'molim'
  * add '.molimignore' file that will be used by a skip strategy
     ** define location for it (must be preserved across reinstalls). config folder?
  * add 'ignore' command that can manage .molimignore list
