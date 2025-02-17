@@ -1,6 +1,6 @@
 [project]
 name = "molim"
-version = "0.3.0"
+version = "0.3.1"
 description = "A collection of utility commands to process and optimize files."
 readme = "README.md"
 requires-python = ">=3.12"

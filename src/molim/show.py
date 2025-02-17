@@ -20,11 +20,14 @@ def elapsed(value: float) -> str:
 
 
 def human_size(size: int) -> str:
-    for unit in ["", "K", "M", "G"]:
+    if abs(size) < 1024:
+        return str(int(size))
+    size /= 1024.0
+    for unit in ["K", "M", "G"]:
         if abs(size) < 1024.0:
             return f"{size:3.1f}{unit}"
         size /= 1024.0
-    return f"{size:.1f}Yi"
+    return f"{size:.1f}T"
 
 
 def ext(value: str) -> str:
@@ -35,9 +38,9 @@ def ext(value: str) -> str:
 
 
 def ellipsis(value: str) -> str:
-    if len(value) > 30:
+    if len(value) > 40:
         ending = value[-10:]
-        start = value[:15]
+        start = value[:25]
         return f"{start}(...){ending}"
     return value
 
@@ -115,7 +118,9 @@ def progress(total: int) -> object:
         rich.progress.TextColumn("{task.description}"),
         rich.progress.BarColumn(),
         rich.progress.MofNCompleteColumn(),
+        rich.progress.TaskProgressColumn(),
         console=__CONSOLE__,
+        expand=True
     )
     p.add_task(total=total, description="")
     return p
@@ -131,11 +136,9 @@ def progress_advance(progress: object) -> None:
     progress.advance(task)
 
 
-def verbose(message: str, new_line=False) -> None:
+def verbose(message: str) -> None:
     if __verbose:
         __CONSOLE__.print("   " + message, style="grey50", highlight=False)
-        if new_line:
-            __CONSOLE__.print()
 
 
 def verbose_args(args, new_line=False):
