@@ -7,9 +7,6 @@
  * add 'ignore' command that can manage .molimignore list
  * add ability of result evaluation: whether to accept the processed file or revert back to original
  * refactor unit tests for images, reduce code duplication
- * investigate Python build systems to create distributable package
- * investigate Python distribution channels (PyPi, custom index, etc)
-    ** local index hosting
 
 ***************
 ***  DONE   ***
