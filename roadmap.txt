@@ -2,7 +2,6 @@
 *** ROADMAP ***
 ***************
 
- * Fix display of file names with [something] in brackets (and other markup)
  * add ability of result evaluation: whether to accept the processed file or revert back to original
  * refactor unit tests for images, reduce code duplication
 
@@ -28,3 +27,4 @@
  * add config file that can define a global skip strategy
     ** define location for it (must be preserved across reinstalls). config folder?
  * add ability to specify RawTherapee profile folder and profile name in configuration.
+ * Fix display of file names with [something] in brackets (and other markup)
