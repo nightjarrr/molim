@@ -11,18 +11,18 @@ def test_ellipsis():
 
     value = "webp-pixbuf-loader_0.0.4-0~202205152028+202205152231~ubuntu20.04.1_amd64.deb"
     e = show.ellipsis(value)
-    assert e == "webp-pixbuf-loader_0.0.4-(...)_amd64.deb"
-    assert len(e) == 40
+    assert e == "webp-pixbuf-loader_0.0.4-0(...)_amd64.deb"
+    assert len(e) == 41
 
     value = "1895626515220692901356254961528463709728e700ccabb61529331309.jpg"
     e = show.ellipsis(value)
-    assert e == "1895626515220692901356254(...)331309.jpg"
-    assert len(e) == 40
+    assert e == "18956265152206929013562549(...)331309.jpg"
+    assert len(e) == 41
 
     value = "There should be one and preferably only one obvious way to do it.pdf"
     e = show.ellipsis(value)
-    assert e == "There should be one and p(...) do it.pdf"
-    assert len(e) == 40
+    assert e == "There should be one and pr(...) do it.pdf"
+    assert len(e) == 41
 
 
 def test_human_size():

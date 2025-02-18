@@ -12,7 +12,7 @@ def main() -> int:
     except KeyboardInterrupt:
         show.important("")
         show.rule()
-        show.important("Processing interrupted with Ctrl+C, exiting.")
+        show.important("Processing interrupted with Ctrl+C.")
         return 130  # Return code for keyboard interrupt
     except Exception as e:
         show.error("A fatal error occurred during execution.", e)

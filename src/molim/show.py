@@ -38,9 +38,9 @@ def ext(value: str) -> str:
 
 
 def ellipsis(value: str) -> str:
-    if len(value) > 40:
+    if len(value) > 41:
         ending = value[-10:]
-        start = value[:25]
+        start = value[:26]
         return f"{start}(...){ending}"
     return value
 
@@ -57,7 +57,7 @@ def set_verbose(val: bool) -> None:
 
 
 def important(message: str, new_line=False) -> None:
-    __CONSOLE__.print(message, style="bold", highlight=False)
+    __CONSOLE__.print(message, style="bold", highlight=False, markup=False)
     if new_line:
         __CONSOLE__.print()
 
@@ -67,7 +67,7 @@ def rule(message: str = "") -> None:
 
 
 def normal(message: str, new_line=False) -> None:
-    __CONSOLE__.print(" " + message, highlight=False)
+    __CONSOLE__.print(" " + message, highlight=False, markup=False)
     if new_line:
         __CONSOLE__.print()
 
@@ -94,7 +94,7 @@ def file_stats(s, show_size: bool):
         ],
         expand=False,
     )
-    __CONSOLE__.print(cols, highlight=False)
+    __CONSOLE__.print(cols, highlight=False, markup=False)
 
 
 def folder_stats(s, show_size: bool):
@@ -138,7 +138,7 @@ def progress_advance(progress: object) -> None:
 
 def verbose(message: str) -> None:
     if __verbose:
-        __CONSOLE__.print("   " + message, style="grey50", highlight=False)
+        __CONSOLE__.print("   " + message, style="grey50", highlight=False, markup=False)
 
 
 def verbose_args(args, new_line=False):
