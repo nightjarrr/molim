@@ -1,8 +1,8 @@
 [project]
 name = "molim"
-version = "0.3.4"
 description = "A collection of utility commands to process and optimize files."
 readme = "README.md"
+dynamic = ["version"]
 requires-python = ">=3.12"
 dependencies = [
     "rich>=13.9.4",
@@ -15,6 +15,7 @@ molim = "molim:main"
 
 [dependency-groups]
 dev = [
+    "hatch-vcs>=0.5.0",
     "pytest>=8.3.4",
     "pytest-cov>=6.0.0",
 ]
@@ -22,6 +23,10 @@ dev = [
 [tool.pytest.ini_options]
 addopts = "--cov=. --cov-branch --cov-config=.coveragerc --cov-report html --cov-report=xml"
 
+[tool.hatch.version]
+source = "vcs"
+fallback-version = "0.0.0.dev0"   # used on untagged commits locally
+
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
