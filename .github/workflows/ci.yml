@@ -25,8 +25,11 @@ jobs:
       - name: Install project dependencies
         run: uv sync --all-extras --dev
 
-      - name: Install CLI tools
-        run: sudo apt-get install -y rawtherapee imagemagick ffmpeg
+      - name: Install and cache CLI tools
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.0
+        with:
+          packages: rawtherapee imagemagick ffmpeg
+          version: 1.0
 
       - name: Run tests
         run: uv run pytest
