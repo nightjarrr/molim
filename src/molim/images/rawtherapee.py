@@ -19,13 +19,13 @@ class RawTherapeeCommand(commands.Command):
     NO_SKIP_PROCESSED = False
     ORIGINALS = "move"
     PROCESSED_SUFFIX = ".m"
-    JPEG_QUALITY_75 = 75
-    JPEG_SUBSAMPLING_1 = 1
+    JPEG_QUALITY_80 = 80
+    JPEG_SUBSAMPLING_2 = 2
 
     def _get_quality_defaults(self) -> tuple[int, int]:
         return (
-            RawTherapeeCommand.JPEG_QUALITY_75,
-            RawTherapeeCommand.JPEG_SUBSAMPLING_1,
+            RawTherapeeCommand.JPEG_QUALITY_80,
+            RawTherapeeCommand.JPEG_SUBSAMPLING_2,
         )
 
     def _add_arguments(
