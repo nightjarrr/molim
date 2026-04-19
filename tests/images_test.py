@@ -218,7 +218,7 @@ def test_JpegifyCommand_dry_run():
     )
 
     assert s is not None
-    assert len(s.processed_files_stats) == 5
+    assert len(s.processed_files_stats) == 11
     assert s.skipped_files_count == 0
     assert s.total_delta_size == 0
 
@@ -239,7 +239,7 @@ def test_JpegifyCommand_core_logic():
     )
 
     assert s is not None
-    assert len(s.processed_files_stats) == 5
+    assert len(s.processed_files_stats) == 11
     assert s.skipped_files_count == 0
 
     cleanup_processed_files(s)
