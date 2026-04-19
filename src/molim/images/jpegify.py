@@ -8,7 +8,7 @@ from . import JPEG_PROCESSED_EXTENSION
 
 
 class JpegifyCommand(commands.Command, ImageMagickMixin):
-    JPEGIFY_EXTENSION = ".png,.webp"
+    JPEGIFY_EXTENSION = ".png,.webp,.avif,.heic"
     JPEGIFY_ORIGINALS = "delete"
 
     def _add_arguments(
