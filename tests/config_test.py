@@ -1,9 +1,8 @@
 import pytest
 
-from . import common
-
 from molim import config
 
+from . import common
 
 
 def test_config_no_file():
@@ -21,7 +20,7 @@ def test_config_none_values():
     assert c("space-shuttle") is None
 
     # Non-existent section
-    c = config.load(common.TEST_CONFIG,"outer-space")
+    c = config.load(common.TEST_CONFIG, "outer-space")
     assert c("space-shuttle") is None
 
 

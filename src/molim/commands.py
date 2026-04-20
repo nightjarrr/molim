@@ -2,14 +2,10 @@ import argparse
 import enum
 import pathlib
 
-from . import check
-from . import config
-from . import processing
-from . import show
-from . import stats
+from . import check, config, processing, show, stats
 
 
-class HumanReadableSizeType(object):
+class HumanReadableSizeType:
     SIZE_NAME = {"K": 1, "M": 2, "G": 3}
 
     def __call__(self, value: str) -> int:
@@ -25,9 +21,7 @@ class HumanReadableSizeType(object):
             # Did not match any suffix, try to convert to regular int. Corresponds to size in bytes.
             result = int(value)
         if result < 0:
-            raise ValueError(
-                f"Expected non-negative value to be specified. {value} was converted to {result}."
-            )
+            raise ValueError(f"Expected non-negative value to be specified. {value} was converted to {result}.")
         return result
 
 
@@ -37,7 +31,7 @@ class OriginalsHandlingEnum(enum.Enum):
     DELETE = 2
 
 
-class OriginalsHandlingArgType(object):
+class OriginalsHandlingArgType:
     ORIGINALS_HANDLING_OPTIONS = ("leave", "move", "delete")
 
     def __call__(self, value: str) -> OriginalsHandlingEnum:
@@ -47,16 +41,14 @@ class OriginalsHandlingArgType(object):
             if value == option:
                 return OriginalsHandlingEnum(i)
             i += 1
-        raise ValueError(
-            f"{value} is not supported. Choose from {OriginalsHandlingArgType.ORIGINALS_HANDLING_OPTIONS}"
-        )
+        raise ValueError(f"{value} is not supported. Choose from {OriginalsHandlingArgType.ORIGINALS_HANDLING_OPTIONS}")
 
 
 # Special value of --extension argument that will match any file.
 ANY_MATCH_EXTENSION = "ALL"
 
 
-class Command(object):
+class Command:
     """
     Base class for defining command-line interface (CLI) commands.
     This class provides a structure for creating CLI commands with common
@@ -78,6 +70,7 @@ class Command(object):
         __call__(args):
             Executes the command with the given arguments.
     """
+
     def __init__(self):
         self.__config = None
 
@@ -113,8 +106,7 @@ class Command(object):
             "--config",
             default=None,
             help=(
-                "Location of the configuration file. "
-                f"If not specified, {config.DEFAULT_CONFIG_PATH} will be used if exists."
+                f"Location of the configuration file. If not specified, {config.DEFAULT_CONFIG_PATH} will be used if exists."
             ),
         )
         parser.add_argument(
@@ -139,7 +131,10 @@ class Command(object):
                 "--greater-than",
                 default=default_greater_than,
                 type=HumanReadableSizeType(),
-                help="Process only files greater than this value. Value should be int or float number with size suffix (K, M, G), or without any suffix for bytes.",
+                help=(
+                    "Process only files greater than this value. Value should be int or float number"
+                    + "with size suffix (K, M, G), or without any suffix for bytes.",
+                ),
             )
         if default_no_skip_processed is not None:
             parser.add_argument(
@@ -153,7 +148,10 @@ class Command(object):
                 "--originals",
                 default=default_originals,
                 type=OriginalsHandlingArgType(),
-                help=f"How to handle original files after processing. Available choices: {OriginalsHandlingArgType.ORIGINALS_HANDLING_OPTIONS}",
+                help=(
+                    "How to handle original files after processing. "
+                    + f"Available choices: {OriginalsHandlingArgType.ORIGINALS_HANDLING_OPTIONS}",
+                ),
             )
         return parser
 
@@ -212,9 +210,7 @@ class Command(object):
         check.ensure_folder(folder_path)
         folder_path = folder_path.absolute()
 
-        show.important(
-            f"Processing {show.ext(args.extension)} files in folder {folder_path}."
-        )
+        show.important(f"Processing {show.ext(args.extension)} files in folder {folder_path}.")
 
         # Load configuration if it exists.
         self.__config = config.load(args.config, self.name)
@@ -230,9 +226,7 @@ class Command(object):
         skipper = self._get_file_skip_strategy(args)
         skipper = self._get_global_skip_strategy(skipper)
 
-        processor = processing.FolderProcessor(
-            folder_path, matcher, skipper, file_processor
-        )
+        processor = processing.FolderProcessor(folder_path, matcher, skipper, file_processor)
 
         show.rule()
         s = processor.process(dry_run=args.dry_run, show_size=self._show_size)
@@ -243,12 +237,8 @@ class Command(object):
 
     # Public methods
 
-    def configure_parser(
-        self, parser: argparse.ArgumentParser
-    ) -> argparse.ArgumentParser:
-        ext, gt_than, no_skip_processed, originals = (
-            self._get_common_arguments_defaults()
-        )
+    def configure_parser(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+        ext, gt_than, no_skip_processed, originals = self._get_common_arguments_defaults()
         self._add_arguments(parser)
         self._add_common_arguments(parser, ext, gt_than, no_skip_processed, originals)
         # Set the command as a value to be available in the resulting args object
@@ -257,9 +247,7 @@ class Command(object):
 
     # Abstract methods
 
-    def _add_arguments(
-        self, parser: argparse.ArgumentParser
-    ) -> argparse.ArgumentParser:
+    def _add_arguments(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         raise NotImplementedError()
 
     def _get_common_arguments_defaults(self) -> tuple[str, str, bool, str]:
@@ -276,9 +264,7 @@ class Command(object):
         """
         raise NotImplementedError()
 
-    def _get_output_file_path_strategy(
-        self, args: argparse.Namespace
-    ) -> processing.OutputFilePathStrategy:
+    def _get_output_file_path_strategy(self, args: argparse.Namespace) -> processing.OutputFilePathStrategy:
         raise NotImplementedError()
 
     def _get_file_processor(
@@ -289,9 +275,7 @@ class Command(object):
     ) -> processing.FileProcessor:
         raise NotImplementedError()
 
-    def _get_file_skip_strategy(
-        self, args: argparse.Namespace
-    ) -> processing.FileSkipStrategy:
+    def _get_file_skip_strategy(self, args: argparse.Namespace) -> processing.FileSkipStrategy:
         raise NotImplementedError()
 
     @property

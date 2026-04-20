@@ -1,34 +1,23 @@
 import pathlib
+
 import sh
 
-from . import check
-from . import processing
-from . import show
+from . import check, processing, show
 
 
 class ShellCommandNotFoundError(Exception):
-    MESSAGE = (
-        "Could not run '{cmdline}' command. "
-        "Check whether {name} is installed on your system and is available on PATH."
-    )
+    MESSAGE = "Could not run '{cmdline}' command. Check whether {name} is installed on your system and is available on PATH."
 
     def __init__(self, cmdline: str, name: str):
-        self.message = ShellCommandNotFoundError.MESSAGE.format(
-            cmdline=cmdline, name=name
-        )
+        self.message = ShellCommandNotFoundError.MESSAGE.format(cmdline=cmdline, name=name)
         super().__init__(self.message)
 
 
 class ShellCommandRuntimeError(Exception):
-    MESSAGE = (
-        "An error occurred during {name} execution. "
-        "Exit code: {exit_code}. Command line: '{args}'"
-    )
+    MESSAGE = "An error occurred during {name} execution. Exit code: {exit_code}. Command line: '{args}'"
 
     def __init__(self, name: str, e: sh.ErrorReturnCode):
-        self.message = ShellCommandRuntimeError.MESSAGE.format(
-            name=name, exit_code=e.exit_code, args=e.full_cmd
-        )
+        self.message = ShellCommandRuntimeError.MESSAGE.format(name=name, exit_code=e.exit_code, args=e.full_cmd)
         super().__init__(self.message)
 
 
@@ -66,12 +55,8 @@ class ShellCommandFileProcessor(processing.FileProcessor):
     def _get_verify_args(self) -> list[str]:
         return []
 
-    def _prepare_execution(
-        self, file_path: pathlib.Path, output_file_path: pathlib.Path
-    ) -> None:
-        self.__args = self._finalize_args(
-            self.__command_args, file_path, output_file_path
-        )
+    def _prepare_execution(self, file_path: pathlib.Path, output_file_path: pathlib.Path) -> None:
+        self.__args = self._finalize_args(self.__command_args, file_path, output_file_path)
         cmdline = " ".join(self.__args)
         show.verbose(f"Running {self.__command_name}...")
         show.verbose(f"$ {self.__command_line} {cmdline}")

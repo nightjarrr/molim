@@ -1,9 +1,8 @@
-import pytest
 import random
 
-from molim import processing
-from molim import stats
+import pytest
 
+from molim import processing, stats
 
 # SuffixOutputFilePathStrategy tests
 
@@ -106,9 +105,7 @@ def test_MultiOutputFilePathStrategy_input_validation():
     with pytest.raises(ValueError):
         processing.MultiOutputFilePathStrategy([])
 
-    s = processing.MultiOutputFilePathStrategy(
-        [processing.ChangeExtOutputFilePathStrategy(".jpg")]
-    )
+    s = processing.MultiOutputFilePathStrategy([processing.ChangeExtOutputFilePathStrategy(".jpg")])
     with pytest.raises(TypeError):
         s.get_output_path("/tmp/path")
     with pytest.raises(ValueError):
@@ -232,9 +229,7 @@ def test_ReplaceOriginalPostProcessignStrategy_input_validation(tmp_path):
     input_path = tmp_path / "data.txt"
     input_path.touch()
 
-    m = processing.ReplaceOriginalPostProcessignStrategy(
-        processing.DeleteOriginalPostProcessingStrategy()
-    )
+    m = processing.ReplaceOriginalPostProcessignStrategy(processing.DeleteOriginalPostProcessingStrategy())
     with pytest.raises(ValueError):
         m.process(None, input_path, True)
     with pytest.raises(ValueError):
@@ -245,9 +240,7 @@ def test_ReplaceOriginalPostProcessignStrategy_dry_run(tmp_path):
     input_path = tmp_path / "data.txt"
     input_path.touch()
 
-    m = processing.ReplaceOriginalPostProcessignStrategy(
-        processing.DeleteOriginalPostProcessingStrategy()
-    )
+    m = processing.ReplaceOriginalPostProcessignStrategy(processing.DeleteOriginalPostProcessingStrategy())
     m.process(input_path, tmp_path / "data.zip", True)
 
     assert input_path.exists()
@@ -263,19 +256,13 @@ def test_ReplaceOriginalPostProcessignStrategy_core_logic(tmp_path):
 
     orig_folder = tmp_path / "_orig"
 
-    m = processing.ReplaceOriginalPostProcessignStrategy(
-        processing.MoveOriginalPostProcessingStrategy(orig_folder, False)
-    )
+    m = processing.ReplaceOriginalPostProcessignStrategy(processing.MoveOriginalPostProcessingStrategy(orig_folder, False))
     m.process(input_path, output_path, False)
 
     assert orig_folder.exists()
     assert (orig_folder / input_path.name).exists()  # Moved original file
-    assert (
-        not output_path.exists()
-    )  # Output original name does not exist because it was renamed
-    assert (
-        input_path.exists()
-    )  # Input original name exists because output was renamed to this name
+    assert not output_path.exists()  # Output original name does not exist because it was renamed
+    assert input_path.exists()  # Input original name exists because output was renamed to this name
 
 
 # FileProcessor tests

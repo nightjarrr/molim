@@ -1,14 +1,11 @@
 import pathlib
 import time
 
-from . import check
-from . import show
+from . import check, show
 
 
 class StatsNotFinishedError(Exception):
-    DEFAULT_MESSAGE = (
-        "Statistics results should not be accessed before gathering is finished yet."
-    )
+    DEFAULT_MESSAGE = "Statistics results should not be accessed before gathering is finished yet."
 
     def __init__(self, message=DEFAULT_MESSAGE):
         self.message = message
@@ -41,7 +38,7 @@ def ensure_not_finished(method):
     return wrapper
 
 
-class Stats(object):
+class Stats:
     def __init__(self):
         self.__start_ts = None
         self.__end_ts = None
@@ -108,9 +105,7 @@ class FileStats(Stats):
         self.__delta_size = None
 
     @ensure_not_finished
-    def set_processed_file(
-        self, processed_file: pathlib.Path, processed_file_size: int = None
-    ):
+    def set_processed_file(self, processed_file: pathlib.Path, processed_file_size: int = None):
         if self.__processed_file:
             raise FileStatsAlreadyHaveProcessedFileError()
         if processed_file_size is not None:

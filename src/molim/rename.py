@@ -1,15 +1,11 @@
 import argparse
 import pathlib
 
-from . import commands
-from . import processing
-from . import show
+from . import commands, processing, show
 
 
 class SuffixCommand(commands.Command):
-    def _add_arguments(
-        self, parser: argparse.ArgumentParser
-    ) -> argparse.ArgumentParser:
+    def _add_arguments(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         parser.add_argument(
             "SUFFIX",
             help="Add this suffix to all matched files.",
@@ -29,9 +25,7 @@ class SuffixCommand(commands.Command):
     ) -> processing.PostProcessingStrategy:
         return processing.NoopPostProcessingStrategy()
 
-    def _get_output_file_path_strategy(
-        self, args: argparse.Namespace
-    ) -> processing.OutputFilePathStrategy:
+    def _get_output_file_path_strategy(self, args: argparse.Namespace) -> processing.OutputFilePathStrategy:
         return processing.SuffixOutputFilePathStrategy(args.SUFFIX)
 
     def _get_file_processor(
@@ -40,13 +34,9 @@ class SuffixCommand(commands.Command):
         output_namer: processing.OutputFilePathStrategy,
         post_processor: processing.PostProcessingStrategy,
     ) -> processing.FileProcessor:
-        return RenameFileProcessor(
-            output_strategy=output_namer, post_processor=post_processor
-        )
+        return RenameFileProcessor(output_strategy=output_namer, post_processor=post_processor)
 
-    def _get_file_skip_strategy(
-        self, args: argparse.Namespace
-    ) -> processing.FileSkipStrategy:
+    def _get_file_skip_strategy(self, args: argparse.Namespace) -> processing.FileSkipStrategy:
         return processing.BySuffixFileSkipStrategy(args.SUFFIX)
 
     @property
@@ -70,9 +60,7 @@ class RenameFileProcessor(processing.FileProcessor):
     ):
         super().__init__(output_strategy, post_processor)
 
-    def _prepare_execution(
-        self, file_path: pathlib.Path, output_file_path: pathlib.Path
-    ) -> None:
+    def _prepare_execution(self, file_path: pathlib.Path, output_file_path: pathlib.Path) -> None:
         show.verbose(f"Renaming {file_path.name} to {output_file_path.name}.")
 
     def _execute(self, file_path: pathlib.Path, output_file_path: pathlib.Path) -> None:

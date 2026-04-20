@@ -1,4 +1,5 @@
 from datetime import timedelta
+
 import rich.console
 import rich.panel
 import rich.progress
@@ -101,11 +102,14 @@ def folder_stats(s, show_size: bool):
     if s.processed_files_stats:
         important(
             f"Processed {len(s.processed_files_stats)} files in {elapsed(s.elapsed)}",
-            new_line=not show_size
+            new_line=not show_size,
         )
         if show_size:
+            tos = s.total_original_size
+            tps = s.total_processed_size
+            tds = s.total_delta_size
             important(
-                f"{human_size(s.total_original_size)} \u2192 {human_size(s.total_processed_size)}, new size {percent(s.total_original_size, s.total_processed_size)} of original, {__delta(s.total_delta_size)}",
+                f"{human_size(tos)} \u2192 {human_size(tps)}, new size {percent(tos, tps)} of original, {__delta(tds)}",
                 new_line=True,
             )
 
@@ -120,7 +124,7 @@ def progress(total: int) -> object:
         rich.progress.MofNCompleteColumn(),
         rich.progress.TaskProgressColumn(),
         console=__CONSOLE__,
-        expand=True
+        expand=True,
     )
     p.add_task(total=total, description="")
     return p

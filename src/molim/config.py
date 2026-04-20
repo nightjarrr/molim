@@ -1,11 +1,10 @@
 import pathlib
+
 import tomlkit.exceptions
 import tomlkit.toml_document
 import tomlkit.toml_file
 
-from . import check
-from . import show
-
+from . import check, show
 
 DEFAULT_CONFIG_PATH = pathlib.Path("~/.config/molim/config.toml")
 
@@ -26,7 +25,7 @@ def load(config_path_str: str = None, section: str = None):
         show.normal("No configuration file, proceeding normally without it.")
 
 
-class ConfigReader(object):
+class ConfigReader:
     GLOBAL_SECTION = "global"
 
     def __init__(self, document: tomlkit.toml_document.TOMLDocument, section: str):
@@ -50,9 +49,7 @@ class ConfigReader(object):
 
         if not self.__doc:
             return None
-        return self._get_or_none(self.__section, key) or self._get_or_none(
-            ConfigReader.GLOBAL_SECTION, key
-        )
+        return self._get_or_none(self.__section, key) or self._get_or_none(ConfigReader.GLOBAL_SECTION, key)
 
     def __call__(self, key: str):
         return self._get(key)

@@ -1,14 +1,12 @@
 import argparse
 import pathlib
-import pytest
 import random
 
+import pytest
+
+from molim import commands, processing, rename
+
 from . import common
-
-from molim import commands
-from molim import processing
-from molim import rename
-
 
 # Fixtures
 

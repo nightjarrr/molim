@@ -1,11 +1,9 @@
 import pathlib
 
-from . import check
-from . import show
-from . import stats
+from . import check, show, stats
 
 
-class OutputFilePathStrategy(object):
+class OutputFilePathStrategy:
     def get_output_path(input_path: pathlib.Path):
         raise NotImplementedError()
 
@@ -67,17 +65,13 @@ class MultiOutputFilePathStrategy(OutputFilePathStrategy):
         return output_path
 
 
-class PostProcessingStrategy(object):
-    def process(
-        self, input_filepath: pathlib.Path, output_filepath: pathlib.Path, dry_run: bool
-    ) -> None:
+class PostProcessingStrategy:
+    def process(self, input_filepath: pathlib.Path, output_filepath: pathlib.Path, dry_run: bool) -> None:
         raise NotImplementedError()
 
 
 class NoopPostProcessingStrategy(PostProcessingStrategy):
-    def process(
-        self, input_filepath: pathlib.Path, output_filepath: pathlib.Path, dry_run: bool
-    ) -> None:
+    def process(self, input_filepath: pathlib.Path, output_filepath: pathlib.Path, dry_run: bool) -> None:
         pass
 
 
@@ -93,15 +87,11 @@ class MoveOriginalPostProcessingStrategy(PostProcessingStrategy):
         show.normal(f"Original files will be moved to folder {move_to}.")
         self.__move_to = move_to
 
-    def process(
-        self, input_filepath: pathlib.Path, output_filepath: pathlib.Path, dry_run: bool
-    ) -> None:
+    def process(self, input_filepath: pathlib.Path, output_filepath: pathlib.Path, dry_run: bool) -> None:
         check.ensure_file(input_filepath)
         if not dry_run:
             check.ensure_file(output_filepath)
-        show.verbose(
-            f"Moving original file {input_filepath.name} to folder {self.__move_to}."
-        )
+        show.verbose(f"Moving original file {input_filepath.name} to folder {self.__move_to}.")
         if not dry_run:
             target = self.__move_to / input_filepath.name
             input_filepath.rename(target)
@@ -111,15 +101,11 @@ class DeleteOriginalPostProcessingStrategy(PostProcessingStrategy):
     def __init__(self):
         show.normal("Original files will be deleted.")
 
-    def process(
-        self, input_filepath: pathlib.Path, output_filepath: pathlib.Path, dry_run: bool
-    ) -> None:
+    def process(self, input_filepath: pathlib.Path, output_filepath: pathlib.Path, dry_run: bool) -> None:
         check.ensure_file(input_filepath)
         if not dry_run:
             check.ensure_file(output_filepath)
-        show.verbose(
-            f"Deleting original file {input_filepath.name}, only processed file {output_filepath.name} will remain."
-        )
+        show.verbose(f"Deleting original file {input_filepath.name}, only processed file {output_filepath.name} will remain.")
         if not dry_run:
             input_filepath.unlink()
 
@@ -127,7 +113,8 @@ class DeleteOriginalPostProcessingStrategy(PostProcessingStrategy):
 class ReplaceOriginalPostProcessignStrategy(PostProcessingStrategy):
     """
     Post-processing strategy that will replace the original file with the processed file.
-    It accepts a post-processing strategy instance that must handle the original file: delete it or move to another location, or anything else.
+    It accepts a post-processing strategy instance that must handle the original file:
+    delete it or move to another location, or anything else.
     """
 
     def __init__(self, originals_post_processor: PostProcessingStrategy):
@@ -135,24 +122,18 @@ class ReplaceOriginalPostProcessignStrategy(PostProcessingStrategy):
         self.__originals_post_processor = originals_post_processor
         show.normal("Processed files will be renamed to the original file name.")
 
-    def process(
-        self, input_filepath: pathlib.Path, output_filepath: pathlib.Path, dry_run: bool
-    ) -> None:
+    def process(self, input_filepath: pathlib.Path, output_filepath: pathlib.Path, dry_run: bool) -> None:
         check.ensure_file(input_filepath)
         if not dry_run:
             check.ensure_file(output_filepath)
         # Handle the original file.
-        self.__originals_post_processor.process(
-            input_filepath, output_filepath, dry_run
-        )
-        show.verbose(
-            f"Renaming processed file {output_filepath.name} to original file name {input_filepath.name}."
-        )
+        self.__originals_post_processor.process(input_filepath, output_filepath, dry_run)
+        show.verbose(f"Renaming processed file {output_filepath.name} to original file name {input_filepath.name}.")
         if not dry_run:
             output_filepath.rename(input_filepath)
 
 
-class FileProcessor(object):
+class FileProcessor:
     def __init__(
         self,
         output_strategy: OutputFilePathStrategy,
@@ -182,9 +163,7 @@ class FileProcessor(object):
 
         return statistics
 
-    def _prepare_execution(
-        self, file_path: pathlib.Path, output_file_path: pathlib.Path
-    ) -> None:
+    def _prepare_execution(self, file_path: pathlib.Path, output_file_path: pathlib.Path) -> None:
         pass
 
     # Abstract methods
@@ -193,7 +172,7 @@ class FileProcessor(object):
         raise NotImplementedError()
 
 
-class FileMatchStrategy(object):
+class FileMatchStrategy:
     def match(self, file_path: pathlib.Path) -> bool:
         raise NotImplementedError()
 
@@ -216,7 +195,7 @@ class ByExtensionFileMatchStrategy(FileMatchStrategy):
         return file_path.suffix in self.__ext
 
 
-class FileSkipStrategy(object):
+class FileSkipStrategy:
     def skip(self, file_path: pathlib.Path) -> bool:
         raise NotImplementedError()
 
@@ -239,9 +218,7 @@ class BySuffixFileSkipStrategy(FileSkipStrategy):
         check.ensure_file(file_path)
         res = file_path.stem.endswith(self.__suffix)
         if res:
-            show.verbose(
-                f" - {file_path.name} skipped as it has suffix {self.__suffix}."
-            )
+            show.verbose(f" - {file_path.name} skipped as it has suffix {self.__suffix}.")
         return res
 
 
@@ -256,7 +233,7 @@ class BySizeFileSkipStrategy(FileSkipStrategy):
         res = size < self.__less_than
         if res:
             show.verbose(
-                f" - {file_path.name} ({show.human_size(size)}) skipped as it is smaller than {show.human_size(self.__less_than)}."
+                f" - {file_path.name} ({show.human_size(size)}) skipped - smaller than {show.human_size(self.__less_than)}."
             )
         return res
 
@@ -270,9 +247,7 @@ class GlobFileSkipStrategy(FileSkipStrategy):
         check.ensure_file(file_path)
         res = file_path.match(self.__glob_pattern)
         if res:
-            show.verbose(
-                f" - {file_path.name} skipped as it is matches pattern '{self.__glob_pattern}'."
-            )
+            show.verbose(f" - {file_path.name} skipped as it is matches pattern '{self.__glob_pattern}'.")
         return res
 
 
@@ -289,7 +264,7 @@ class MultiFileSkipStrategy(FileSkipStrategy):
         return False
 
 
-class FolderProcessor(object):
+class FolderProcessor:
     def __init__(
         self,
         folder_path: pathlib.Path,

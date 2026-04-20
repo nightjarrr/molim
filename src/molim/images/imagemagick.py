@@ -1,17 +1,12 @@
 import argparse
 import pathlib
 
-from .. import check
-from .. import processing
-from .. import shell
-
+from .. import check, processing, shell
 from . import JPEG_QUALITY
 
 
-class ImageMagickMixin(object):
-    def _add_arguments(
-        self, parser: argparse.ArgumentParser
-    ) -> argparse.ArgumentParser:
+class ImageMagickMixin:
+    def _add_arguments(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         parser.add_argument(
             "--imagemagick-quality",
             default=JPEG_QUALITY,

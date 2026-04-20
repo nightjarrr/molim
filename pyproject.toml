@@ -25,7 +25,7 @@ dev = [
 ]
 
 [tool.ruff]
-line-length = 88 # Black-compatible default
+line-length = 128
 target-version = "py312"
 
 [tool.ruff.lint]

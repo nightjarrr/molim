@@ -1,23 +1,22 @@
 import argparse
 import pathlib
 
-from .. import check
-from .. import commands
-from .. import processing
-from .imagemagick import ImageMagickMixin
+from .. import check, commands, processing
 from . import JPEG_EXTENSION, JPEG_PROCESSED_EXTENSION
+from .imagemagick import ImageMagickMixin
 
 
 class ResizeCommand(commands.Command, ImageMagickMixin):
     RESIZE_ORIGINALS = "delete"
 
-    def _add_arguments(
-        self, parser: argparse.ArgumentParser
-    ) -> argparse.ArgumentParser:
+    def _add_arguments(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         parser = ImageMagickMixin._add_arguments(self, parser)
         parser.add_argument(
             "SIZE",
-            help="Resize images to this size. Size can be an integer value or a percent value. Only images larger than specified size will be resized.",
+            help=(
+                "Resize images to this size. Size can be an integer value or a percent value. "
+                + "Only images larger than specified size will be resized.",
+            ),
         )
         parser.add_argument(
             "--suffix",
@@ -38,16 +37,12 @@ class ResizeCommand(commands.Command, ImageMagickMixin):
     def _get_post_processing_strategy(
         self, folder_path: pathlib.Path, args: argparse.Namespace
     ) -> processing.PostProcessingStrategy:
-        originals_post_processor = super()._get_post_processing_strategy(
-            folder_path, args
-        )
+        originals_post_processor = super()._get_post_processing_strategy(folder_path, args)
         if (args.originals == commands.OriginalsHandlingEnum.LEAVE) or args.suffix:
             # If a suffix will be added, do not rename the processed file back to original name.
             return originals_post_processor
         else:
-            return processing.ReplaceOriginalPostProcessignStrategy(
-                originals_post_processor
-            )
+            return processing.ReplaceOriginalPostProcessignStrategy(originals_post_processor)
 
     def _get_size_name(self, size: str) -> str:
         check.ensure_type(size, str)
@@ -62,22 +57,14 @@ class ResizeCommand(commands.Command, ImageMagickMixin):
         subfolder = self._get_size_name(args.SIZE)
         return original_path / subfolder
 
-    def _get_output_file_path_strategy(
-        self, args: argparse.Namespace
-    ) -> processing.OutputFilePathStrategy:
+    def _get_output_file_path_strategy(self, args: argparse.Namespace) -> processing.OutputFilePathStrategy:
         out = [processing.ChangeExtOutputFilePathStrategy(JPEG_PROCESSED_EXTENSION)]
         if args.suffix:
-            out.append(
-                processing.SuffixOutputFilePathStrategy(
-                    "." + self._get_size_name(args.SIZE)
-                )
-            )
+            out.append(processing.SuffixOutputFilePathStrategy("." + self._get_size_name(args.SIZE)))
         if args.originals == commands.OriginalsHandlingEnum.LEAVE:
             # If original files stay as is, the resized files must go to subfolder.
             resized_subfolder = self._get_resized_subfolder(args)
-            out.append(
-                processing.FolderOutputFilePathStrategy(resized_subfolder, args.dry_run)
-            )
+            out.append(processing.FolderOutputFilePathStrategy(resized_subfolder, args.dry_run))
         else:
             if not args.suffix:
                 # For MOVE and DELETE handling of original files, create a temp name for processed file.
@@ -112,17 +99,11 @@ class ResizeCommand(commands.Command, ImageMagickMixin):
         output_namer: processing.OutputFilePathStrategy,
         post_processor: processing.PostProcessingStrategy,
     ) -> processing.FileProcessor:
-        return ImageMagickMixin._get_file_processor(
-            self, args, output_namer, post_processor
-        )
+        return ImageMagickMixin._get_file_processor(self, args, output_namer, post_processor)
 
-    def _get_file_skip_strategy(
-        self, args: argparse.Namespace
-    ) -> processing.FileSkipStrategy:
+    def _get_file_skip_strategy(self, args: argparse.Namespace) -> processing.FileSkipStrategy:
         if args.suffix:
-            return processing.BySuffixFileSkipStrategy(
-                "." + self._get_size_name(args.SIZE)
-            )
+            return processing.BySuffixFileSkipStrategy("." + self._get_size_name(args.SIZE))
         # Skipping is not applicable for image conversion.
         return processing.NoFileSkipStrategy()
 

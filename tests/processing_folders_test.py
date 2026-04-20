@@ -1,9 +1,9 @@
 import pathlib
-import pytest
 import random
 
-from molim import processing
+import pytest
 
+from molim import processing
 
 # Fixtures
 
@@ -303,8 +303,6 @@ def test_FolderProcessor_dry_run(prepared_folder):
     assert len(stat.processed_files_stats) == PROCESSED_FILES_COUNT
     assert stat.skipped_files_count == SKIPPED_FILES_COUNT
     assert stat.total_original_size > 0
-    assert stat.total_original_size == sum(
-        s.original_file_size for s in stat.processed_files_stats
-    )
+    assert stat.total_original_size == sum(s.original_file_size for s in stat.processed_files_stats)
     assert stat.total_processed_size == stat.total_original_size
     assert stat.total_delta_size == 0

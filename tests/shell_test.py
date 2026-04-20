@@ -1,7 +1,6 @@
 import pytest
 
-from molim import processing
-from molim import shell
+from molim import processing, shell
 
 # ShellCommandFileProcessor tests
 
