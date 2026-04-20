@@ -44,9 +44,6 @@ jobs:
 
   scan_secrets:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read    # ← add this
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
