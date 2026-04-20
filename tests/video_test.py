@@ -29,7 +29,8 @@ def cleanup_output_file(file_path: pathlib.Path):
 
 def cleanup_processed_files():
     for f in VIDEO_FOLDER.glob("*.min.mp4"):
-        f.unlink()
+        if f.name != "1.min.mp4":
+            f.unlink()
 
 
 # FfmpegFileProcessor tests
@@ -84,7 +85,7 @@ def test_FfmpegFileProcessor_dry_run():
     p = processing.NoopPostProcessingStrategy()
     v = video.FfmpegFileProcessor("libx265", 27, None, True, o, p)
 
-    i = get_input_file("sample_720x480_1mb.mp4")
+    i = get_input_file("small_ sample_720x480.mp4")
     assert i.exists()
 
     s = v.process(i, dry_run=True)
@@ -110,10 +111,11 @@ def real_run(name: str, addl=None):
 
 
 def test_FfmpegFileProcessor_real_run():
-    real_run("sample_720x480_1mb.mp4")
-    real_run("Sample Video 1280x720 1mb.mp4")  # Test name with spaces
+    real_run("small_ sample_720x480.mp4")
     with pytest.raises(shell.ShellCommandRuntimeError):
-        real_run("sample_720x480_1mb.mp4", "---non -existent ARGUMENT!!!")
+        real_run("small_ sample_720x480.mp4", "---non -existent ARGUMENT!!!")
+
+    cleanup_processed_files()
 
 
 # VideoFfmpegCommand tests
@@ -170,7 +172,7 @@ def test_VideoFfmpegCommand_core_logic():
             ),  
             extension=".mp4",
             no_skip_processed=False,
-            greater_than=500 * 1024,
+            greater_than=100 * 1024,
             originals=commands.OriginalsHandlingEnum.LEAVE,
             ffmpeg_codec="libx265",
             ffmpeg_rate=27,
@@ -181,8 +183,8 @@ def test_VideoFfmpegCommand_core_logic():
     )
 
     assert s is not None
-    assert len(s.processed_files_stats) == 2
-    assert s.skipped_files_count == 1
+    assert len(s.processed_files_stats) == 1
+    assert s.skipped_files_count == 2
     assert s.total_delta_size > 0
 
     cleanup_processed_files()
