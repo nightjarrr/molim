@@ -74,8 +74,8 @@ per-command options.
 - **Use at your own risk.** Always back up your files before processing — batch
   operations on large folders can be destructive if misconfigured.
 - **Personal project.** The primary goal is to be useful to the author.
-  Features and design decisions reflect personal workflows and preferences.
-- **Feel free to fork** and adapt to your own needs.
+  Features and design decisions reflect personal workflows and preferences. PRs from external contributors are not being accepted.
+- **Feel free to fork** and adapt to your liking if you find it useful but not exactly fitting your needs.
 
 ---
 
