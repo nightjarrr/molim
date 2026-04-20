@@ -1,6 +1,7 @@
 [project]
 name = "molim"
 description = "Batch file processing utility for Linux."
+homepage = "https://github.com/nightjarrr/molim"
 readme = "README.md"
 license = { file = "LICENSE" }
 dynamic = ["version"]
