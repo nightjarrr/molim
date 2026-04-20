@@ -1,7 +1,8 @@
 [project]
 name = "molim"
-description = "A collection of utility commands to process and optimize files."
+description = "Batch file processing utility for Linux."
 readme = "README.md"
+license = { file = "LICENSE" }
 dynamic = ["version"]
 requires-python = ">=3.12"
 dependencies = [
