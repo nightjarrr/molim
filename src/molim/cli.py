@@ -1,5 +1,7 @@
 import argparse
 
+from importlib.metadata import version, PackageNotFoundError
+
 from . import check
 from . import commands
 from . import rename
@@ -10,6 +12,13 @@ from .images import resize
 from .images import jpegify
 from .images import rawtherapee
 
+# Version support
+UNKNOWN_VERSION = "0.0.0-unknown"
+def __version():
+    try:
+        return version("molim")
+    except PackageNotFoundError:
+        return UNKNOWN_VERSION
 
 def _create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -17,6 +26,14 @@ def _create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
         description="Processing of files for different use cases by commands.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+
+    # Version support
+    parser.add_argument(
+        "--version", 
+        action="version",
+        version=f"%(prog)s {__version()}"
+    )
+
     sorted_cmds = sorted(cmds, key=lambda c: c.name)
     metavar = "[ " + " | ".join([c.name for c in sorted_cmds]) + " ]"
     s = parser.add_subparsers(
