@@ -19,7 +19,7 @@ molim = "molim:main"
 dev = [
     "hatch-vcs>=0.5.0",
     "pre-commit>=4.5.1",
-    "pytest>=8.3.4",
+    "pytest>=9.0.3",
     "pytest-cov>=6.0.0",
     "ruff>=0.15.11",
 ]
