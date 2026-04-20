@@ -1,9 +1,8 @@
 import argparse
+
 import pytest
 
-from molim import commands
-from molim import processing
-
+from molim import commands, processing
 
 # HumanReadableSizeType tests
 
@@ -55,9 +54,7 @@ def test_OriginalsHandlingArgType_input_validation():
 
 def test_Command_get_post_processing_strategy(tmp_path):
     c = commands.Command()
-    args = argparse.Namespace(
-        originals=commands.OriginalsHandlingEnum.LEAVE, dry_run=False
-    )
+    args = argparse.Namespace(originals=commands.OriginalsHandlingEnum.LEAVE, dry_run=False)
 
     p = c._get_post_processing_strategy(tmp_path, args)
     assert isinstance(p, processing.NoopPostProcessingStrategy)

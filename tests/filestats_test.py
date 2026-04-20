@@ -1,8 +1,8 @@
-import pytest
 import random
 
-from molim import stats
+import pytest
 
+from molim import stats
 
 SOURCE_SIZE = 200
 SOURCE_DATA = random.randbytes(SOURCE_SIZE)

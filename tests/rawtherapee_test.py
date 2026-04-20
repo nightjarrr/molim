@@ -1,13 +1,13 @@
 import argparse
 import os.path
 import pathlib
+
 import pytest
 
-from . import common
-
-from molim import commands
-from molim import processing
+from molim import commands, processing
 from molim.images import rawtherapee
+
+from . import common
 
 FOLDER = pathlib.Path(os.path.dirname(__file__)) / "data/rawtherapee"
 

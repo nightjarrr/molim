@@ -1,7 +1,6 @@
 import sys
 
-from . import cli
-from . import show
+from . import cli, show
 
 
 def main() -> int:

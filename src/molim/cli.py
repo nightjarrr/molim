@@ -1,24 +1,19 @@
 import argparse
+from importlib.metadata import PackageNotFoundError, version
 
-from importlib.metadata import version, PackageNotFoundError
-
-from . import check
-from . import commands
-from . import rename
-from . import show
-from . import video
-
-from .images import resize
-from .images import jpegify
-from .images import rawtherapee
+from . import check, commands, rename, show, video
+from .images import jpegify, rawtherapee, resize
 
 # Version support
 UNKNOWN_VERSION = "0.0.0-unknown"
+
+
 def __version():
     try:
         return version("molim")
     except PackageNotFoundError:
         return UNKNOWN_VERSION
+
 
 def _create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -28,17 +23,11 @@ def _create_parser(*cmds: commands.Command) -> argparse.ArgumentParser:
     )
 
     # Version support
-    parser.add_argument(
-        "--version", 
-        action="version",
-        version=f"%(prog)s {__version()}"
-    )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version()}")
 
     sorted_cmds = sorted(cmds, key=lambda c: c.name)
     metavar = "[ " + " | ".join([c.name for c in sorted_cmds]) + " ]"
-    s = parser.add_subparsers(
-        title="Supported commands", required=True, dest="command", metavar=metavar
-    )
+    s = parser.add_subparsers(title="Supported commands", required=True, dest="command", metavar=metavar)
     for cmd in sorted_cmds:
         p = s.add_parser(
             cmd.name,
@@ -59,7 +48,7 @@ def run(cmdline: list[str]) -> None:
         resize.ResizeCommand(),
         rename.SuffixCommand(),
         rawtherapee.RawTherapeeCommand(),
-        rawtherapee.RawTherapeeHQCommand()
+        rawtherapee.RawTherapeeHQCommand(),
     )
     args = parser.parse_args(cmdline)
 

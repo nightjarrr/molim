@@ -18,9 +18,29 @@ molim = "molim:main"
 [dependency-groups]
 dev = [
     "hatch-vcs>=0.5.0",
+    "pre-commit>=4.5.1",
     "pytest>=8.3.4",
     "pytest-cov>=6.0.0",
+    "ruff>=0.15.11",
 ]
+
+[tool.ruff]
+line-length = 128
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes (unused imports, undefined names, etc.)
+    "I",    # isort (import ordering)
+    "UP",   # pyupgrade (modernise Python syntax)
+]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
 
 [tool.pytest.ini_options]
 addopts = "--cov=. --cov-branch --cov-config=.coveragerc --cov-report html --cov-report=xml"

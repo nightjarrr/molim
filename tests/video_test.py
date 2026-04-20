@@ -1,16 +1,12 @@
 import argparse
 import os.path
 import pathlib
+
 import pytest
 
+from molim import commands, processing, shell, show, video
+
 from . import common
-
-from molim import commands
-from molim import processing
-from molim import shell
-from molim import show
-from molim import video
-
 
 # Set verbose output
 show.set_verbose(True)
@@ -146,9 +142,7 @@ def test_VideoFfmpegCommand_create_parser():
     assert args.dry_run
     assert args.extension == video.VIDEO_EXTENSION
     assert not args.no_skip_processed
-    assert args.greater_than == commands.HumanReadableSizeType()(
-        video.VIDEO_GREATER_THAN
-    )
+    assert args.greater_than == commands.HumanReadableSizeType()(video.VIDEO_GREATER_THAN)
     assert args.originals == commands.OriginalsHandlingEnum.MOVE
     assert args.ffmpeg_codec == video.VIDEO_FFMPEG_CODEC
     assert args.ffmpeg_rate == video.VIDEO_FFMPEG_RATE
@@ -169,7 +163,7 @@ def test_VideoFfmpegCommand_core_logic():
             config=str(
                 # Test non-empty config with glob for *.webm skipping
                 common.TEST_CONFIG
-            ),  
+            ),
             extension=".mp4",
             no_skip_processed=False,
             greater_than=100 * 1024,

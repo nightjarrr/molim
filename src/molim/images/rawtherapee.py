@@ -1,12 +1,7 @@
 import argparse
 import pathlib
 
-from .. import check
-from .. import commands
-from .. import processing
-from .. import shell
-from .. import show
-
+from .. import check, commands, processing, shell, show
 from . import JPEG_EXTENSION, JPEG_PROCESSED_EXTENSION, JPEG_QUALITY
 
 RAWTHERAPEE_PROFILE_FOLDER = pathlib.Path("~/.config/RawTherapee/profiles")
@@ -28,9 +23,7 @@ class RawTherapeeCommand(commands.Command):
             RawTherapeeCommand.JPEG_SUBSAMPLING_2,
         )
 
-    def _add_arguments(
-        self, parser: argparse.ArgumentParser
-    ) -> argparse.ArgumentParser:
+    def _add_arguments(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         parser.add_argument(
             "--profile-folder",
             default=None,
@@ -66,10 +59,7 @@ class RawTherapeeCommand(commands.Command):
             default=js,
             type=int,
             choices=(1, 2, 3),
-            help=(
-                "Processed JPEG file chroma subsampling parameter "
-                "(corresponds to RawTherapee CLI -js<VALUE> option)."
-            ),
+            help=("Processed JPEG file chroma subsampling parameter (corresponds to RawTherapee CLI -js<VALUE> option)."),
         )
         parser.add_argument(
             "--processed-subfolder",
@@ -90,20 +80,14 @@ class RawTherapeeCommand(commands.Command):
             RawTherapeeCommand.ORIGINALS,
         )
 
-    def _get_output_file_path_strategy(
-        self, args: argparse.Namespace
-    ) -> processing.OutputFilePathStrategy:
+    def _get_output_file_path_strategy(self, args: argparse.Namespace) -> processing.OutputFilePathStrategy:
         ext = processing.ChangeExtOutputFilePathStrategy(JPEG_PROCESSED_EXTENSION)
-        suffix = processing.SuffixOutputFilePathStrategy(
-            RawTherapeeCommand.PROCESSED_SUFFIX
-        )
+        suffix = processing.SuffixOutputFilePathStrategy(RawTherapeeCommand.PROCESSED_SUFFIX)
         out = [ext, suffix]
         if args.processed_subfolder is not None:
             original_path = pathlib.Path(args.FOLDER).absolute()
             output_folder = original_path / args.processed_subfolder
-            out.append(
-                processing.FolderOutputFilePathStrategy(output_folder, args.dry_run)
-            )
+            out.append(processing.FolderOutputFilePathStrategy(output_folder, args.dry_run))
         return processing.MultiOutputFilePathStrategy(out)
 
     def _get_file_processor(
@@ -114,21 +98,13 @@ class RawTherapeeCommand(commands.Command):
     ) -> processing.FileProcessor:
         # Getting RawTherapee profile
         profile_folder = (
-            pathlib.Path(
-                args.profile_folder
-                or self._get_config_value("profile-folder")
-                or RAWTHERAPEE_PROFILE_FOLDER
-            )
+            pathlib.Path(args.profile_folder or self._get_config_value("profile-folder") or RAWTHERAPEE_PROFILE_FOLDER)
             .expanduser()
             .absolute()
         )
         check.ensure_folder(profile_folder)
 
-        profile = (
-            args.profile
-            or self._get_config_value("profile")
-            or RAWTHERAPEE_DEFAULT_PROFILE
-        )
+        profile = args.profile or self._get_config_value("profile") or RAWTHERAPEE_DEFAULT_PROFILE
         check.ensure_type(profile, str)
         profile_name = f"{profile}{RAWTHERAPEE_PROFILE_EXTENSION}"
         profile_path = profile_folder / profile_name
@@ -144,14 +120,10 @@ class RawTherapeeCommand(commands.Command):
         )
         return file_processor
 
-    def _get_file_skip_strategy(
-        self, args: argparse.Namespace
-    ) -> processing.FileSkipStrategy:
+    def _get_file_skip_strategy(self, args: argparse.Namespace) -> processing.FileSkipStrategy:
         skips = []
         if not args.no_skip_processed:
-            skips.append(
-                processing.BySuffixFileSkipStrategy(RawTherapeeCommand.PROCESSED_SUFFIX)
-            )
+            skips.append(processing.BySuffixFileSkipStrategy(RawTherapeeCommand.PROCESSED_SUFFIX))
         if args.greater_than:
             skips.append(processing.BySizeFileSkipStrategy(args.greater_than))
         skipper = processing.MultiFileSkipStrategy(skips)
@@ -181,10 +153,7 @@ class RawTherapeeHQCommand(RawTherapeeCommand):
 
     @property
     def help(self) -> str:
-        return (
-            "Process image files with RawTherapee profiles "
-            "(alias with high-quality JPEG processing parameters)."
-        )
+        return "Process image files with RawTherapee profiles (alias with high-quality JPEG processing parameters)."
 
 
 class RawTherapeeFileProcessor(shell.ShellCommandFileProcessor):

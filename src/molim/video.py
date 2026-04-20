@@ -1,11 +1,7 @@
 import argparse
 import pathlib
 
-from . import check
-from . import commands
-from . import processing
-from . import shell
-
+from . import check, commands, processing, shell
 
 VIDEO_EXTENSION = ".mp4"
 VIDEO_GREATER_THAN = "30M"
@@ -18,9 +14,7 @@ VIDEO_FFMPEG_RATE = 26
 
 
 class VideoFfmpegCommand(commands.Command):
-    def _add_arguments(
-        self, parser: argparse.ArgumentParser
-    ) -> argparse.ArgumentParser:
+    def _add_arguments(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         parser.add_argument(
             "--ffmpeg-codec",
             default=VIDEO_FFMPEG_CODEC,
@@ -53,9 +47,7 @@ class VideoFfmpegCommand(commands.Command):
             VIDEO_ORIGINALS,
         )
 
-    def _get_output_file_path_strategy(
-        self, args: argparse.Namespace
-    ) -> processing.OutputFilePathStrategy:
+    def _get_output_file_path_strategy(self, args: argparse.Namespace) -> processing.OutputFilePathStrategy:
         output_namer = processing.MultiOutputFilePathStrategy(
             [
                 processing.SuffixOutputFilePathStrategy(VIDEO_PROCESSED_SUFFIX),
@@ -83,9 +75,7 @@ class VideoFfmpegCommand(commands.Command):
         )
         return file_processor
 
-    def _get_file_skip_strategy(
-        self, args: argparse.Namespace
-    ) -> processing.FileSkipStrategy:
+    def _get_file_skip_strategy(self, args: argparse.Namespace) -> processing.FileSkipStrategy:
         skips = []
         if not args.no_skip_processed:
             skips.append(processing.BySuffixFileSkipStrategy(VIDEO_PROCESSED_SUFFIX))

@@ -1,19 +1,15 @@
 import argparse
 
-from .. import commands
-from .. import processing
-
-from .imagemagick import ImageMagickMixin
+from .. import commands, processing
 from . import JPEG_PROCESSED_EXTENSION
+from .imagemagick import ImageMagickMixin
 
 
 class JpegifyCommand(commands.Command, ImageMagickMixin):
     JPEGIFY_EXTENSION = ".png,.webp,.avif,.heic"
     JPEGIFY_ORIGINALS = "delete"
 
-    def _add_arguments(
-        self, parser: argparse.ArgumentParser
-    ) -> argparse.ArgumentParser:
+    def _add_arguments(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         return ImageMagickMixin._add_arguments(self, parser)
 
     def _get_common_arguments_defaults(self) -> tuple[str, str, bool, str]:
@@ -24,9 +20,7 @@ class JpegifyCommand(commands.Command, ImageMagickMixin):
             JpegifyCommand.JPEGIFY_ORIGINALS,
         )
 
-    def _get_output_file_path_strategy(
-        self, args: argparse.Namespace
-    ) -> processing.OutputFilePathStrategy:
+    def _get_output_file_path_strategy(self, args: argparse.Namespace) -> processing.OutputFilePathStrategy:
         output_namer = processing.ChangeExtOutputFilePathStrategy(
             # Force output extension.
             JPEG_PROCESSED_EXTENSION
@@ -39,13 +33,9 @@ class JpegifyCommand(commands.Command, ImageMagickMixin):
         output_namer: processing.OutputFilePathStrategy,
         post_processor: processing.PostProcessingStrategy,
     ) -> processing.FileProcessor:
-        return ImageMagickMixin._get_file_processor(
-            self, args, output_namer, post_processor
-        )
+        return ImageMagickMixin._get_file_processor(self, args, output_namer, post_processor)
 
-    def _get_file_skip_strategy(
-        self, args: argparse.Namespace
-    ) -> processing.FileSkipStrategy:
+    def _get_file_skip_strategy(self, args: argparse.Namespace) -> processing.FileSkipStrategy:
         # Skipping is not applicable for image conversion.
         return processing.NoFileSkipStrategy()
 

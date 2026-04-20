@@ -1,20 +1,13 @@
 import argparse
 import os.path
 import pathlib
+
 import pytest
 
+from molim import commands, images, processing, shell, show, stats
+from molim.images import imagemagick, jpegify, resize
+
 from . import common
-
-from molim import commands
-from molim import processing
-from molim import shell
-from molim import show
-from molim import stats
-from molim import images
-from molim.images import resize
-from molim.images import jpegify
-from molim.images import imagemagick
-
 
 JPEGIFY_FOLDER = pathlib.Path(os.path.dirname(__file__)) / "data/jpegify"
 RESIZE_FOLDER = pathlib.Path(os.path.dirname(__file__)) / "data/resize"
@@ -49,9 +42,7 @@ def test_ImageMagickFileProcessor_input_validation():
 
     # Null checks
     with pytest.raises(ValueError):
-        imagemagick.ImageMagickFileProcessor(
-            None, "None", output_strategy=o, post_processor=p
-        )
+        imagemagick.ImageMagickFileProcessor(None, "None", output_strategy=o, post_processor=p)
     with pytest.raises(ValueError):
         imagemagick.ImageMagickFileProcessor("78", output_strategy=None, post_processor=p)
     with pytest.raises(ValueError):
@@ -76,9 +67,7 @@ def test_ImageMagickFileProcessor_input_validation():
 def test_ImageMagickFileProcessor_dry_run():
     o = processing.ChangeExtOutputFilePathStrategy(".jpg")
     p = processing.NoopPostProcessingStrategy()
-    i = imagemagick.ImageMagickFileProcessor(
-        "-quality", "92", output_strategy=o, post_processor=p
-    )
+    i = imagemagick.ImageMagickFileProcessor("-quality", "92", output_strategy=o, post_processor=p)
 
     ii = get_input_file("file_example_PNG_1MB.png")
     assert ii.exists()
@@ -265,9 +254,7 @@ def test_ResizeCommand_get_common_arguments_defaults():
 
 def test_ResizeCommand_get_post_processing_strategy(tmp_path):
     cmd = resize.ResizeCommand()
-    args = argparse.Namespace(
-        originals=commands.OriginalsHandlingEnum.LEAVE, suffix=False, dry_run=False
-    )
+    args = argparse.Namespace(originals=commands.OriginalsHandlingEnum.LEAVE, suffix=False, dry_run=False)
 
     # No suffix verification
 

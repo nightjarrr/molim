@@ -1,5 +1,6 @@
-import pytest
 import random
+
+import pytest
 
 from molim import stats
 
