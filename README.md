@@ -15,7 +15,7 @@ way to ask for something useful to be done.*
 ## What it does
 
 Many useful command-line tools have their own interfaces, flags, and conventions.
-molim provides a single, consistent entry point for running batch operations over
+**molim** provides a single, consistent entry point for running batch operations over
 files in a folder — regardless of the underlying tool doing the work.
 
 The current command set focuses on image and video processing, wrapping
