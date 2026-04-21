@@ -1,5 +1,6 @@
 # molim
 
+[![Github Release](https://img.shields.io/github/v/release/nightjarrr/molim)](https://github.com/nightjarrr/molim/releases/latest)
 [![CI](https://github.com/nightjarrr/molim/actions/workflows/ci.yml/badge.svg)](https://github.com/nightjarrr/molim/actions/workflows/ci.yml)
 [![Release](https://github.com/nightjarrr/molim/actions/workflows/release.yml/badge.svg)](https://github.com/nightjarrr/molim/actions/workflows/release.yml)
 [![codecov](https://codecov.io/gh/nightjarrr/molim/branch/main/graph/badge.svg?token=NCL8ZXUHYJ)](https://codecov.io/gh/nightjarrr/molim)
