@@ -59,7 +59,7 @@ that Issue — read all files present before acting.
 docs/
 ├── architecture.md           # Persistent project-wide architecture reference
 ├── conventions.md            # Coding conventions and patterns
-├── workflow.md               # This document — the development workflow
+├── SDLC.md                   # This document — the development workflow
 └── {issue-id}-{slug}/        # Per-feature folder, e.g. 42-avif-heic-support/
     ├── spec.md               # Functional specification
     ├── tech-design.md        # Technical design
@@ -446,7 +446,7 @@ the documentation sweep in Phase 6.
 |---|---|
 | `docs/architecture.md` | Overall structure, module responsibilities, key patterns |
 | `docs/conventions.md` | Coding conventions, patterns used consistently in the codebase |
-| `docs/workflow.md` | This document — the development workflow itself |
+| `docs/SDLC.md` | This document — the development workflow itself |
 
 These documents are produced once (by an AI Agent reading the full codebase)
 before AI-assisted development begins, and updated incrementally thereafter.
