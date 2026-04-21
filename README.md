@@ -43,7 +43,36 @@ Point it at a folder, pick a command, and it handles the rest.
 
 ## Installation
 
-*Installation instructions will be added once the first release is published.*
+## Installation
+
+### Latest release
+
+Requires `jq` for parsing the GitHub API response:
+
+```bash
+sudo apt install jq
+```
+
+Install or update to the latest release:
+
+```bash
+uv tool install --reinstall \
+  $(curl -s https://api.github.com/repos/nightjarrr/molim/releases/latest \
+    | jq -r '.assets[] | select(.name | endswith(".whl")) | .browser_download_url')
+```
+
+### Specific version
+
+Requires `uv` only. Replace `<VERSION>` with the desired version number
+(e.g. `0.3.6`):
+
+```bash
+uv tool install --reinstall \
+  https://github.com/nightjarrr/molim/releases/download/v<VERSION>/molim-<VERSION>-py3-none-any.whl
+```
+
+All available releases are listed on the
+[Releases page](https://github.com/nightjarrr/molim/releases).
 
 ---
 
