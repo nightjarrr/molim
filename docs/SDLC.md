@@ -277,10 +277,9 @@ to `phase: implementation` before Phase 5 begins.
 
 **Steps:**
 1. AI Agent implements code changes per `impl-plan.md`
-2. All existing tests must remain green
-3. New tests per the test coverage plan in `impl-plan.md` must be written
-   and passing
-4. All quality gates must pass: `uv run pytest`, `ruff format --check`,
+2. AI Agent ensures all existing tests remain green
+3. AI Agent writes new tests per the test coverage plan in `impl-plan.md` and ensures they pass
+4. AI Agent ensures all quality gates pass: `uv run pytest`, `ruff format --check`,
    `ruff check`
 5. AI Agent flags any deviations from the impl plan to the Project Owner
    before proceeding
@@ -331,8 +330,8 @@ PR review (next phase, Phase 7 — Pull request).
    the feature branch with links pointing to `main`
 8. AI Agent updates phase label to `phase: merged`
 
-**Gate:** Issue phase label is `phase: merged` and all artifact links in the
-Issue body point to `main`, PR merged to `main`, all CI jobs green.
+**Gate:** PR merged to `main`, all CI jobs green, all artifact links in the Issue body 
+updated to point to `main`, Issue phase label is `phase: merged`.
 
 ---
 
@@ -372,7 +371,7 @@ as each is completed. The Project Owner handles the PR merge and tag push.
 2. AI Agent creates a release prep branch: `chore/release-vX.Y.Z`
 3. AI Agent updates `CHANGELOG.md`:
    - Renames `## UPCOMING` to `## vX.Y.Z — YYYY-MM-DD`
-   - Addd a new empty `## UPCOMING` section above it
+   - Adds a new empty `## UPCOMING` section above it
 4. AI Agent opens a PR titled `chore: release vX.Y.Z`, with the full
    changelog section for this release included in the PR body
 5. Project Owner reviews and merges the PR
@@ -424,8 +423,8 @@ Bad: `Refactored ImageMagick delegate resolution to support libheif codec`
 1. Project Owner triages as normal (Phase 1)
 2. If accepted: the external Issue body becomes an *input* to Phase 2, not
    the spec itself — produce `spec.md` from it as normal
-3. If rejected: close with a brief explanation referencing the personal
-   project policy in `CONTRIBUTING.md`
+3. If rejected: close with a brief explanation referencing the project
+   policy in `CONTRIBUTING.md`
 
 ### Private security vulnerability
 
