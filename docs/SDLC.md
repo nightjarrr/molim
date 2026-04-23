@@ -102,7 +102,8 @@ by the Project Owner.
 | `phase: impl-plan` | Implementation plan in progress or awaiting acceptance |
 | `phase: implementation` | Coding in progress |
 | `phase: dev-done` | Implementation complete, documentation sweep done, PR open |
-| `phase: released` | Merged and included in a release |
+| `phase: merged` | Merged to main, pending release |
+| `phase: released` | Included in a published release |
 
 Only one phase label is active at a time. The AI Agent updates the phase
 label as each phase is completed.
@@ -137,9 +138,9 @@ it automatically when `Closes #N` appears in the PR description.
 
 **Branch naming convention role**
 The `{issue-id}-{slug}` pattern in branch names and `docs/` folder names
-provides human readability and a back-reference from the folder to the Issue.
-It is documentation and folder sequencing, not the primary linking mechanism — that is handled by
-GitHub's Development panel and closing keywords as described above.
+provides human readability and a back-reference from the folder to the Issue,
+not the primary linking mechanism — that is handled by GitHub's Development
+panel and closing keywords as described above.
 
 **AI Agent linking responsibilities summary**
 
@@ -308,7 +309,7 @@ unresolved deviations from the impl plan.
 7. AI Agent updates phase label to `phase: dev-done`
 
 **Gate:** Project Owner reviews all documentation changes as part of the
-PR review (next phase, phase 7 - pull request).
+PR review (next phase, Phase 7 — Pull request).
 
 ---
 
@@ -352,7 +353,7 @@ The Issue body is a checklist:
 ## Release vX.Y.Z
 
 - [ ] All milestone Issues are closed and merged to `main`
- [ ] `CHANGELOG.md` updated: `UPCOMING` renamed to `vX.Y.Z — YYYY-MM-DD`,
+- [ ] `CHANGELOG.md` updated: `UPCOMING` renamed to `vX.Y.Z — YYYY-MM-DD`,
       new empty `UPCOMING` added above it by AI Agent
 - [ ] Release prep PR created by AI Agent
 - [ ] Release prep PR reviewed and merged by Project Owner
@@ -369,9 +370,9 @@ as each is completed. The Project Owner handles the PR merge and tag push.
 
 1. AI Agent verifies all Issues in the milestone are closed and merged
 2. AI Agent creates a release prep branch: `chore/release-vX.Y.Z`
-3. In `CHANGELOG.md`:
-   - Rename `## UPCOMING` to `## vX.Y.Z — YYYY-MM-DD`
-   - Add a new empty `## UPCOMING` section above it
+3. AI Agent updates `CHANGELOG.md`:
+   - Renames `## UPCOMING` to `## vX.Y.Z — YYYY-MM-DD`
+   - Addd a new empty `## UPCOMING` section above it
 4. AI Agent opens a PR titled `chore: release vX.Y.Z`, with the full
    changelog section for this release included in the PR body
 5. Project Owner reviews and merges the PR
