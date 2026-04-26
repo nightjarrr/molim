@@ -5,18 +5,18 @@
 This document defines the conceptual design of an AI-first agentic Software
 Development Lifecycle for a Github-hosted project. It describes:
 
-- The roles in the system (human and AI agents)
-- The orchestration pattern that connects them
-- The permissions and capabilities each role needs
-- The skills (reusable capabilities) the AI agents depend on
-- The end-to-end workflow for delivering features and releases
+- The roles in the system (human and AI agents).
+- The orchestration pattern that connects them.
+- The permissions and capabilities each role needs.
+- The skills (reusable capabilities) the AI agents depend on.
+- The end-to-end workflow for delivering features and releases.
 
 **Audience: human Project Owner only.**
 
 This document is read or authored by human at project setup time when configuring the agentic system for a
 new project, and when the design of the system itself is being modified. It is
 **not** designed to be part of any AI agent's runtime context. Concrete agent instructions and
-skill definitions should be  derived artifacts, generated from this design at setup
+skill definitions should be derived artifacts, generated from this design at project setup
 time and adapted to the specific agentic platform in use (Claude Code, OpenAI
 Agents SDK, or others). The vendor-agnostic concepts in this document should be
 translated into vendor-specific primitives during that generation step.
@@ -27,43 +27,43 @@ translated into vendor-specific primitives during that generation step.
 
 ### Project Owner (human)
 
-- Defines requirements and priorities
-- Reviews and approves all artifacts at each phase gate
-- Makes architectural decisions
-- Reviews and merges PRs
-- Controls release versioning and pushes release tags
-- Single point of contact between the human and the agentic system
+- Defines requirements and priorities.
+- Reviews and approves all artifacts at each phase gate.
+- Makes architectural decisions.
+- Reviews and merges PRs.
+- Controls release versioning and pushes release tags.
+- Single point of contact between the human and the agentic system.
 
 ### Project Manager (AI agent / orchestrator)
 
 - The only orchestrator agent in the system; the only role that can dispatch
-  subagents
+  subagents.
 - Owns interpretation and execution of the SDLC; reads and applies the workflow
-  defined in this document
-- Maintains feature-level state by reading GitHub Issues and the repository
-- Dispatches Associate Architect or Coder for individual steps within phases
+  defined in this document.
+- Maintains feature-level state by reading GitHub Issues and the repository.
+- Dispatches Associate Architect or Coder for individual steps within phases.
 - Acts as a transparent relay between subagents and the Project Owner during
-  collaborative work
-- Handles all GitHub state updates: phase labels, comments, links, PR creation
-- Surfaces phase gate questions to the Project Owner and records approvals
+  collaborative work.
+- Handles all GitHub state updates: phase labels, comments, links, PR creation.
+- Surfaces phase gate questions to the Project Owner and records approvals.
 
 ### Associate Architect (AI agent / architect subagent)
 
 - Performs creative, decision-heavy work: drafting specifications, technical
-  designs, implementation plans, and project-wide documentation updates
+  designs, implementation plans, and project-wide documentation updates.
 - Step-scoped: invoked by PM for one specific step within a phase, terminates
-  on completion
-- Communicates with the Project Owner during its work via PM relay
+  on completion.
+- Communicates with the Project Owner during its work via PM relay.
 - Produces artifact documents that fully capture decisions and rationale,
-  enabling later phases to operate without access to prior session context
-- Never writes code on their own, only generates artifacts for the coding phase
+  enabling later phases to operate without access to prior session context.
+- Never writes code on its own, only generates artifacts for the coding phase.
 
 ### Coder (AI agent / coding subagent)
 
-- Performs implementation: writing code, writing tests, running quality gates
-- Step-scoped: invoked by PM for Phase 5 implementation steps
-- Only role with shell execution capability
-- Communicates with the Project Owner during its work via PM relay
+- Performs implementation: writing code, writing tests, running quality gates.
+- Step-scoped: invoked by PM for Phase 5 implementation steps.
+- Only role with shell execution capability.
+- Communicates with the Project Owner during its work via PM relay.
 
 ---
 
@@ -81,13 +81,13 @@ through PM.
 ### Subagent delegation
 
 When PM delegates a step to AA or Coder, it constructs a self-contained task description as the subagent's initial input. This task description includes all context the subagent needs to perform its step independently:
-- The originating Issue ID, title, type, and current phase
-- The relevant Issue body content and any pertinent comments
-- Paths to all prior artifacts produced for this Issue (spec, tech-design, impl-plan, as applicable)
+- The originating Issue ID, title, type, and current phase.
+- The relevant Issue body content and any pertinent comments.
+- Paths to all prior artifacts produced for this Issue (spec, tech-design, impl-plan, as applicable).
 - Paths to relevant project-wide context documents (`architecture.md`,
-  `conventions.md`)
-- The specific deliverable expected from this step
-- Any constraints or decisions surfaced earlier in the workflow that bound the subagent's work
+  `conventions.md`).
+- The specific deliverable expected from this step.
+- Any constraints or decisions surfaced earlier in the workflow that bound the subagent's work.
 
 The subagent operates from this self-contained input and does not require access to PM's session history or to the Project Owner's prior conversation with PM. This is what enables phase-scoped subagent sessions and stateless subagent execution.
 
@@ -100,24 +100,21 @@ The subagent operates from this self-contained input and does not require access
 | Coder | Single step | Duration of one delegated step within Phase 5 |
 
 PM sessions begin when the Project Owner instructs PM to work on a feature
-or initiate a release, and ends when the current feature gets merged into `main` or is put on pause by Project Owner. State persists between sessions through GitHub Issues and the
+or initiate a release, and end when the current feature gets merged into `main` or is put on pause by Project Owner. State persists between sessions through GitHub Issues and the
 repository — the world is stateful, agents are stateless.
 
-Associate Architect does not preserve context of design elaboration with the human across steps and artifacts in phases it is involved into (2, 3, 4, 6). All necessary context — including decision rationale and rejected
+Associate Architect does not preserve context of design elaboration with the human across steps and artifacts in phases it is involved in (2, 3, 4, 6). All necessary context — including decision rationale and rejected
 alternatives — must be captured explicitly in the artifacts AA produces, so
 that subsequent phases can operate on those artifacts alone.
 
 ### Communication
 
-- Project Owner communicates with the system through PM exclusively
-- Project Owner provides intent (e.g. "proceed with #42"); PM derives the current phase and next action from GitHub Issue state and codebase state. PM always validates Issue and codebase consistency before acting using "Validate Issue" skill. When inconsistencies or missing required state are detected, PM follows the Issue Validation Failure Remediation protocol
-- Phase gate approvals are explicit chat exchanges: PM asks for approval, Project Owner
-  confirms, PM records the approval as an Issue comment and updates the phase
-  label to the next phase
-- PM does not automatically advance to proceed work on the next phase after approval; explicitly asks whether to proceed working on the next phase, allowing the Project Owner to pause feature implementation
-- When PM relays for a subagent, the active subagent is identified to the
-  Project Owner (e.g. "Coder via PM" indicator)
-- When acting as a relay between Project Owner and subagent, PM does not interpret or filter the relayed conversation; PM is a transparent pipe during these exchanges, acting only on completion signal and summary of subagent execution from subagent to take over the conversation back
+- Project Owner communicates with the system through PM exclusively.
+- Project Owner provides intent (e.g. "proceed with #42"); PM derives the current phase and next action from GitHub Issue state and codebase state. PM always validates Issue and codebase consistency before acting using "Validate Issue" skill. When inconsistencies or missing required state are detected, PM follows the Issue Validation Failure Remediation protocol.
+- Phase gate approvals are explicit chat exchanges: PM asks for approval, Project Owner confirms, PM records the approval as an Issue comment and updates the phase label to the next phase.
+- PM does not automatically proceed to the next phase after approval; PM explicitly asks whether to proceed, allowing the Project Owner to pause feature implementation.
+- When PM relays for a subagent, the active subagent is identified to the Project Owner (e.g. "Coder via PM" indicator).
+- When acting as a relay between Project Owner and subagent, PM does not interpret or filter the relayed conversation; PM is a transparent pipe during these exchanges, acting only on the completion signal and execution summary received from the subagent, at which point PM takes over the conversation again.
 
 ### Escalation
 
@@ -126,10 +123,10 @@ escalation path:
 
 | Type | Description | Handling |
 |---|---|---|
-| 1 — Transient | Technical/infrastructure failures (API timeouts, network) | Role retries internally; escalates only if internal retries and workarounds exhausted |
-| 2 — Quality | Failure within role competence (tests fail, output rejected) | Configurable retry threshold per role, then escalate; thresholds set and evolved in agent role instructions, not designed speculatively in this document |
-| 3 — Ambiguity | Scope or decision outside role authority | Always escalate to human; encourage proactive early review rather than assumption |
-| 4 — Confidence | Work done but uncertainty surfaced | Always surface as information, encourage proactive disclosure and review from human |
+| 1 — Transient | Technical/infrastructure failures (API timeouts, network) | Role retries internally; escalates only if internal retries and workarounds exhausted. |
+| 2 — Quality | Failure within role competence (tests fail, output rejected) | Configurable retry threshold per role, then escalate; thresholds set and evolved in agent role instructions, not designed speculatively in this document. |
+| 3 — Ambiguity | Scope or decision outside role authority | Always escalate to human; encourage proactive early review rather than assumption. |
+| 4 — Confidence | Work done but uncertainty surfaced | Always surface as information, encourage proactive disclosure and review from human. |
 
 Content roles (AA, Coder) escalate to the Project Owner via PM relay. PM
 escalates to the Project Owner directly when its own operations encounter
@@ -140,21 +137,20 @@ agent.
 
 ## Permission model
 
-Permissions are described in vendor-agnostic manner that map to
-specific platform primitives when agent definition is generated.
+Permissions are described in a vendor-agnostic manner and map to specific platform primitives when an agent definition is generated.
 
 ### Permission categories
 
 | Permission | Covers |
 |---|---|
-| `fs:read` | Read files from the Git repository checkout on the local filesystem. Includes standard agentic tools usage for codebase reading (Grep, Glob, etc) |
-| `fs:write` | Create or modify files on the local filesystem location of the Git repository checkout |
-| `git:read` | Read git history, branches, tags, status. Includes Git CLI interface usage for read-only commands |
-| `git:write` | Create branches, commit, push. Includes Git CLI interface usage |
-| `github:read` | Read Issues, PRs, labels, milestones, CI status via API or Github MCP tool |
-| `github:write` | Create/update Issues, PRs, labels, comments, links via API or Github MCP tool |
-| `shell:exec` | Execute shell commands (test runners, linters, build tools). The command list is not restructed at conceptual document level but should be restructed at specific agent permission definition |
-| `private:memory` | Read/write to a role-private persistent storage. Conceptual design does not make assumptions whether agent memory is project-level, user-level or other but suggests project-level memory (part of Git repository) to be considered as a default |
+| `fs:read` | Read files from the Git repository checkout on the local filesystem. Includes standard agentic tools usage for codebase reading (Grep, Glob, etc). |
+| `fs:write` | Create or modify files on the local filesystem location of the Git repository checkout. |
+| `git:read` | Read git history, branches, tags, status. Includes Git CLI interface usage for read-only commands. |
+| `git:write` | Create branches, commit, push. Includes Git CLI interface usage. |
+| `github:read` | Read Issues, PRs, labels, milestones, CI status via API or Github MCP tool. |
+| `github:write` | Create/update Issues, PRs, labels, comments, links via API or Github MCP tool. |
+| `shell:exec` | Execute shell commands (test runners, linters, build tools). The command list is not restricted at conceptual document level but should be restricted at specific agent permission definition. |
+| `private:memory` | Read/write to a role-private persistent storage. Conceptual design does not make assumptions whether agent memory is project-level, user-level or other but suggests project-level memory (part of Git repository) to be considered as a default. |
 
 **IMPORTANT**: The `fs:read` category covers code-reading tools (file reading, content search,
 glob matching) and is distinct from `shell:exec` which covers arbitrary command
@@ -192,55 +188,55 @@ Agents invoke skills; skills do not invoke agents. Each skill defines its inputs
 
 #### Validate Issue
 
-- **Purpose:** Verify that an Issue's GitHub state is consistent with its current phase label and that all expected artifacts exist on the correct branch
-- **Inputs:** Issue ID
-- **Outputs:** Structured pass/fail report, listing specific inconsistencies if found
-- **Permissions required:** `github:read`, `git:read`, `fs:read`
-- **Invoked by:** PM, at every phase transition and as the initial step of every "Work on #XYZ" request by Project Owner
+- **Purpose:** Verify that an Issue's GitHub state is consistent with its current phase label and that all expected artifacts exist on the correct branch.
+- **Inputs:** Issue ID.
+- **Outputs:** Structured pass/fail report, listing specific inconsistencies if found.
+- **Permissions required:** `github:read`, `git:read`, `fs:read`.
+- **Invoked by:** PM, at every phase transition and as the initial step of every "Work on #XYZ" request by Project Owner.
 
 #### Validate Release Readiness
 
-- **Purpose:** Verify that all Issues with `phase: merged` are present in `main`, no Issues are stranded mid-phase, and the CHANGELOG UPCOMING section is non-empty and correctly references all issues with `phase: merged`label. Ensures that the release scope across all tracking channels is consistent and ready to be released 
-- **Inputs:** None (operates on current state of repository)
-- **Outputs:** Structured readiness report with list of merged-but-unreleased Issues and any inconsistencies if identified
-- **Permissions required:** `github:read`, `git:read`, `fs:read`
-- **Invoked by:** PM, at the start of a release session
+- **Purpose:** Verify that all Issues with `phase: merged` are present in `main`, no Issues are stranded mid-phase, and the CHANGELOG UPCOMING section is non-empty and correctly references all issues with `phase: merged` label. Ensures that the release scope across all tracking channels is consistent and ready to be released.
+- **Inputs:** None (operates on current state of repository).
+- **Outputs:** Structured readiness report with list of merged-but-unreleased Issues and any inconsistencies if identified.
+- **Permissions required:** `github:read`, `git:read`, `fs:read`.
+- **Invoked by:** PM, at the start of a release session.
 
 #### Pull Request
 
-- **Purpose:** Construct and open a PR with the correct format (Closes #N for feature PRs, changelog body for release PRs, artifact links), then verify CI status for PR run before reporting completion
-- **Inputs:** Branch name, target branch, associated Issue ID, description content
-- **Outputs:** PR number, CI status report
-- **Permissions required:** `github:write`, `github:read`
-- **Invoked by:** PM, in Phase 7 and the release workflow
+- **Purpose:** Construct and open a PR with the correct format (Closes #N for feature PRs, changelog body for release PRs, artifact links), then verify CI status for PR run before reporting completion.
+- **Inputs:** Branch name, target branch, associated Issue ID, description content.
+- **Outputs:** PR number, CI status report.
+- **Permissions required:** `github:write`, `github:read`.
+- **Invoked by:** PM, in Phase 7 and the release workflow.
 
 #### Add Changelog Entry
 
-- **Purpose:** Add a new entry to the UPCOMING section of `CHANGELOG.md`, with the originating Issue ID appended at the end of the line for traceability
-- **Inputs:** Issue ID, entry text
-- **Outputs:** Confirmation of update, resulting CHANGELOG content (UPCOMING section)
-- **Permissions required:** `fs:write`
-- **Invoked by:** AA, in Phase 6 documentation update
+- **Purpose:** Add a new entry to the UPCOMING section of `CHANGELOG.md`, with the originating Issue ID appended at the end of the line for traceability.
+- **Inputs:** Issue ID, entry text.
+- **Outputs:** Confirmation of update, resulting CHANGELOG content (UPCOMING section).
+- **Permissions required:** `fs:write`.
+- **Invoked by:** AA, in Phase 6 documentation update.
 
 The skill writes only to `CHANGELOG.md`. The invoking agent (AA) handles the commit as part of its broader documentation update work.
 
 #### Quality Gates
 
-- **Purpose:** Run all project quality checks (tests, format, lint) and produce a unified pass/fail report
-- **Inputs:** None (operates on current working directory of Git branch checkout)
-- **Outputs:** Structured pass/fail report with per-check results and failure details
-- **Permissions required:** `shell:exec`, `fs:read`, `fs:write`
-- **Invoked by:** Coder, in Phase 5
+- **Purpose:** Run all project quality checks (tests, format, lint) and produce a unified pass/fail report.
+- **Inputs:** None (operates on current working directory of Git branch checkout).
+- **Outputs:** Structured pass/fail report with per-check results and failure details.
+- **Permissions required:** `shell:exec`, `fs:read`, `fs:write`.
+- **Invoked by:** Coder, in Phase 5.
 
-`fs:write` access is required for formatting and linting tools to modify codebase and for tests to store any output artifacts (e.g. coverage report)
+`fs:write` access is required for formatting and linting tools to modify codebase and for tests to store any output artifacts (e.g. coverage report).
 
 #### Cut Release
 
-- **Purpose:** Perform all git-side preparation for a release: create the release prep branch, rename the UPCOMING section in `CHANGELOG.md` to the release version with date, add a new empty UPCOMING section above it, commit, and push
-- **Inputs:** Version (e.g. `v0.4.0`), date
-- **Outputs:** Branch name, commit SHA, confirmation of push
-- **Permissions required:** `fs:write`, `git:write`
-- **Invoked by:** PM, in the release workflow
+- **Purpose:** Perform all git-side preparation for a release: create the release prep branch, rename the UPCOMING section in `CHANGELOG.md` to the release version with date, add a new empty UPCOMING section above it, commit, and push.
+- **Inputs:** Version (e.g. `v0.4.0`), date.
+- **Outputs:** Branch name, commit SHA, confirmation of push.
+- **Permissions required:** `fs:write`, `git:write`.
+- **Invoked by:** PM, in the release workflow.
 
 The skill owns the full atomic operation. The invoking agent (PM) does not need `git:write` — all git operations are encapsulated within the skill.
 
@@ -250,30 +246,29 @@ The following skills are part of the PM's capability set and execute within PM s
 
 #### New Issue
 
-- **Purpose:** Create a new Issue in the correct initial state with proper
-  labels and phase
-- **Inputs:** Type label (`feature`, `bug`, `chore`, `docs`), one-line description, optional details
-- **Outputs:** Created Issue ID and link
-- **Permissions required:** `github:write`
-- **Invoked by:** Project Owner via PM session (manual invocation only, never autonomous)
+- **Purpose:** Create a new Issue in the correct initial state with proper labels and phase.
+- **Inputs:** Type label (`feature`, `bug`, `chore`, `docs`), one-line description, optional details.
+- **Outputs:** Created Issue ID and link.
+- **Permissions required:** `github:write`.
+- **Invoked by:** Project Owner via PM session (manual invocation only, never autonomous).
 
-Produces a new issue in `phase:triage` state.
+Produces a new issue in `phase: triage` state.
 
 #### Upcoming Release
 
-- **Purpose:** Show the Project Owner what would be included in the next release, supporting the release/not-release decision
-- **Inputs:** None
-- **Outputs:** List of merged PRs since the last release tag, current UPCOMING section of `CHANGELOG.md`, report from "Validate Release Readiness" skill
-- **Permissions required:** `github:read`, `git:read`, `fs:read`
-- **Invoked by:** Project Owner via PM session (manual invocation only, never autonomous)
+- **Purpose:** Show the Project Owner what would be included in the next release, supporting the release/not-release decision.
+- **Inputs:** None.
+- **Outputs:** List of merged PRs since the last release tag, current UPCOMING section of `CHANGELOG.md`, report from "Validate Release Readiness" skill.
+- **Permissions required:** `github:read`, `git:read`, `fs:read`.
+- **Invoked by:** Project Owner via PM session (manual invocation only, never autonomous).
 
 #### Current Work
 
-- **Purpose:** Show the Project Owner the status of all active (i.e., triaged, non-merged) features in the backlog
-- **Inputs:** None
-- **Outputs:** List of open Issues with their phase labels, grouped by phase
-- **Permissions required:** `github:read`
-- **Invoked by:** Project Owner via PM session (manual invocation only, never autonomous)
+- **Purpose:** Show the Project Owner the status of all active (i.e., triaged, non-merged) features in the backlog.
+- **Inputs:** None.
+- **Outputs:** List of open Issues with their phase labels, grouped by phase.
+- **Permissions required:** `github:read`.
+- **Invoked by:** Project Owner via PM session (manual invocation only, never autonomous).
 
 ---
 
@@ -281,11 +276,11 @@ Produces a new issue in `phase:triage` state.
 
 The `Validate Issue` skill (or `Validate Release Readiness` skill for release sessions) produces a structured report of inconsistencies between an Issue's expected and actual state. PM consumes this report and applies the following remediation protocol whenever inconsistencies are reported:
 
-- PM reports the findings to the Project Owner clearly, listing each specific inconsistency
-- PM analyzes the findings and proposes specific remediation when fixes are identifiable (e.g. "Issue lacks a phase label — should I apply   `phase: triage` and proceed with interactive triage?")
-- PM applies fixes only after explicit Project Owner approval
-- PM never auto-applies fixes silently, even when remediation seems obvious
-- If the inconsistency cannot be remediated by PM (e.g. requires Project Owner judgment on Issue scope or content), PM surfaces the situation and awaits Project Owner direction before any further action
+- PM reports the findings to the Project Owner clearly, listing each specific inconsistency.
+- PM analyzes the findings and proposes specific remediation when fixes are identifiable (e.g. "Issue lacks a phase label — should I apply `phase: triage` and proceed with interactive triage?").
+- PM applies fixes only after explicit Project Owner approval.
+- PM never auto-applies fixes silently, even when remediation seems obvious.
+- If the inconsistency cannot be remediated by PM (e.g. requires Project Owner judgment on Issue scope or content), PM surfaces the situation and awaits Project Owner direction before any further action.
 
 This protocol applies at every point where validation runs — session start, phase entry, and any explicit revalidation triggered by the Project Owner. GitHub Issue state is external to the agentic system and may be modified by external actors at any time, so revalidation can detect drift mid-session.
 
@@ -307,7 +302,7 @@ CHANGELOG.md                  # Running changelog with UPCOMING section
 ```
 
 Branch naming: `feature/{issue-id}-{slug}`, `fix/{issue-id}-{slug}`,
-`chore/{issue-id}-{slug}`, `docs/{issue-id}-{slug}`
+`chore/{issue-id}-{slug}`, `docs/{issue-id}-{slug}`.
 
 ---
 
@@ -331,15 +326,15 @@ to determine current and next steps within the phase, or identify inconsistent s
 
 | Label | Meaning |
 |---|---|
-| `phase: triage` | Newly created, awaiting triage by Project Owner or in process of triage |
-| `phase: spec` | Spec in progress or awaiting acceptance |
-| `phase: tech-design` | Tech design in progress or awaiting acceptance |
-| `phase: impl-plan` | Implementation plan in progress or awaiting acceptance |
-| `phase: impl-coding` | Coding in progress; ends with code committed, pushed, and CI green on feature branch |
-| `phase: impl-docs` | Documentation update in progress; ends with docs committed, pushed, and CI green on feature branch |
-| `phase: impl-done` | Implementation and documentation complete, PR ready to be opened or open |
-| `phase: merged` | Merged to `main`, pending release |
-| `phase: released` | Included in a published release |
+| `phase: triage` | Newly created, awaiting triage by Project Owner or in process of triage. |
+| `phase: spec` | Spec in progress or awaiting acceptance. |
+| `phase: tech-design` | Tech design in progress or awaiting acceptance. |
+| `phase: impl-plan` | Implementation plan in progress or awaiting acceptance. |
+| `phase: impl-coding` | Coding in progress; ends with code committed, pushed, and CI green on feature branch. |
+| `phase: impl-docs` | Documentation update in progress; ends with docs committed, pushed, and CI green on feature branch. |
+| `phase: impl-done` | Implementation and documentation complete, PR ready to be opened or open. |
+| `phase: merged` | Merged to `main`, pending release. |
+| `phase: released` | Included in a published release. |
 
 Only one phase label is active at a time. PM updates the phase label as each phase completes and the Project Owner approves the gate.
 
@@ -349,10 +344,10 @@ For `docs`-type Issues, the labels `phase: tech-design`, `phase: impl-plan`, `ph
 
 Releases are not tracked through GitHub Milestones. The release model uses multiple complementary mechanisms:
 
-- **Git tag** — authoritative release boundary; what's in `main` at the moment of tagging defines the release content
-- **`CHANGELOG.md`** — curated user-facing traceability index; every entry includes the originating Issue ID, making it the human-readable index for "which release contained Issue #XYZ?"
-- **GitHub Release auto-generated notes** — exhaustive list of merged PRs for the release; serves as the implementation-level changelog
-- **Phase labels** — `phase: merged` identifies Issues ready for the next release; `phase: released` marks them after the release is cut
+- **Git tag** — authoritative release boundary; what's in `main` at the moment of tagging defines the release content.
+- **`CHANGELOG.md`** — curated user-facing traceability index; every entry includes the originating Issue ID, making it the human-readable index for "which release contained Issue #XYZ?".
+- **GitHub Release auto-generated notes** — exhaustive list of merged PRs for the release; serves as the implementation-level changelog.
+- **Phase labels** — `phase: merged` identifies Issues ready for the next release; `phase: released` marks them after the release is cut.
 
 Backward traceability from a released Issue to its release version is performed by searching `CHANGELOG.md` for the Issue ID.
 
@@ -366,9 +361,9 @@ When a feature branch is created, PM links the branch to the Issue via the GitHu
 **PR → Issue link (closing keyword)**
 When PM opens a PR, the description includes `Closes #N` where N is the Issue
 number. This automatically:
-- Links the PR to the Issue in the Development sidebar of both
-- Closes the Issue when the PR is merged into `main`
-- Creates a cross-reference event in the Issue timeline
+- Links the PR to the Issue in the Development sidebar of both.
+- Closes the Issue when the PR is merged into `main`.
+- Creates a cross-reference event in the Issue timeline.
 
 **Branch naming convention role**
 The `{issue-id}-{slug}` pattern in branch names and `docs/` folder names provides human readability and a back-reference from the folder to the Issue. It is documentation, not the primary linking mechanism — that is handled by GitHub's Development panel and closing keywords.
@@ -382,9 +377,9 @@ The feature workflow is composed of seven phases. PM owns all phases. Within eac
 For Issues with the `docs` type label, the workflow is streamlined: only Phases 1, 2, and 7 are run, with Phase 2 covering all required documentation work. See the variation note in Phase 2.
 
 The columns in each phase table are:
-- **Step** — the action being taken
-- **Executor** — who performs it (Project Owner, PM, AA, or Coder)
-- **Skills** — skills invoked during the step
+- **Step** — the action being taken.
+- **Executor** — who performs it (Project Owner, PM, AA, or Coder).
+- **Skills** — skills invoked during the step.
 
 Every phase begins with a Validate Issue step. If Validate Issue reports
 inconsistencies, PM follows the Issue Validation Failure Remediation
@@ -392,17 +387,17 @@ protocol before proceeding with the rest of the phase.
 
 ### Phase 1 — Triage
 
-**Trigger:** new Issue created (by Project Owner manually, by  Project Owner using New Issue skill, externally, or via security report)
+**Trigger:** new Issue created (by Project Owner manually, by Project Owner using New Issue skill, externally, or via security report).
 
 | Step | Executor | Skills |
 |---|---|---|
-| If invoked on a non-labelled, non-triaged Issue, offer to drive interactive triage with the Project Owner | PM | Validate Issue |
-| Assign type label if missing (PM applies on Project Owner's instruction during interactive triage) | Project Owner via PM | — |
-| Assign `phase:triage` label if missing (PM applies on Project Owner's instruction during interactive triage) | Project Owner via PM | — |
-| Review the Issue | Project Owner | — |
-| For external Issues: assess and accept or close with explanation | Project Owner | — |
-| For private security vulnerabilities: follow security workflow before public exposure | Project Owner | — |
-| Set phase label to `phase: spec` | PM | — |
+| If invoked on a non-labelled, non-triaged Issue, offer to drive interactive triage with the Project Owner. | PM | Validate Issue |
+| Assign type label if missing (PM applies on Project Owner's instruction during interactive triage). | Project Owner via PM | — |
+| Assign `phase: triage` label if missing (PM applies on Project Owner's instruction during interactive triage). | Project Owner via PM | — |
+| Review the Issue. | Project Owner | — |
+| For external Issues: assess and accept or close with explanation. | Project Owner | — |
+| For private security vulnerabilities: follow security workflow before public exposure. | Project Owner | — |
+| Set phase label to `phase: spec`. | PM | — |
 
 **Gate:** Issue has a type label and `phase: spec` label before Phase 2 begins.
 
@@ -412,22 +407,22 @@ protocol before proceeding with the rest of the phase.
 **Output:** `docs/{issue-id}-{slug}/spec.md`
 
 **Contents of spec.md:**
-- Problem statement / motivation
-- Functional requirements (from a user perspective)
-- Out of scope (explicit exclusions)
-- Acceptance criteria and verification scenarios (from a user perspective)
-- Impact on existing functionality
-- Alternatives considered and rejected
-- Decision log from elaboration with Project Owner
+- Problem statement / motivation.
+- Functional requirements (from a user perspective).
+- Out of scope (explicit exclusions).
+- Acceptance criteria and verification scenarios (from a user perspective).
+- Impact on existing functionality.
+- Alternatives considered and rejected.
+- Decision log from elaboration with Project Owner.
 
 | Step | Executor | Skills |
 |---|---|---|
-| Read Issue context, validate state | PM | Validate Issue |
-| Create feature branch and link to Issue | AA (delegated by PM) | — |
-| Draft `spec.md`, iterate with Project Owner | AA (delegated by PM) | — |
-| Commit `spec.md` to feature branch, push feature branch | AA (delegated by PM) | — |
-| Update Issue body with link to `spec.md` in the feature branch | PM | — |
-| On Project Owner approval, set phase label to `phase: tech-design` | PM | — |
+| Read Issue context, validate state. | PM | Validate Issue |
+| Create feature branch and link to Issue. | AA (delegated by PM) | — |
+| Draft `spec.md`, iterate with Project Owner. | AA (delegated by PM) | — |
+| Commit `spec.md` to feature branch, push feature branch. | AA (delegated by PM) | — |
+| Update Issue body with link to `spec.md` in the feature branch. | PM | — |
+| On Project Owner approval, set phase label to `phase: tech-design`. | PM | — |
 
 **Gate:** Project Owner explicitly accepts the spec.
 
@@ -440,26 +435,26 @@ On Project Owner approval, PM sets the phase label directly to `phase: impl-done
 **Output:** `docs/{issue-id}-{slug}/tech-design.md`
 
 **Contents of tech-design.md:**
-- Data model changes (if any)
-- Key design decisions and rationale
-- Applied design patterns and principles of good code-level design
-- Non-functional requirements (performance, security)
-- Identified points of extensilbity and configurability parameters
-- Affected modules and files
-- Test cases and scenarios
-- Dependencies or prerequisites introduced
-- Impact on existing functionality
-- Alternatives considered and rejected
-- Decision log from elaboration with Project Owner
+- Data model changes (if any).
+- Key design decisions and rationale.
+- Applied design patterns and principles of good code-level design.
+- Non-functional requirements (performance, security).
+- Identified points of extensibility and configurability parameters.
+- Affected modules and files.
+- Test cases and scenarios.
+- Dependencies or prerequisites introduced.
+- Impact on existing functionality.
+- Alternatives considered and rejected.
+- Decision log from elaboration with Project Owner.
 
 | Step | Executor | Skills |
 |---|---|---|
-| Validate Issue state | PM | Validate Issue |
-| Read `spec.md`, `architecture.md`, identified relevant source files | AA (delegated by PM) | — |
-| Draft `tech-design.md`, iterate with Project Owner | AA (delegated by PM) | — |
-| Commit `tech-design.md` to feature branch, push feature branch | AA (delegated by PM) | — |
-| Update Issue body with link to `tech-design.md` in the feature branch | PM | — |
-| On Project Owner approval, set phase label to `phase: impl-plan` | PM | — |
+| Validate Issue state. | PM | Validate Issue |
+| Read `spec.md`, `architecture.md`, identified relevant source files. | AA (delegated by PM) | — |
+| Draft `tech-design.md`, iterate with Project Owner. | AA (delegated by PM) | — |
+| Commit `tech-design.md` to feature branch, push feature branch. | AA (delegated by PM) | — |
+| Update Issue body with link to `tech-design.md` in the feature branch. | PM | — |
+| On Project Owner approval, set phase label to `phase: impl-plan`. | PM | — |
 
 **Gate:** Project Owner explicitly accepts the tech design.
 
@@ -468,64 +463,66 @@ On Project Owner approval, PM sets the phase label directly to `phase: impl-done
 **Output:** `docs/{issue-id}-{slug}/impl-plan.md`
 
 **Contents of impl-plan.md:**
-- Ordered list of implementation steps
-- For each step: files to create/modify/remove, classes/functions to add/change/remove
-- Test coverage plan: what new tests are required
-- Estimated risk areas or complexity flags
+- Ordered list of implementation steps.
+- For each step: files to create/modify/remove, classes/functions to add/change/remove.
+- Test coverage plan: what new tests are required.
+- Estimated risk areas or complexity flags.
 
 | Step | Executor | Skills |
 |---|---|---|
-| Validate Issue state | PM | Validate Issue |
-| Read `spec.md` and `tech-design.md`, relevant source files listed in `tech-design.md` | AA (delegated by PM) | — |
-| Draft `impl-plan.md`, iterate with Project Owner | AA (delegated by PM) | — |
-| Commit `impl-plan.md` to feature branch, push feature branch | AA (delegated by PM) | — |
-| Update Issue body with link to `impl-plan.md` in the feature branch | PM | — |
-| On Project Owner approval, set phase label to `phase: impl-coding` | PM | — |
+| Validate Issue state. | PM | Validate Issue |
+| Read `spec.md` and `tech-design.md`, relevant source files listed in `tech-design.md` | AA (delegated by PM). | — |
+| Draft `impl-plan.md`, iterate with Project Owner. | AA (delegated by PM) | — |
+| Commit `impl-plan.md` to feature branch, push feature branch. | AA (delegated by PM) | — |
+| Update Issue body with link to `impl-plan.md` in the feature branch. | PM | — |
+| On Project Owner approval, set phase label to `phase: impl-coding`. | PM | — |
 
 **Gate:** Project Owner explicitly accepts the implementation plan.
 
-### Phase 5 — Implementation (Coding)
+### Phase 5 — Implementation (coding)
 
 | Step | Executor | Skills |
 |---|---|---|
-| Validate Issue state | PM | Validate Issue |
-| Implement code changes per `impl-plan.md`, iterate with Project Owner on implementation questions | Coder (delegated by PM) | — |
-| Write new tests per the test coverage plan, ensure they pass, iterate with Project Owner on implementation questions | Coder (delegated by PM) | — |
-| Run all quality gates locally | Coder (delegated by PM) | Quality Gates |
-| Flag deviations from impl plan to Project Owner via PM relay | Coder | — |
-| Commit code changes to feature branch, push feature branch | Coder (delegated by PM) | — |
-| Monitor CI job on feature branch to completion | PM | — |
-| On green CI and Project Owner approval, set phase label to `phase: impl-docs` | PM | — |
+| Validate Issue state. | PM | Validate Issue |
+| Implement code changes per `impl-plan.md`, iterate with Project Owner on implementation questions. | Coder (delegated by PM) | — |
+| Write new tests per the test coverage plan, ensure they pass, iterate with Project Owner on implementation questions. | Coder (delegated by PM) | — |
+| Run all quality gates locally. | Coder (delegated by PM) | Quality Gates |
+| Flag deviations from impl plan to Project Owner via PM relay. | Coder | — |
+| Commit code changes to feature branch, push feature branch. | Coder (delegated by PM) | — |
+| Monitor CI job on feature branch to completion | PM. | — |
+| Project Owner reviews and approves the implementation based on feature branch changes. | Project Owner | — |
+| On Project Owner approval, set phase label to `phase: impl-docs`. | PM | — |
 
-**Gate:** all tests green, all quality gates passing locally and in CI on feature branch, all deviations from the impl plan resolved or explicitly accepted by Project Owner.
+**Gate:** all tests green, all quality gates passing locally and in CI on feature branch, all deviations from the impl plan resolved or explicitly accepted by Project Owner, and Project Owner explicitly approves the implementation.
 
-### Phase 6 — Implementation (Documentation update)
+### Phase 6 — Implementation (documentation update)
 
 | Step | Executor | Skills |
 |---|---|---|
-| Validate Issue state | PM | Validate Issue |
-| Update `architecture.md` if structural changes occurred | AA (delegated by PM) | — |
-| Update `README.md` if requirements, commands, or install instructions changed | AA (delegated by PM) | — |
-| Update `conventions.md` if new patterns were introduced | AA (delegated by PM) | — |
-| Update other affected project-wide docs | AA (delegated by PM) | — |
-| Add UPCOMING entry for the feature | AA (delegated by PM) | Add Changelog Entry |
-| Commit documentation updates to feature branch, push feature branch | AA (delegated by PM) | — |
-| Monitor CI job on feature branch to completion | PM | — |
-| On green CI and Project Owner approval of documentation changes, set phase label to `phase: impl-done` | PM | — |
+| Validate Issue state. | PM | Validate Issue |
+| Update `architecture.md` if structural changes occurred. | AA (delegated by PM) | — |
+| Update `README.md` if requirements, commands, or install instructions changed. | AA (delegated by PM) | — |
+| Update `conventions.md` if new patterns were introduced. | AA (delegated by PM) | — |
+| Update other affected project-wide docs. | AA (delegated by PM) | — |
+| Add UPCOMING entry for the feature. | AA (delegated by PM) | Add Changelog Entry |
+| Commit documentation updates to feature branch, push feature branch. | AA (delegated by PM) | — |
+| Monitor CI job on feature branch to completion. | PM | — |
+| Project Owner reviews and approves the documentation changes in the feature branch. | Project Owner | — |
+| On Project Owner approval, set phase label to `phase: impl-done`. | PM | — |
 
-**Gate:** Project Owner accepts all documentation changes, docs committed to feature branch, CI green on feature branch.
+**Gate:** docs committed to feature branch, CI green on feature branch, Project Owner explicitly approves all documentation changes.
 
 ### Phase 7 — Pull request
 
 | Step | Executor | Skills |
 |---|---|---|
-| Validate Issue state | PM | Validate Issue |
-| Create PR with `Closes #N`, artifact links, description from feature branch | PM | Pull Request |
-| Verify CI checks pass on created PR | PM | Pull Request |
-| Review code, documentation, changelog entry once again | Project Owner | — |
-| Squash and merge | Project Owner | — |
-| Update artifact links (spec, tech-design, impl-plan) in Issue body to point to `main` | PM | — |
-| Set phase label to `phase: merged` | PM | — |
+| Validate Issue state. | PM | Validate Issue |
+| Create PR with `Closes #N`, artifact links, description from feature branch. | PM | Pull Request |
+| Verify CI checks pass on created PR. | PM | Pull Request |
+| Review code, documentation, changelog entry once again. | Project Owner | — |
+| Squash and merge. | Project Owner | — |
+| Update artifact links (spec, tech-design, impl-plan) in Issue body to point to `main`. | PM | — |
+| Set phase label to `phase: merged`. | PM | — |
 
 **Gate:** PR merged, issue phase label is `phase: merged` and all artifact links in the
 Issue body point to `main`.
@@ -554,16 +551,16 @@ PR merge and tag push.
 
 | Step | Executor | Skills |
 |---|---|---|
-| Validate that all Issues with `phase: merged` are reflected in `main` | PM | Validate Release Readiness |
-| Create release prep branch `chore/release-vX.Y.Z`, update `CHANGELOG.md`, commit and push | PM | Cut Release |
-| Monitor CI job on release prep branch to completion | PM | — |
-| Open release prep PR with full changelog section in body | PM | Pull Request |
-| Verify CI checks pass on created PR | PM | Pull Request |
-| Review and merge release prep PR | Project Owner | — |
-| Push release tag `vX.Y.Z` | Project Owner | — |
-| Monitor automated release workflow runs (CI build, GitHub Release) | PM | — |
-| Bulk-update phase labels of all included Issues from `phase: merged` to `phase: released` | PM | — |
-| Close release chore Issue | PM | — |
+| Validate that all Issues with `phase: merged` are reflected in `main`. | PM | Validate Release Readiness |
+| Create release prep branch `chore/release-vX.Y.Z`, update `CHANGELOG.md`, commit and push. | PM | Cut Release |
+| Monitor CI job on release prep branch to completion. | PM | — |
+| Open release prep PR with full changelog section in body. | PM | Pull Request |
+| Verify CI checks pass on created PR. | PM | Pull Request |
+| Review and merge release prep PR. | Project Owner | — |
+| Push release tag `vX.Y.Z`. | Project Owner | — |
+| Monitor automated release workflow runs (CI build, GitHub Release). | PM | — |
+| Bulk-update phase labels of all included Issues from `phase: merged` to `phase: released`. | PM | — |
+| Close release chore Issue. | PM | — |
 
 ---
 
@@ -574,13 +571,13 @@ PR merge and tag push.
 
 ## UPCOMING
 
-- Brief human-readable description of each merged feature/fix (#42)
-- One line per item, written from the user's perspective (#51)
+- Brief human-readable description of each merged feature/fix. (#42)
+- One line per item, written from the user's perspective. (#51)
 
 ## v0.4.0 — 2026-04-20
 
-- Added AVIF and HEIC as supported input formats for the jpegify command (#38)
-- Fixed timeout handling in rawtherapee command for large files (#39)
+- Added AVIF and HEIC as supported input formats for the jpegify command. (#38)
+- Fixed timeout handling in rawtherapee command for large files. (#39)
 
 ## v0.3.6 — 2026-03-15
 
@@ -589,11 +586,11 @@ PR merge and tag push.
 
 Each entry is added by AA via the Add Changelog Entry skill during Phase 6.
 Entries must:
-- Be one line, written from the user's perspective
-- Describe the user-facing change, not the implementation
-- End with the originating Issue ID `(#N)` for traceability
+- Be one line, written from the user's perspective.
+- Describe the user-facing change, not the implementation.
+- End with the originating Issue ID `(#N)` for traceability.
 
-Good: `Added AVIF and HEIC as supported input formats for the jpegify command (#65)`
+Good: `Added AVIF and HEIC as supported input formats for the jpegify command. (#65)`
 Bad: `45 - Refactored ImageMagick delegate resolution to support libheif codec`
 
 ---
@@ -602,17 +599,16 @@ Bad: `45 - Refactored ImageMagick delegate resolution to support libheif codec`
 
 ### Human-proposed bug or feature
 
-1. Project Owner triages as normal (Phase 1)
-2. If accepted: the external Issue body becomes an *input* to Phase 2, not the spec itself — AA produces `spec.md` from it as normal
-3. If rejected: close with a brief explanation referencing the project policy
-   in `CONTRIBUTING.md`
+1. Project Owner triages as normal (Phase 1).
+2. If accepted: the external Issue body becomes an *input* to Phase 2, not the spec itself — AA produces `spec.md` from it as normal.
+3. If rejected: close with a brief explanation referencing the project policy in `CONTRIBUTING.md`.
 
 ### Private security vulnerability
 
-1. Project Owner assesses severity privately
-2. If valid: create a fix branch, follow the standard workflow but keep the Issue private until the fix is released
-3. After release: optionally publish a public security advisory
-4. If invalid: close the advisory with explanation
+1. Project Owner assesses severity privately.
+2. If valid: create a fix branch, follow the standard workflow but keep the Issue private until the fix is released.
+3. After release: optionally publish a public security advisory.
+4. If invalid: close the advisory with explanation.
 
 ---
 
