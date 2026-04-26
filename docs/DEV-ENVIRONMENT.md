@@ -29,9 +29,12 @@ Prerequisites:
   required.
 - Bash.
 - Ghostty (or another GPU-capable terminal emulator).
+- `libsecret-tools` (provides `secret-tool` for keyring access).
+- `seahorse` (GUI for browsing and auditing the keyring).
+- An active GNOME (or compatible Secret Service) login session, so that the keyring is unlocked.
 
-Notably *not* required on the host: `git`, `gh`, any language runtime, any
-project-specific tooling. All of those live in the container image.
+Notably *not* required on the host: `git`, `gh`, `claude`, any language
+runtime, any project-specific tooling. All of those live inside containers.
 
 ---
 
@@ -65,6 +68,11 @@ container is `git push` to GitHub. No host filesystem bind mounts (beyond
 read-only configuration injected by the launcher), no persistent volume for
 `~/.claude`, no SSH agent forwarding. Credentials are injected as
 environment variables at container start and discarded on exit.
+
+**No plaintext secrets on host disk.** Authentication tokens (Claude Code
+OAuth, GitHub Token) live in the host's Secret Service keyring, retrieved
+on demand by the launcher. There is no `.env` file, no credentials file,
+no token in shell history.
 
 ---
 
@@ -107,6 +115,104 @@ container exits, by design.
 
 ---
 
+## Authentication
+
+Two secrets are required: a Claude Code OAuth token (for Anthropic API
+access via the Pro/Max subscription) and a GitHub Token (a fine-grained
+Personal Access Token for repository access). Both are stored in the host's
+Secret Service keyring, retrieved on demand by the launcher, and injected
+into the container as environment variables.
+
+### Secret naming in keyring
+
+| Secret | Service | Account |
+| --- | --- | --- |
+| Claude Code OAuth token | `claude-dev` | `claude-oauth` |
+| GitHub Token | `claude-dev` | `github-token` |
+
+Both share the `claude-dev` service namespace; the `account` attribute
+distinguishes them.
+
+### One-time bootstrap: Claude Code OAuth token
+
+Acquired via a throwaway container that installs Claude Code from npm and
+runs the OAuth setup flow. No host install of `claude` required.
+
+```
+docker run --rm -it node:20 \
+  sh -c "npm install -g @anthropic-ai/claude-code && claude setup-token"
+```
+
+Procedure:
+
+1. The container prints an authorization URL. Open it in the host browser.
+2. Authorize. The browser displays a short-lived **authorization code**.
+3. Paste the code back into the container's `setup-token` prompt.
+4. Claude Code exchanges the code for the OAuth token and displays it.
+5. Copy the OAuth token.
+6. `Ctrl+C` the container (or let `setup-token` finish; the token is
+   discarded with the container either way).
+7. Store the token in the keyring on the host:
+
+```
+secret-tool store --label='Claude Code OAuth' \
+  service claude-dev account claude-oauth
+```
+
+Paste the token at the prompt; press Enter. Verify in Seahorse: the entry
+appears in the Login keyring with `service=claude-dev` and
+`account=claude-oauth` attributes (Right-click → Properties → Details).
+
+The trust chain is Docker Official `node:20` image, the public npm
+registry, and the Anthropic-published `@anthropic-ai/claude-code` package.
+No third-party Claude Code images are involved.
+
+### One-time bootstrap: GitHub Token
+
+Generated in the GitHub web UI and stored directly in the keyring; no
+container involved.
+
+1. In GitHub: Settings → Developer settings → Personal access tokens →
+   Fine-grained tokens → Generate new token.
+2. Scope to the project repository only. Permissions: read/write Contents,
+   Issues, Pull requests, Workflows; read Metadata.
+3. Copy the token (shown once).
+4. Store in the keyring:
+
+```
+secret-tool store --label='Claude Code GitHub Token' \
+  service claude-dev account github-token
+```
+
+Paste the token; press Enter. Verify in Seahorse.
+
+### Retrieval
+
+The launcher retrieves both tokens at run time via `secret-tool lookup`:
+
+```
+CLAUDE_CODE_OAUTH_TOKEN=$(secret-tool lookup service claude-dev account claude-oauth)
+GH_TOKEN=$(secret-tool lookup service claude-dev account github-token)
+```
+
+If either lookup returns empty, the launcher fails fast with a message
+referencing the bootstrap procedure.
+
+### Rotation
+
+Both tokens are overwritten in place with the same `secret-tool store`
+commands used during bootstrap (the same `service` + `account` attributes
+identify and replace the existing entry). No file edits, no copy steps.
+
+- **OAuth token rotation.** Re-run the bootstrap container, generate a new
+  token, re-run the `secret-tool store` command for `claude-oauth`. Useful
+  when changing Anthropic plans or after suspected compromise.
+- **GitHub Token rotation.** Generate a new fine-grained token in GitHub,
+  re-run the `secret-tool store` command for `github-token`. Recommended
+  every 90 days.
+
+---
+
 ## Repository layout
 
 The harness lives in the project repository, versioned with the code it
@@ -124,16 +230,16 @@ environment.
 .claude/                     # Claude Code project configuration
 
 scripts/
-  claude-dev.env             # per-project launcher configuration
   claude-dev.sh              # host-side launcher
+  claude-dev.env             # per-project launcher configuration
 
 .github/workflows/
   devenv.yml                 # builds and publishes the dev environment image
 ```
 
 Modifications to the harness (`.devcontainer/`, `scripts/claude-dev.sh`,
-`.github/workflows/devenv.yml`) follow the project's regular SDLC as
-`chore` Issues.
+`scripts/claude-dev.env`, `.github/workflows/devenv.yml`) follow the
+project's regular SDLC as `chore` Issues.
 
 ---
 
@@ -175,7 +281,7 @@ claude-dev.sh <issue-id>
 ```
 
 **Per-project configuration.** The launcher reads project identity from
-`claude-dev.env` in the current repository checkout:
+`scripts/claude-dev.env` in the current repository checkout:
 
 ```
 GH_OWNER=<github-namespace>
@@ -183,15 +289,19 @@ GH_REPO=<repository-name>
 DEVENV_IMAGE=ghcr.io/<github-namespace>/<repository-name>-devenv
 ```
 
+Colocated with the launcher under `scripts/` so both move together.
+
 **Behavior.**
 
-1. Source `claude-dev.env` from the repo root.
+1. Source `scripts/claude-dev.env` from the repo root.
 2. Read the pinned image digest from `.devcontainer/image.digest`.
-3. Read auth tokens (Claude Code OAuth, GitHub PAT) from the host.
+3. Retrieve auth tokens from the Secret Service keyring:
+   - `secret-tool lookup service claude-dev account claude-oauth`
+   - `secret-tool lookup service claude-dev account github-token`
+   Fail fast with a bootstrap-procedure pointer if either is empty.
 4. `docker run --rm -it` with the pinned image and an interactive TTY,
-   passing `GH_OWNER`, `GH_REPO`, `ISSUE_ID`, and the auth tokens as
-   environment variables. No bind mounts beyond what credential injection
-   requires.
+   passing `GH_OWNER`, `GH_REPO`, `ISSUE_ID`, `CLAUDE_CODE_OAUTH_TOKEN`,
+   and `GH_TOKEN` as environment variables. No bind mounts.
 5. On exit, print the final `git status` and `git log origin/main..HEAD`
    from the container so the operator sees what was pushed and what was
    not before the container is destroyed.
@@ -200,13 +310,12 @@ DEVENV_IMAGE=ghcr.io/<github-namespace>/<repository-name>-devenv
 
 ## Entrypoint script (`entrypoint.sh`)
 
-Container-side entry point script. The SDLC-aware bootstrap step, run as
-the container's entrypoint. Receives `GH_OWNER`, `GH_REPO`, `ISSUE_ID`, 
-and auth tokens via environment variables.
+Container-side script. The SDLC-aware bootstrap step, run as the
+container's entrypoint. Receives `GH_OWNER`, `GH_REPO`, `ISSUE_ID`, `CLAUDE_CODE_OAUTH_TOKEN`, and `GH_TOKEN` via environment variables.
 
 **Behavior.**
 
-1. Configure git identity and HTTPS authentication via the GitHub PAT.
+1. Configure git identity and HTTPS authentication via `GH_TOKEN`.
 2. Clone `https://github.com/${GH_OWNER}/${GH_REPO}.git` into `/workspace`.
 3. Look up the linked branch for the Issue:
    `gh issue develop ${ISSUE_ID} --list --repo ${GH_OWNER}/${GH_REPO}`.
@@ -237,10 +346,10 @@ near-zero configuration.
 Bump scrollback in `~/.config/ghostty/config`:
 
 ```
-scrollback-limit = 50000000
+scrollback-limit = 100000000
 ```
 
-Unit is bytes, ~50 MB.
+Unit is bytes, ~100 MB.
 
 ---
 
@@ -262,8 +371,18 @@ ephemeral model.
 configuration files, SSH keys, or other personal state.
 
 **No SSH agent forwarding.** GitHub access is via HTTPS using a
-fine-grained Personal Access Token scoped to the project repository,
-injected as an environment variable.
+fine-grained GitHub Token scoped to the project repository, injected as
+an environment variable.
+
+**No `claude` install on the host.** Claude Code only runs inside
+containers. The OAuth bootstrap uses a one-off `node:20` container with
+`@anthropic-ai/claude-code` installed from npm, so no permanent Claude
+Code presence on the host is required.
+
+**No plaintext secrets on host disk.** Tokens live in the Secret Service
+keyring (encrypted at rest, unlocked by the login session). No `.env`
+files, no credentials files, no token in shell history. The launcher
+retrieves on demand via `secret-tool`.
 
 **No git worktrees.** Each container does its own `git clone`. Worktrees on
 a shared host clone would reduce clone time but add complexity not
