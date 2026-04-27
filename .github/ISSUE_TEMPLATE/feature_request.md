@@ -1,7 +1,7 @@
 ---
 name: Feature request
 about: Suggest a new command or improvement
-labels: enhancement
+labels: feature
 ---
 
 ## What you would like
