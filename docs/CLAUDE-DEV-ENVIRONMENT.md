@@ -552,11 +552,22 @@ Host-side script. Single purpose: start the container. No knowledge of the
 SDLC, no Issue-aware logic, no `gh` on the host.
 
 ```
-claude-dev.sh <issue-id>
+claude-dev.sh                  # general session, no issue context
+claude-dev.sh <issue-id>       # session for a specific GitHub Issue
 ```
 
+The Issue ID argument is optional. Two invocation modes:
+
+- **With Issue ID** — work on or resume a specific feature. The container
+  receives `ISSUE_ID` and the entrypoint resolves the linked branch.
+- **Without Issue ID** — start a session with no specific Issue context.
+  Suitable for the SDLC's `New Issue` skill (Project Owner discusses a
+  problem with PM and decides what to file) or for general work outside
+  a feature workflow. The container starts on `main`; `ISSUE_ID` is
+  unset.
+
 **Per-project configuration.** The launcher reads project identity from
-`scripts/claude-dev.env` in the current repository checkout:
+`scripts/claude-dev.env` colocated with the launcher:
 
 ```
 GH_OWNER=<github-namespace>
@@ -564,33 +575,42 @@ GH_REPO=<repository-name>
 DEVENV_IMAGE=ghcr.io/<github-namespace>/<repository-name>-devenv
 ```
 
-Colocated with the launcher under `scripts/` so both move together.
+`DEVENV_IMAGE` is used by the launcher to construct the `docker run`
+target; it is not propagated into the container.
 
 **Behavior.**
 
-1. Source `scripts/claude-dev.env` from the repo root.
-2. Read the pinned image digest from `.devcontainer/image.digest`.
-3. Retrieve auth tokens from the Secret Service keyring:
+1. Validate the argument: zero or one positional argument; if present,
+   must be a positive integer Issue ID.
+2. Verify host prerequisites (`docker`, `secret-tool`); fail fast with
+   installation hints if anything is missing.
+3. Source `scripts/claude-dev.env`; verify required variables are set.
+4. Read the pinned image digest from `.devcontainer/image.digest`.
+5. Retrieve auth tokens from the Secret Service keyring:
    - `secret-tool lookup service claude-dev account claude-oauth`
    - `secret-tool lookup service claude-dev account github-token`
    Fail fast with a bootstrap-procedure pointer if either is empty.
-4. `docker run --rm -it` with the pinned image, an interactive TTY,
+6. Detect the host timezone from `/etc/timezone` or `/etc/localtime`.
+7. `docker run --rm -it` with the pinned image, an interactive TTY,
    resource limits (`--memory`, `--cpus`), capability drop
    (`--cap-drop=ALL` plus `--cap-add=NET_ADMIN` for firewall init),
    `--security-opt no-new-privileges`, read-only root filesystem with
    tmpfs for required writable paths, and the env vars `GH_OWNER`,
-   `GH_REPO`, `ISSUE_ID`, `CLAUDE_CODE_OAUTH_TOKEN`, `GH_TOKEN`. No bind
-   mounts.
-5. On exit, print the final `git status` and `git log origin/main..HEAD`
-   from the container so the Project Owner sees what was pushed and what was
-   not before the container is destroyed.
+   `GH_REPO`, `CLAUDE_CODE_OAUTH_TOKEN`, `GH_TOKEN`, `TZ`, plus
+   `ISSUE_ID` when an Issue ID was provided. No bind mounts.
+8. On exit, print the final `git status` and `git log origin/main..HEAD`
+   from the container so the Project Owner sees what was pushed and what
+   was not before the container is destroyed.
 
 ---
 
 ## Entrypoint script (`entrypoint.sh`)
 
 Container-side script. The SDLC-aware bootstrap step, run as the
-container's entrypoint. Receives `GH_OWNER`, `GH_REPO`, `ISSUE_ID`, `CLAUDE_CODE_OAUTH_TOKEN`, and `GH_TOKEN` via environment variables.
+container's entrypoint. Receives `GH_OWNER`, `GH_REPO`,
+`CLAUDE_CODE_OAUTH_TOKEN`, `GH_TOKEN`, and `TZ` via environment
+variables; `ISSUE_ID` is also received when the launcher was invoked
+with an Issue ID.
 
 **Behavior.**
 
@@ -599,18 +619,20 @@ container's entrypoint. Receives `GH_OWNER`, `GH_REPO`, `ISSUE_ID`, `CLAUDE_CODE
    aborts the container.
 2. Configure git identity and HTTPS authentication via `GH_TOKEN`.
 3. Clone `https://github.com/${GH_OWNER}/${GH_REPO}.git` into `/workspace`.
-4. Look up the linked branch for the Issue:
-   `gh issue develop ${ISSUE_ID} --list --repo ${GH_OWNER}/${GH_REPO}`.
-   - **Empty result** — no branch yet. Remain on `main`. Branch creation
-     happens during the SDLC's spec phase via `gh issue develop` invoked
-     by AA.
-   - **One linked branch** — check it out.
-   - **Multiple linked branches** — refuse and exit. The Project Owner
-     resolves the ambiguity in GitHub (Issue page → Development sidebar
-     → unlink the unwanted branches) before retrying.
-5. Print a brief summary: Issue title, current phase, branch state
-   (fresh start vs resuming, commits ahead of `main` if resuming).
-6. Start a `tmux` session and exec `claude` inside it.
+4. Resolve the working branch:
+   - **`ISSUE_ID` not set** — no Issue context. Remain on `main`. Suitable for the `New Issue` skill or general work.
+   - **`ISSUE_ID` set, no linked branch** (`gh issue develop ${ISSUE_ID}
+     --list` returns empty) — branch not yet created. Remain on `main`.
+     Branch creation happens during the SDLC's spec phase by AA.
+   - **`ISSUE_ID` set, one linked branch** — check it out.
+   - **`ISSUE_ID` set, multiple linked branches** — refuse and exit. The
+     Project Owner resolves the ambiguity in GitHub (Issue page →
+     Development sidebar → unlink the unwanted branches) before
+     retrying.
+5. Install project development tooling and and dependencies (in case of `uv` and Python project via `uv sync --frozen` against the project's locked manifests. `uv` resolves and installs Python itself (per the project's `.python-version` / `pyproject.toml`) at this step; no Python is baked into the image).
+6. Print a brief summary: Issue title (if any), current phase, branch
+   state (fresh start vs resuming, commits ahead of `main` if resuming).
+7. Start a `tmux` session and exec `claude` inside it.
 
 **Branch lookup uses GitHub's first-class linkage**, not the branch
 naming convention. The SDLC creates the link when the branch is created
