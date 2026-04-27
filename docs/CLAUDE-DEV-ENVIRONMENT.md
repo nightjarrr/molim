@@ -516,6 +516,16 @@ versions, no fresh resolution at build time. This is both a performance
 and a security property: the running container has no need to reach
 package registries, and the firewall allow-list need not include them.
 
+**Project runtime tooling.** Whatever the project's code needs to execute
+end-to-end — system packages, external CLIs, additional language
+toolchains — is installed into the image at build time. The principle:
+the running container provides the full environment to write code, run
+tests, and perform quality-gate verification. There is no "this only
+runs in CI" carve-out; if the SDLC's quality gates depend on a tool,
+that tool is in the image. Build-time installation also keeps the
+runtime network policy small (no `apt-get`, no toolchain downloads at
+container start).
+
 ---
 
 ## Launcher script (`claude-dev.sh`)
