@@ -76,6 +76,105 @@ no token in shell history.
 
 ---
 
+## Threat model
+
+### Primary threat: host compromise from anything inside the development environment
+
+The environment must prevent any code, tool, or AI agent running inside it
+from affecting the host system. This is the principal driver of the
+isolation design and the reason for several non-negotiable constraints:
+
+- No `claude` install on the host (OAuth bootstrap uses a throwaway container).
+- No filesystem mounts between host and container (no host home, no SSH
+  keys, no project source bind, no `~/.claude` volume).
+- No shared namespaces (no `--privileged`, no `--network=host`, no
+  `--pid=host`, no `--ipc=host`).
+- No Docker socket inside the container (mounting `/var/run/docker.sock`
+  would be escape-equivalent).
+- No host display or clipboard forwarding. The container has no `DISPLAY`,
+  no X11 socket, no Wayland socket — in-container processes cannot
+  programmatically read or write the host GUI clipboard. Normal
+  copy/paste between Claude's TUI and the host (mouse selection, keyboard
+  shortcuts in Ghostty) continues to work, mediated entirely by the
+  terminal emulator.
+- No outbound network paths back to the host. The container is on a
+  Docker bridge network with a route to the host's bridge IP; the
+  in-container firewall denies traffic to the bridge gateway and to
+  RFC1918 ranges other than what is explicitly required.
+- Non-root user inside the container.
+- `--cap-drop=ALL` with deliberate add-back only of what is needed
+  (`NET_ADMIN` for `init-firewall.sh`).
+- `--security-opt no-new-privileges` to block setuid escalation.
+- Read-only root filesystem, with `tmpfs` for the writable paths Claude
+  needs.
+
+**Limits of this isolation.** Container isolation reduces likelihood and
+raises the skill bar; it does not reduce risk to zero. The host kernel
+must be patched (Ubuntu's `unattended-upgrades` for the security pocket
+suffices). The image is only as trustworthy as its build chain — pinned
+digests, CI provenance, and base image discipline are part of the
+mitigation. A determined attacker exploiting an unpatched container
+escape CVE inside a compromised container is outside the design's
+guarantees.
+
+### Secondary threats
+
+**Prompt injection.** Adversarial content (web pages, dependency READMEs,
+issue bodies, fetched files) reaches Claude's context and attempts to
+manipulate it. *Recognized.* Mitigated by ephemeral container isolation
+(blast radius bounded to one session, one branch, one repository) and by
+narrow GitHub Token scope (a manipulated Claude cannot push to other
+repositories or modify account-level resources). Residual risk: hostile
+content pushed to the feature branch under the operator's identity until
+caught at PR review.
+
+**Malicious dependencies.** A package on a public registry runs hostile
+code at install or test time. *Recognized.* Mitigated by Dependabot
+scanning the repository, lockfile-pinned dependency installation in the
+image build (no floating versions), and the SDLC's PR review on any
+new-dependency addition. Theoretical residual risk accepted; image build
+runs against locked manifests, so a compromised registry version that
+bypasses Dependabot would still need to evade the next dependency-bump
+PR review.
+
+**Network exfiltration.** A compromised dependency or a manipulated Claude
+attempts to send repository contents, secrets, or other data to an
+attacker-controlled endpoint. *Recognized.* Primary driver of the network
+policy: outbound traffic is restricted to a small allow-list (Anthropic
+API, GitHub API, GitHub git endpoints, DNS) enforced by `init-firewall.sh`
+at container start. An attacker who cannot reach `attacker-server.com`
+cannot easily exfiltrate.
+
+**Token theft.** An attacker inside the container reads
+`CLAUDE_CODE_OAUTH_TOKEN` or `GH_TOKEN` from the process environment.
+*Recognized.* Cannot be mitigated to zero — the container must hold the
+tokens to function. Bounded by:
+
+- Narrow scoping (GitHub Token: single repository; OAuth: one Anthropic
+  account, revocable).
+- Time-limited rotation (90-day GitHub Token rotation).
+- Firewall-constrained exfiltration paths (a stolen token must still be
+  sent somewhere reachable from the allow-list).
+- No persistence on host disk (keyring, not files).
+- Fast revocation paths (Anthropic console, GitHub UI; both
+  ~30-second operations).
+
+Accepted residual risk: an attacker in a single live session can use the
+tokens at their granted scope for the session's lifetime.
+
+**Quota and resource abuse.** A runaway Claude session — bug, prompt loop,
+hostile instruction — burns through Anthropic quota, GitHub API rate
+limits, or local CPU/memory/disk. *Recognized.* Mitigated by ephemeral
+teardown (closing the terminal tab kills the container immediately) and
+by container resource limits (`--memory`, `--cpus`) on `docker run` that
+bound local resource impact regardless of in-container behavior. Small
+residual exposure to Anthropic quota exhaustion (you notice when Claude
+starts refusing requests; no real-time alerting available) and GitHub API
+rate limits (5,000 requests/hour per token; failures appear as
+backpressure) accepted.
+
+---
+
 ## Container and session model
 
 One container instance corresponds to one in-flight feature:
@@ -265,9 +364,14 @@ environment is reproducible from any commit (an old commit pulls the image
 current at that commit), updates are explicit and go through a `chore`
 Issue, and a bad `:latest` push cannot break ongoing work.
 
-**Build context.** The Dockerfile build context is the repository root,
-not `.devcontainer/`. This lets the image bake in language dependencies at
-build time using the project's manifests, keeping container start fast.
+**Build context and dependency resolution.** The Dockerfile build context
+is the repository root, not `.devcontainer/`. This lets the image bake in
+language dependencies at build time using the project's manifests, keeping
+container start fast. Dependency installation uses lockfile-frozen
+resolution (`uv sync --frozen`, `npm ci`, equivalents) — no floating
+versions, no fresh resolution at build time. This is both a performance
+and a security property: the running container has no need to reach
+package registries, and the firewall allow-list need not include them.
 
 ---
 
@@ -299,9 +403,13 @@ Colocated with the launcher under `scripts/` so both move together.
    - `secret-tool lookup service claude-dev account claude-oauth`
    - `secret-tool lookup service claude-dev account github-token`
    Fail fast with a bootstrap-procedure pointer if either is empty.
-4. `docker run --rm -it` with the pinned image and an interactive TTY,
-   passing `GH_OWNER`, `GH_REPO`, `ISSUE_ID`, `CLAUDE_CODE_OAUTH_TOKEN`,
-   and `GH_TOKEN` as environment variables. No bind mounts.
+4. `docker run --rm -it` with the pinned image, an interactive TTY,
+   resource limits (`--memory`, `--cpus`), capability drop
+   (`--cap-drop=ALL` plus `--cap-add=NET_ADMIN` for firewall init),
+   `--security-opt no-new-privileges`, read-only root filesystem with
+   tmpfs for required writable paths, and the env vars `GH_OWNER`,
+   `GH_REPO`, `ISSUE_ID`, `CLAUDE_CODE_OAUTH_TOKEN`, `GH_TOKEN`. No bind
+   mounts.
 5. On exit, print the final `git status` and `git log origin/main..HEAD`
    from the container so the operator sees what was pushed and what was
    not before the container is destroyed.
@@ -315,9 +423,11 @@ container's entrypoint. Receives `GH_OWNER`, `GH_REPO`, `ISSUE_ID`, `CLAUDE_CODE
 
 **Behavior.**
 
-1. Configure git identity and HTTPS authentication via `GH_TOKEN`.
-2. Clone `https://github.com/${GH_OWNER}/${GH_REPO}.git` into `/workspace`.
-3. Look up the linked branch for the Issue:
+1. Run `init-firewall.sh` to install the outbound allow-list before any
+   other network operation.
+2. Configure git identity and HTTPS authentication via `GH_TOKEN`.
+3. Clone `https://github.com/${GH_OWNER}/${GH_REPO}.git` into `/workspace`.
+4. Look up the linked branch for the Issue:
    `gh issue develop ${ISSUE_ID} --list --repo ${GH_OWNER}/${GH_REPO}`.
    - **Empty result** — no branch yet. Remain on `main`. Branch creation
      happens during the SDLC's spec phase via `gh issue develop` invoked
@@ -325,9 +435,9 @@ container's entrypoint. Receives `GH_OWNER`, `GH_REPO`, `ISSUE_ID`, `CLAUDE_CODE
    - **One linked branch** — check it out.
    - **Multiple linked branches** — refuse and exit. The Project Owner
      resolves the ambiguity in GitHub before retrying.
-4. Print a brief summary: Issue title, current phase, branch state
+5. Print a brief summary: Issue title, current phase, branch state
    (fresh start vs resuming, commits ahead of `main` if resuming).
-5. Start a `tmux` session and exec `claude` inside it.
+6. Start a `tmux` session and exec `claude` inside it.
 
 **Branch lookup uses GitHub's first-class linkage**, not the branch
 naming convention. The SDLC creates the link when the branch is created
@@ -404,3 +514,8 @@ and operate on the same working tree.
 resolution, clone) happen inside the container, where the tools and
 auth tokens already exist. The launcher's responsibility ends at "start
 the container."
+
+**No floating dependency versions.** Image build uses lockfile-frozen
+resolution. Floating versions at build time would let a compromised
+upstream release reach the image without review and would require the
+firewall allow-list to include package registries at runtime.
