@@ -8,8 +8,15 @@
 # dev environment image with an interactive TTY.
 #
 # Usage:
-#   claude-dev.sh                  # no issue; for "New Issue" skill or general session
-#   claude-dev.sh <issue-id>       # work on a specific GitHub Issue
+#   claude-dev.sh                            # no issue; default command
+#   claude-dev.sh <issue-id>                 # specific Issue; default command
+#   claude-dev.sh -- <cmd> [args...]         # no issue; override command
+#   claude-dev.sh <issue-id> -- <cmd> [args] # specific Issue; override command
+#
+# The default command is whatever the image's CMD specifies (currently
+# bash; will become tmux + claude in Step 7). The override is intended
+# for troubleshooting (e.g., running `uv run pytest` against a fresh
+# clone without entering an interactive session).
 #
 # [TODO] Hardening flags, GHCR pull, digest pinning, entrypoint logic, and
 # pre-exit reporting are added in later steps.
@@ -33,33 +40,71 @@ die() {
 
 usage() {
     cat >&2 <<EOF
-Usage: claude-dev.sh [<issue-id>]
+Usage: claude-dev.sh [<issue-id>] [-- <cmd> [args...]]
 
-  <issue-id>   Optional. Positive integer GitHub Issue number to work on.
-               If omitted, the container starts without a specific Issue
-               context (suitable for the "New Issue" skill or general work).
+  <issue-id>     Optional. Positive integer GitHub Issue number to work on.
+                 If omitted, the container starts without a specific Issue
+                 context (suitable for the "New Issue" skill or general work).
+
+  -- <cmd>...    Optional. Override the image's default command. Useful for
+                 one-off troubleshooting against a freshly bootstrapped
+                 workspace.
 
 Examples:
-  claude-dev.sh          # start a session with no issue context
-  claude-dev.sh 42       # start a session for Issue #42
+  claude-dev.sh                              # session with no Issue
+  claude-dev.sh 42                           # session for Issue #42
+  claude-dev.sh -- ls -la /workspace         # one-off ls, no Issue
+  claude-dev.sh 42 -- uv run pytest -q       # one-off pytest for Issue #42
 EOF
 }
 
 # ----------------------------------------------------------------------
-# Argument validation
+# Argument parsing
+#
+# Accepts:
+#   (no args)
+#   <issue-id>
+#   -- <cmd> [args...]
+#   <issue-id> -- <cmd> [args...]
 # ----------------------------------------------------------------------
-if [[ $# -gt 1 ]]; then
+ISSUE_ID=""
+CMD_OVERRIDE=()
+POSITIONAL=()
+SEPARATOR_FOUND=0
+
+# Walk the args; everything before -- is positional, everything after is
+# the command override.
+for arg in "$@"; do
+    if [[ "$SEPARATOR_FOUND" -eq 0 ]]; then
+        if [[ "$arg" == "--" ]]; then
+            SEPARATOR_FOUND=1
+        else
+            POSITIONAL+=("$arg")
+        fi
+    else
+        CMD_OVERRIDE+=("$arg")
+    fi
+done
+
+# If the separator was given, a command must follow it.
+if [[ "$SEPARATOR_FOUND" -eq 1 ]] && [[ ${#CMD_OVERRIDE[@]} -eq 0 ]]; then
     usage
-    die "expected 0 or 1 arguments, got $#"
+    die "'--' was given but no command followed it"
 fi
 
-ISSUE_ID=""
-if [[ $# -eq 1 ]]; then
-    if [[ ! "$1" =~ ^[1-9][0-9]*$ ]]; then
+# Positional args (before --) carry the optional issue ID. Zero or one,
+# nothing else.
+if [[ ${#POSITIONAL[@]} -gt 1 ]]; then
+    usage
+    die "expected at most one positional argument before '--', got ${#POSITIONAL[@]}"
+fi
+
+if [[ ${#POSITIONAL[@]} -eq 1 ]]; then
+    if [[ ! "${POSITIONAL[0]}" =~ ^[1-9][0-9]*$ ]]; then
         usage
-        die "issue ID must be a positive integer, got '$1'"
+        die "issue ID must be a positive integer, got '${POSITIONAL[0]}'"
     fi
-    ISSUE_ID="$1"
+    ISSUE_ID="${POSITIONAL[0]}"
 fi
 
 # ----------------------------------------------------------------------
@@ -149,6 +194,13 @@ fi
 
 # Local image tag for v0; switch to digest-pinned GHCR reference at Step 13.
 DOCKER_ARGS+=("${DEVENV_IMAGE}:dev")
+
+# If a command override was given, append it after the image reference.
+# Docker passes everything after the image to the container's CMD, which
+# the entrypoint exec's via "$@".
+if [[ ${#CMD_OVERRIDE[@]} -gt 0 ]]; then
+    DOCKER_ARGS+=("${CMD_OVERRIDE[@]}")
+fi
 
 # ----------------------------------------------------------------------
 # Run
