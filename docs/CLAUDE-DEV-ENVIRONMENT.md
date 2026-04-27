@@ -31,7 +31,7 @@ Prerequisites:
 - Ghostty (or another GPU-capable terminal emulator).
 - `libsecret-tools` (provides `secret-tool` for keyring access).
 - `seahorse` (GUI for browsing and auditing the keyring).
-- An active GNOME (or compatible Secret Service) login session, so that the keyring is unlocked.
+- An active GNOME (or compatible Secret Service) login session, so the keyring is unlocked.
 
 Notably *not* required on the host: `git`, `gh`, `claude`, any language
 runtime, any project-specific tooling. All of those live inside containers.
@@ -50,14 +50,25 @@ and reproducibility.
 exit. Claude Code rebuilds context at session start by reading GitHub state
 and repository artifacts.
 
-**Defense in depth.** Three concentric trust boundaries:
+**Defense in depth.** Three concentric trust boundaries protect what runs
+inside the container:
 
 1. **Container isolation** — host filesystem, network, and processes are
    inaccessible by default.
 2. **Network policy** — outbound traffic restricted to a small allow-list,
    enforced inside the container at startup.
-3. **Tool permissions** — Claude Code's agent, skill, tool restrictions
-   enforce the SDLC's permission matrix.
+3. **Claude permission system** — Claude Code's agent, skill, and tool
+   restrictions enforce the SDLC's permission matrix.
+
+Two further protections sit outside the container's runtime, bounding
+the impact of credential exposure:
+
+- **Host-side keyring** — authentication tokens never reside in
+  plaintext on host disk; the keyring is encrypted at rest and unlocked
+  only by an active login session.
+- **Token scoping** — the GitHub Token is scoped to a single repository
+  with no administration permissions, bounding what any compromise of
+  the token can do server-side.
 
 The container is the single trust boundary between host and Claude Code.
 Per-role separation is enforced inside the container by Claude Code's own
@@ -70,9 +81,10 @@ read-only configuration injected by the launcher), no persistent volume for
 environment variables at container start and discarded on exit.
 
 **No plaintext secrets on host disk.** Authentication tokens (Claude Code
-OAuth, GitHub Token) live in the host's Secret Service keyring, retrieved
-on demand by the launcher. There is no `.env` file, no credentials file,
-no token in shell history.
+OAuth, GitHub Token) live in the host's Secret Service keyring, encrypted
+at rest and unlocked only by an active login session. The launcher
+retrieves tokens on demand. There is no `.env` file, no credentials
+file, no token in shell history.
 
 ---
 
@@ -84,7 +96,7 @@ The environment must prevent any code, tool, or AI agent running inside it
 from affecting the host system. This is the principal driver of the
 isolation design and the reason for several non-negotiable constraints:
 
-- No `claude` install on the host (OAuth bootstrap uses a throwaway container).
+- No `claude` install on the host (the OAuth bootstrap uses a throwaway container).
 - No filesystem mounts between host and container (no host home, no SSH
   keys, no project source bind, no `~/.claude` volume).
 - No shared namespaces (no `--privileged`, no `--network=host`, no
@@ -102,11 +114,15 @@ isolation design and the reason for several non-negotiable constraints:
   in-container firewall denies traffic to the bridge gateway and to
   RFC1918 ranges other than what is explicitly required.
 - Non-root user inside the container.
-- `--cap-drop=ALL` with deliberate add-back only of what is needed
-  (`NET_ADMIN` for `init-firewall.sh`).
+- `--cap-drop=ALL` with deliberate add-back of the minimal set required.
+  Currently `NET_ADMIN` for `init-firewall.sh`; the set may be expanded
+  according to project needs.
 - `--security-opt no-new-privileges` to block setuid escalation.
-- Read-only root filesystem, with `tmpfs` for the writable paths Claude
-  needs.
+- Read-only root filesystem with `tmpfs` mounts for the writable paths
+  the running container needs: `/tmp`, `/workspace`, `/home/{user}`
+  (per-user state including Claude session, git/gh config, shell
+  history), and `/var/run`. Additional tmpfs paths may be added as
+  project-specific tooling requires.
 
 **Limits of this isolation.** Container isolation reduces likelihood and
 raises the skill bar; it does not reduce risk to zero. The host kernel
@@ -114,8 +130,8 @@ must be patched (Ubuntu's `unattended-upgrades` for the security pocket
 suffices). The image is only as trustworthy as its build chain — pinned
 digests, CI provenance, and base image discipline are part of the
 mitigation. A determined attacker exploiting an unpatched container
-escape CVE inside a compromised container is outside the design's
-guarantees.
+escape CVE inside a compromised container is outside the scope of this
+design.
 
 ### Secondary threats
 
@@ -124,9 +140,7 @@ issue bodies, fetched files) reaches Claude's context and attempts to
 manipulate it. *Recognized.* Mitigated by ephemeral container isolation
 (blast radius bounded to one session, one branch, one repository) and by
 narrow GitHub Token scope (a manipulated Claude cannot push to other
-repositories or modify account-level resources). Residual risk: hostile
-content pushed to the feature branch under the Project Owner's identity until
-caught at PR review.
+repositories or modify account-level resources). Residual risk: hostile content may be pushed to the feature branch until caught at PR review.
 
 **Malicious dependencies.** A package on a public registry runs hostile
 code at install or test time. *Recognized.* Mitigated by Dependabot
@@ -156,22 +170,27 @@ tokens to function. Bounded by:
 - Firewall-constrained exfiltration paths (a stolen token must still be
   sent somewhere reachable from the allow-list).
 - No persistence on host disk (keyring, not files).
-- Fast revocation paths (Anthropic console, GitHub UI; both
-  ~30-second operations).
+- Fast revocation paths: `https://claude.ai/settings/claude-code`
+  ("Manage your authorization tokens" section) for the OAuth token, and
+  the GitHub fine-grained tokens page for the GitHub Token. Both are
+  ~30-second operations.
 
 Accepted residual risk: an attacker in a single live session can use the
-tokens at their granted scope for the session's lifetime.
+tokens within their granted scope for the session's lifetime.
 
 **Quota and resource abuse.** A runaway Claude session — bug, prompt loop,
 hostile instruction — burns through Anthropic quota, GitHub API rate
-limits, or local CPU/memory/disk. *Recognized.* Mitigated by ephemeral
-teardown (closing the terminal tab kills the container immediately) and
-by container resource limits (`--memory`, `--cpus`) on `docker run` that
-bound local resource impact regardless of in-container behavior. Small
-residual exposure to Anthropic quota exhaustion (you notice when Claude
-starts refusing requests; no real-time alerting available) and GitHub API
-rate limits (5,000 requests/hour per token; failures appear as
-backpressure) accepted.
+limits, or local CPU, memory, and disk. *Recognized.* Bounded by:
+
+- **Ephemeral teardown.** Closing the terminal tab kills the container
+  immediately, stopping further consumption.
+- **Container resource limits** (`--memory`, `--cpus`) on `docker run`
+  bound local resource impact regardless of in-container behavior.
+
+Accepted residual risk: small exposure to Anthropic quota exhaustion
+(noticed when Claude starts refusing requests; no real-time alerting
+available) and GitHub API rate limits (5,000 requests per hour per
+token; failures appear as backpressure).
 
 ---
 
@@ -196,7 +215,7 @@ work pauses or the feature merges. No long-running containers. Resuming a
 paused feature creates a new container; Claude Code rebuilds context from
 GitHub state.
 
-**Concurrency.** Multiple features may be in flight in parallel, each in
+**Concurrency.** Multiple features may be in flight, each in
 its own container. Containers share no state with each other; mutual
 visibility is via GitHub. The Project Owner switches features by switching
 terminal tabs. Each `claude-dev.sh <issue-id>` invocation spins up a fresh
@@ -262,7 +281,7 @@ Paste the token at the prompt; press Enter. Verify in Seahorse: the entry
 appears in the Login keyring with `service=claude-dev` and
 `account=claude-oauth` attributes (Right-click → Properties → Details).
 
-The trust chain is Docker Official `node:20` image, the public npm
+The trust chain is the Docker Official `node:20` image, the public npm
 registry, and the Anthropic-published `@anthropic-ai/claude-code` package.
 No third-party Claude Code images are involved.
 
@@ -307,8 +326,7 @@ identify and replace the existing entry). No file edits, no copy steps.
   token, re-run the `secret-tool store` command for `claude-oauth`. Useful
   when changing Anthropic plans or after suspected compromise.
 - **GitHub Token rotation.** Generate a new fine-grained token in GitHub,
-  re-run the `secret-tool store` command for `github-token`. Recommended
-  every 90 days.
+  re-run the `secret-tool store` command for `github-token`. Rotation recommended to be executed every 90 days or less.
 
 ### GitHub Token scoping
 
@@ -340,7 +358,7 @@ exactly what its scope permits, no more.
 | Metadata | Read | Implicit prerequisite for every other permission. GitHub auto-grants. |
 | Contents | Read & write | Clone, fetch, push, branch creation and deletion. Phase 2 onwards. |
 | Issues | Read & write | Phase 1 issue creation, label updates across all phases, phase comments. |
-| Pull requests | Read & write | Phase 5 and release workflow PR creation, PR comments, status updates. |
+| Pull requests | Read & write | PR creation, comments, and status updates across Phase 5 and the release workflow. |
 | Workflows | Read & write | `chore` Issues that touch `.github/workflows/*`. Without this, those PRs cannot be pushed. |
 | Actions | Read | Reading CI run status to confirm quality gates passed before proceeding to PR review. |
 
@@ -378,8 +396,9 @@ destinations required for Claude Code's normal operation. This is the
 primary mitigation against the network exfiltration threat.
 
 The policy is enforced by `init-firewall.sh`, run as the first step of
-the entrypoint before any other network operation. It uses iptables
-(requiring the `NET_ADMIN` capability granted by the launcher) to:
+the entrypoint so no later operation can reach the network without it
+in place. It uses iptables (requiring the `NET_ADMIN` capability granted
+by the launcher) to:
 
 1. Set a default-deny outbound policy.
 2. Resolve allow-listed hostnames to current IPs and install ACCEPT rules
@@ -389,11 +408,10 @@ the entrypoint before any other network operation. It uses iptables
 4. Allow DNS to the container's resolver.
 
 The hostname-to-IP approach matches the Anthropic reference firewall.
-Because GitHub and Anthropic endpoints are behind CDNs whose IPs may
-rotate, very long sessions could see allow-listed hostnames resolve to
-new IPs that are not in the rules. Mitigation: re-init the firewall by
-restarting the container. The ephemeral session model makes this a
-non-issue in practice.
+Because GitHub and Anthropic endpoints sit behind CDNs with rotating
+IPs, very long sessions can drift out of sync with the installed rules.
+Mitigation: re-init the firewall by restarting the container. The
+ephemeral session model makes this a non-issue in practice.
 
 ### Allow-list
 
@@ -410,7 +428,7 @@ non-issue in practice.
 
 - Package registries (PyPI, npm, etc.). Dependencies are baked into the
   image at build time using lockfile-frozen resolution; the running
-  container has no need to reach registries.
+  container does not need to reach them.
 - `ghcr.io`. The image is pulled by the launcher on the host, not from
   inside the container.
 
@@ -433,7 +451,7 @@ After firewall installation, the entrypoint runs two probes before
 proceeding:
 
 - **Negative probe.** A short-timeout request to a known-blocked
-  destination (e.g., `curl --max-time 3 https://google.com`). Must fail.
+  destination (e.g., `curl --max-time 3 https://example.com`). Must fail.
   Confirms default-deny is in effect.
 - **Positive probe.** A short-timeout request to a known-allowed
   destination (e.g., `curl --max-time 3 https://api.anthropic.com`).
@@ -469,7 +487,7 @@ environment.
   entrypoint.sh              # in-container start: clone, checkout, exec claude
   image.digest               # pinned digest of the published image
 
-.claude/                     # Claude Code project configuration
+.claude/                     # Claude Code project configuration (populated as part of the SDLC implementation, out of scope of this document)
 
 scripts/
   claude-dev.sh              # host-side launcher
@@ -588,7 +606,8 @@ container's entrypoint. Receives `GH_OWNER`, `GH_REPO`, `ISSUE_ID`, `CLAUDE_CODE
      by AA.
    - **One linked branch** — check it out.
    - **Multiple linked branches** — refuse and exit. The Project Owner
-     resolves the ambiguity in GitHub before retrying.
+     resolves the ambiguity in GitHub (Issue page → Development sidebar
+     → unlink the unwanted branches) before retrying.
 5. Print a brief summary: Issue title, current phase, branch state
    (fresh start vs resuming, commits ahead of `main` if resuming).
 6. Start a `tmux` session and exec `claude` inside it.
@@ -596,8 +615,8 @@ container's entrypoint. Receives `GH_OWNER`, `GH_REPO`, `ISSUE_ID`, `CLAUDE_CODE
 **Branch lookup uses GitHub's first-class linkage**, not the branch
 naming convention. The SDLC creates the link when the branch is created
 (Phase 2); this script consumes it. The naming convention remains
-documentation, per the SDLC. The entrypoint stays convention-agnostic:
-changes to the naming convention require no changes here.
+documentation. The entrypoint stays convention-agnostic: changes to the
+naming convention require no changes here.
 
 ---
 
@@ -613,7 +632,7 @@ Bump scrollback in `~/.config/ghostty/config`:
 scrollback-limit = 100000000
 ```
 
-Unit is bytes, ~100 MB.
+Unit is bytes (~100 MB).
 
 ---
 
