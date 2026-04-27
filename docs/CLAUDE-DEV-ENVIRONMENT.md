@@ -8,7 +8,7 @@ environment.
 
 Companion to [`AGENTIC-SDLC.md`](AGENTIC-SDLC.md).
 
-**Audience: human operator only.** Read at setup time and when modifying the
+**Audience: human Project Owner only.** Read at setup time and when modifying the
 environment. Not part of any agent's runtime context.
 
 Throughout, `{owner}` and `{repo}` refer to the GitHub namespace and
@@ -125,7 +125,7 @@ manipulate it. *Recognized.* Mitigated by ephemeral container isolation
 (blast radius bounded to one session, one branch, one repository) and by
 narrow GitHub Token scope (a manipulated Claude cannot push to other
 repositories or modify account-level resources). Residual risk: hostile
-content pushed to the feature branch under the operator's identity until
+content pushed to the feature branch under the Project Owner's identity until
 caught at PR review.
 
 **Malicious dependencies.** A package on a public registry runs hostile
@@ -198,7 +198,7 @@ GitHub state.
 
 **Concurrency.** Multiple features may be in flight in parallel, each in
 its own container. Containers share no state with each other; mutual
-visibility is via GitHub. The operator switches features by switching
+visibility is via GitHub. The Project Owner switches features by switching
 terminal tabs. Each `claude-dev.sh <issue-id>` invocation spins up a fresh
 container; there is no "resume previous container" path.
 
@@ -371,6 +371,90 @@ exists to prevent.
 
 ---
 
+## Network policy
+
+The container's outbound network is restricted to a small allow-list of
+destinations required for Claude Code's normal operation. This is the
+primary mitigation against the network exfiltration threat.
+
+The policy is enforced by `init-firewall.sh`, run as the first step of
+the entrypoint before any other network operation. It uses iptables
+(requiring the `NET_ADMIN` capability granted by the launcher) to:
+
+1. Set a default-deny outbound policy.
+2. Resolve allow-listed hostnames to current IPs and install ACCEPT rules
+   for them.
+3. Install explicit DROP rules for the Docker bridge gateway and broader
+   RFC1918 ranges, closing paths back to the host.
+4. Allow DNS to the container's resolver.
+
+The hostname-to-IP approach matches the Anthropic reference firewall.
+Because GitHub and Anthropic endpoints are behind CDNs whose IPs may
+rotate, very long sessions could see allow-listed hostnames resolve to
+new IPs that are not in the rules. Mitigation: re-init the firewall by
+restarting the container. The ephemeral session model makes this a
+non-issue in practice.
+
+### Allow-list
+
+| Destination | Why |
+| --- | --- |
+| `api.anthropic.com` | Claude Code API calls |
+| `statsig.anthropic.com` | Claude Code telemetry (current behavior; without this, Claude Code makes failed connection attempts at startup) |
+| `github.com` | git clone, fetch, push over HTTPS |
+| `api.github.com` | `gh` CLI for issues, PRs, labels, branch linkage |
+| `*.githubusercontent.com` | Raw file fetches, release assets |
+| DNS (UDP/TCP 53 to the container's resolver, typically `127.0.0.11`) | Hostname resolution for the above |
+
+**Deliberately not on the list:**
+
+- Package registries (PyPI, npm, etc.). Dependencies are baked into the
+  image at build time using lockfile-frozen resolution; the running
+  container has no need to reach registries.
+- `ghcr.io`. The image is pulled by the launcher on the host, not from
+  inside the container.
+
+**Project-specific addition:** `objects.githubusercontent.com` (used by
+Git LFS for large file downloads). Not in the default allow-list. Add it
+in `init-firewall.sh` if the project uses Git LFS.
+
+### Failure handling
+
+`init-firewall.sh` failure is a hard error. If the firewall cannot be
+installed — DNS resolution failure, iptables call failure, missing
+capability — the entrypoint exits non-zero and the container terminates.
+A container running without the firewall would have full default outbound
+access, violating the threat model. There is no `|| true`, no fallback
+to permissive mode, no warning-and-continue.
+
+### Self-test
+
+After firewall installation, the entrypoint runs two probes before
+proceeding:
+
+- **Negative probe.** A short-timeout request to a known-blocked
+  destination (e.g., `curl --max-time 3 https://google.com`). Must fail.
+  Confirms default-deny is in effect.
+- **Positive probe.** A short-timeout request to a known-allowed
+  destination (e.g., `curl --max-time 3 https://api.anthropic.com`).
+  Must succeed. Confirms the allow-list is in effect.
+
+If either probe gives the wrong result, the entrypoint exits non-zero and
+the container terminates. This catches misconfigurations immediately
+rather than after Claude Code starts misbehaving in non-obvious ways.
+
+### Bootstrap container exception
+
+The OAuth bootstrap container (`docker run ... node:20 ...` for
+`claude setup-token`) does not run `init-firewall.sh` and is not subject
+to this policy. It is a one-off operation outside the SDLC, uses a
+different image, and needs to reach destinations (`claude.ai`, the npm
+registry) that the runtime policy does not permit. Keeping it firewall-
+exempt is intentional; the Project Owner runs it manually for a one-time
+credential setup, not as part of the development workflow.
+
+---
+
 ## Repository layout
 
 The harness lives in the project repository, versioned with the code it
@@ -470,7 +554,7 @@ Colocated with the launcher under `scripts/` so both move together.
    `GH_REPO`, `ISSUE_ID`, `CLAUDE_CODE_OAUTH_TOKEN`, `GH_TOKEN`. No bind
    mounts.
 5. On exit, print the final `git status` and `git log origin/main..HEAD`
-   from the container so the operator sees what was pushed and what was
+   from the container so the Project Owner sees what was pushed and what was
    not before the container is destroyed.
 
 ---
@@ -482,8 +566,9 @@ container's entrypoint. Receives `GH_OWNER`, `GH_REPO`, `ISSUE_ID`, `CLAUDE_CODE
 
 **Behavior.**
 
-1. Run `init-firewall.sh` to install the outbound allow-list before any
-   other network operation.
+1. Run `init-firewall.sh` to install the outbound allow-list, then run
+   the firewall self-test (negative + positive probes). Either failure
+   aborts the container.
 2. Configure git identity and HTTPS authentication via `GH_TOKEN`.
 3. Clone `https://github.com/${GH_OWNER}/${GH_REPO}.git` into `/workspace`.
 4. Look up the linked branch for the Issue:
@@ -555,7 +640,7 @@ retrieves on demand via `secret-tool`.
 
 **No git worktrees.** Each container does its own `git clone`. Worktrees on
 a shared host clone would reduce clone time but add complexity not
-justified for small repositories and a single operator.
+justified for small repositories and a single Project Owner.
 
 **No save-on-exit.** The container exits with `--rm`; uncommitted work is
 lost. The SDLC's "commit and push" discipline at every phase boundary
