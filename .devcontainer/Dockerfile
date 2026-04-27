@@ -35,8 +35,7 @@ FROM node:24.15.0-bookworm-slim
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 \
-    TERM=xterm-256color \
-    TZ=Etc/UTC
+    TERM=xterm-256color
 
 # ----------------------------------------------------------------------
 # System packages required by the Claude Code dev environment
@@ -109,6 +108,14 @@ RUN npm install -g @anthropic-ai/claude-code@2.1.112
 # ----------------------------------------------------------------------
 RUN mkdir -p /home/node/.claude && chown -R node:node /home/node/.claude
 
+# ----------------------------------------------------------------------
+# Bootstrap entrypoint script
+# Copied from .devcontainer/entrypoint.sh into the image at build time;
+# invoked as the container's ENTRYPOINT (see COMMON section below).
+# ----------------------------------------------------------------------
+COPY .devcontainer/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 
 # ======================================================================
 # PROJECT — molim-specific tooling
@@ -140,13 +147,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 
 # ======================================================================
-# COMMON — user, working directory, default command
+# COMMON — user, working directory, entrypoint, default command
 # ======================================================================
 
 # Reuse the `node` user (UID/GID 1000) that ships with the base image.
+# Pre-create /workspace owned by node so the entrypoint's git clone can
+# write into it. WORKDIR alone would create /workspace as root.
+# TODO Phase 3: when /workspace becomes a tmpfs mount, this RUN line
+# becomes redundant (tmpfs uid/gid is set by the mount flags) and
+# should be removed.
+RUN mkdir -p /workspace && chown -R node:node /workspace
 USER node
 WORKDIR /workspace
 
-# Default command for Step 4 verification — interactive bash.
-# Replaced by entrypoint.sh at Step 6.
+# ENTRYPOINT runs unconditionally on container start; CMD is the default
+# final command after bootstrap. CMD is overridable at `docker run` time
+# for troubleshooting (e.g., `docker run ... molim-devenv ls /workspace`
+# bootstraps and runs ls instead of bash).
+#
+# Step 6: CMD = bash (interactive shell after bootstrap).
+# Step 7: CMD will become tmux + claude.
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["bash"]
