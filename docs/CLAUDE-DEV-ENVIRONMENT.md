@@ -273,8 +273,8 @@ container involved.
 
 1. In GitHub: Settings → Developer settings → Personal access tokens →
    Fine-grained tokens → Generate new token.
-2. Scope to the project repository only. Permissions: read/write Contents,
-   Issues, Pull requests, Workflows; read Metadata.
+2. Scope and permissions per [GitHub Token scoping](#github-token-scoping)
+   below.
 3. Copy the token (shown once).
 4. Store in the keyring:
 
@@ -309,6 +309,65 @@ identify and replace the existing entry). No file edits, no copy steps.
 - **GitHub Token rotation.** Generate a new fine-grained token in GitHub,
   re-run the `secret-tool store` command for `github-token`. Recommended
   every 90 days.
+
+### GitHub Token scoping
+
+The GitHub Token's scope is the most consequential constraint on the
+secondary-threat blast radius. A stolen or manipulated token can do
+exactly what its scope permits, no more.
+
+**Hard requirements** (inviolable; apply to every project):
+
+- **Repository scope: single repository** (`{owner}/{repo}`). Not "all
+  repositories", not "selected repositories" with more than one selected.
+  A stolen token cannot reach any other repository.
+- **No account-level permissions.** All entries under "Account
+  permissions" remain at "No access". The token has no view of the
+  GitHub account beyond the one repository.
+- **No administration permissions.** The following repository
+  permissions remain at "No access" regardless of project needs:
+  Administration, Secrets, Variables, Environments, Deployments,
+  Codespaces, Pages, Webhooks, Custom properties, Attestations. These
+  modify the repository's configuration rather than performing work
+  inside it; granting them would let a manipulated agent disable branch
+  protection, exfiltrate secrets, rewrite CI to run attacker code, or
+  similar.
+
+**Baseline permissions** (required by the SDLC's current operations):
+
+| Permission | Access | Why |
+| --- | --- | --- |
+| Metadata | Read | Implicit prerequisite for every other permission. GitHub auto-grants. |
+| Contents | Read & write | Clone, fetch, push, branch creation and deletion. Phase 2 onwards. |
+| Issues | Read & write | Phase 1 issue creation, label updates across all phases, phase comments. |
+| Pull requests | Read & write | Phase 5 and release workflow PR creation, PR comments, status updates. |
+| Workflows | Read & write | `chore` Issues that touch `.github/workflows/*`. Without this, those PRs cannot be pushed. |
+| Actions | Read | Reading CI run status to confirm quality gates passed before proceeding to PR review. |
+
+Workflows is the most consequential individual baseline permission — it
+lets the token modify CI definitions. Accepted because the SDLC
+explicitly governs `chore` work that touches workflows; the alternative
+(manual edits outside the SDLC) defeats the design. The mitigation is
+that workflow changes pass through PR review like any other change.
+
+**Grey area** (project-specific; add only when a named operation
+requires it):
+
+| Permission | Consider when |
+| --- | --- |
+| Actions: write | The SDLC grows to include Claude triggering CI re-runs or cancelling stuck workflows. |
+| Discussions: read/write | Project uses Discussions for design docs, RFCs, or decision records. |
+| Packages: read | Project depends on private packages from GHCR or GitHub Packages. |
+| Packages: write | Project publishes packages from CI and Claude drives the publish step. |
+| Commit statuses: write | The SDLC adds a step where Claude posts custom commit statuses separate from CI. |
+| Code scanning alerts: read | Quality gates include reading scanning results (CodeQL or similar). |
+| Dependabot alerts: read | The SDLC includes a phase where Claude reviews and acts on Dependabot findings. |
+
+The principle: start with the baseline, add a permission only when a
+specific named SDLC operation requires it, document why in the project's
+repository (not only in the token configuration). Drift toward "grant a
+bit more just in case" is exactly what the no-administration policy
+exists to prevent.
 
 ---
 
