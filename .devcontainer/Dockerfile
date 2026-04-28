@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # ======================================================================
-# molim development environment image — initial skeleton (Phase 2, Step 4)
+# molim development environment image
 #
 # This Dockerfile is organized into two logical sections:
 #
@@ -11,8 +11,7 @@
 #   2. PROJECT — molim-specific tooling. Replaceable per project.
 #
 # Hardening (firewall enforcement, capability drops, read-only root) is
-# added at Phase 3. Entrypoint logic (clone, branch checkout, exec
-# claude) is added at Step 6.
+# not yet implemented.
 # ======================================================================
 
 
@@ -70,7 +69,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
         git \
-        tmux \
         jq \
         bubblewrap \
         socat \
@@ -172,8 +170,5 @@ WORKDIR /workspace
 # final command after bootstrap. CMD is overridable at `docker run` time
 # for troubleshooting (e.g., `docker run ... molim-devenv ls /workspace`
 # bootstraps and runs ls instead of bash).
-#
-# Step 6: CMD = bash (interactive shell after bootstrap).
-# Step 7: CMD will become tmux + claude.
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["bash"]
+CMD ["claude"]
