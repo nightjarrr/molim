@@ -607,9 +607,6 @@ target; it is not propagated into the container.
      Issue ID was provided, `{GH_OWNER}-{GH_REPO}-{suffix}` otherwise),
      and exec `tmux new-session -s <name> docker run ...`. The session
      name is printed so the Project Owner can use it with `tmux attach`.
-9. On exit, print the final `git status` and `git log origin/main..HEAD`
-   from the container so the Project Owner sees what was pushed and what
-   was not before the container is destroyed.
 
 ---
 
@@ -641,7 +638,9 @@ with an Issue ID.
 5. Install project development tooling and and dependencies (in case of `uv` and Python project via `uv sync --frozen` against the project's locked manifests. `uv` resolves and installs Python itself (per the project's `.python-version` / `pyproject.toml`) at this step; no Python is baked into the image).
 6. Print a brief summary: Issue title (if any), current phase, branch
    state (fresh start vs resuming, commits ahead of `main` if resuming).
-7. Exec `claude` directly.
+7. Run CMD command (by default `claude`) within bash shell of entrypoint.sh itself.
+8. After CMD command exist, run a new interactive bash shell (do not exit the container immediately)
+9. Upon bash shell exit, run EXIT trap to show the final `git status` and `git log --oneline @{u}..HEAD` from the container so the Project Owner sees what was pushed and what was not before the container was destroyed.
 
 **Branch lookup uses GitHub's first-class linkage**, not the branch
 naming convention. The SDLC creates the link when the branch is created
