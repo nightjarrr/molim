@@ -122,18 +122,48 @@ cd /workspace
 # ----------------------------------------------------------------------
 # Resolve and check out the working branch
 #
-#   ISSUE_ID not set                     -> stay on main
-#   ISSUE_ID set, no linked branch       -> stay on main
-#   ISSUE_ID set, one linked branch      -> check it out
-#   ISSUE_ID set, multiple linked         -> refuse and exit
+#   ISSUE_ID not set                       -> stay on main
+#   ISSUE_ID set, issue does not exist     -> error
+#   ISSUE_ID set, issue exists, 0 branches -> stay on main
+#   ISSUE_ID set, issue exists, 1 branch   -> check it out
+#   ISSUE_ID set, issue exists, ≥2 branches -> refuse and exit
+#
+# Implemented via GraphQL because `gh issue develop --list` does not
+# support --json output. The first:2 cap is sufficient since logic
+# only distinguishes 0 / 1 / multiple.
 # ----------------------------------------------------------------------
 section "Resolving working branch"
 
 if [[ -z "${ISSUE_ID:-}" ]]; then
     echo "No ISSUE_ID; staying on main."
 else
-    LINKED_BRANCHES_JSON="$(gh issue develop "${ISSUE_ID}" --list --repo "${GH_OWNER}/${GH_REPO}" --json name 2>/dev/null || echo '[]')"
-    LINKED_COUNT="$(echo "${LINKED_BRANCHES_JSON}" | jq 'length')"
+
+    if ! gh issue view "${ISSUE_ID}" --repo "${GH_OWNER}/${GH_REPO}" --json number >/dev/null 2>&1; then
+        die "Issue #${ISSUE_ID} not found in ${GH_OWNER}/${GH_REPO}."
+    fi
+
+    QUERY_RESULT="$(gh api graphql \
+        -F owner="${GH_OWNER}" \
+        -F repo="${GH_REPO}" \
+        -F number="${ISSUE_ID}" \
+        -f query='
+            query($owner: String!, $repo: String!, $number: Int!) {
+              repository(owner: $owner, name: $repo) {
+                issue(number: $number) {
+                  linkedBranches(first: 2) {
+                    nodes { ref { name } }
+                  }
+                }
+              }
+            }')"
+
+    # Issue not found -> .data.repository.issue is null
+    if [[ "$(echo "${QUERY_RESULT}" | jq '.data.repository.issue')" == "null" ]]; then
+        die "Issue #${ISSUE_ID} not returned by GraphQL API in ${GH_OWNER}/${GH_REPO}."
+    fi
+
+    LINKED_BRANCHES="$(echo "${QUERY_RESULT}" | jq -r '.data.repository.issue.linkedBranches.nodes | map(.ref.name)')"
+    LINKED_COUNT="$(echo "${LINKED_BRANCHES}" | jq 'length')"
 
     case "${LINKED_COUNT}" in
         0)
@@ -141,13 +171,13 @@ else
             echo "Branch creation is the SDLC's spec phase responsibility."
             ;;
         1)
-            BRANCH="$(echo "${LINKED_BRANCHES_JSON}" | jq -r '.[0].name')"
+            BRANCH="$(echo "${LINKED_BRANCHES}" | jq -r '.[0]')"
             echo "Issue #${ISSUE_ID}: one linked branch (${BRANCH}); checking out."
             git checkout "${BRANCH}"
             ;;
         *)
             echo "Issue #${ISSUE_ID}: multiple linked branches found:" >&2
-            echo "${LINKED_BRANCHES_JSON}" | jq -r '.[].name' | sed 's/^/  - /' >&2
+            echo "${LINKED_BRANCHES}" | jq -r '.[]' | sed 's/^/  - /' >&2
             die "ambiguous branch state. Resolve in GitHub (Issue page → Development sidebar → unlink unwanted branches) and retry."
             ;;
     esac
