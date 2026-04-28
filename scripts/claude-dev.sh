@@ -13,10 +13,10 @@
 #   claude-dev.sh -- <cmd> [args...]         # no issue; override command
 #   claude-dev.sh <issue-id> -- <cmd> [args] # specific Issue; override command
 #
-# The default command is whatever the image's CMD specifies (currently
-# bash; will become tmux + claude in Step 7). The override is intended
-# for troubleshooting (e.g., running `uv run pytest` against a fresh
-# clone without entering an interactive session).
+# The default command is whatever the image's CMD specifies (claude).
+# The override is intended for troubleshooting (e.g., running
+# `uv run pytest` against a fresh clone without entering an interactive
+# session).
 #
 # [TODO] Hardening flags, GHCR pull, digest pinning, entrypoint logic, and
 # pre-exit reporting are added in later steps.
@@ -120,6 +120,7 @@ require_tool() {
 
 require_tool docker      "Install Docker Engine (https://docs.docker.com/engine/install/)."
 require_tool secret-tool "Install libsecret-tools (apt install libsecret-tools)."
+require_tool tmux        "Install tmux (apt install tmux)."
 
 # ----------------------------------------------------------------------
 # Load and validate claude-dev.env
@@ -203,6 +204,23 @@ if [[ ${#CMD_OVERRIDE[@]} -gt 0 ]]; then
 fi
 
 # ----------------------------------------------------------------------
-# Run
+# Run — inside a named host tmux session for survivability.
+#
+# If Ghostty (or any other terminal) crashes, the tmux session on the
+# host keeps docker run alive. Reattach with: tmux attach -t <name>
+#
+# If already inside tmux ($TMUX is set), run docker directly to avoid
+# nesting sessions.
 # ----------------------------------------------------------------------
-exec docker "${DOCKER_ARGS[@]}"
+if [[ -n "${TMUX:-}" ]]; then
+    exec docker "${DOCKER_ARGS[@]}"
+else
+    SUFFIX=$(LC_ALL=C tr -dc 'a-zA-Z0-9' </dev/urandom | head -c 4)
+    if [[ -n "$ISSUE_ID" ]]; then
+        TMUX_SESSION="${GH_OWNER}-${GH_REPO}-${ISSUE_ID}-${SUFFIX}"
+    else
+        TMUX_SESSION="${GH_OWNER}-${GH_REPO}-${SUFFIX}"
+    fi
+    echo "tmux session: ${TMUX_SESSION}"
+    exec tmux new-session -s "${TMUX_SESSION}" docker "${DOCKER_ARGS[@]}"
+fi

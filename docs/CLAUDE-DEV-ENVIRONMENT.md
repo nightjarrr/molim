@@ -29,6 +29,7 @@ Prerequisites:
   required.
 - Bash.
 - Ghostty (or another GPU-capable terminal emulator).
+- `tmux` (session manager; keeps the container alive across terminal crashes).
 - `libsecret-tools` (provides `secret-tool` for keyring access).
 - `seahorse` (GUI for browsing and auditing the keyring).
 - An active GNOME (or compatible Secret Service) login session, so the keyring is unlocked.
@@ -204,7 +205,7 @@ One container instance corresponds to one in-flight feature:
 | One feature workflow | One Claude Code session |
 | One Claude Code session | One `claude` process |
 | One `claude` process | One container |
-| One container | One terminal tab (or `tmux` window) |
+| One container | One host `tmux` session |
 
 Claude Code subagents run inside the parent `claude` process and do not
 require their own containers.
@@ -225,11 +226,12 @@ container; there is no "resume previous container" path.
 PTY (`docker run -it`), `TERM=xterm-256color`, and a UTF-8 locale
 (`LANG=en_US.UTF-8`, `locales` package installed in the image).
 
-**Survivability.** `claude` runs inside a `tmux` session inside the
-container, so accidental terminal closes (lid close, X disconnect, SSH
-drop) do not kill the session. Reattach with
-`docker exec -it <container> tmux attach`. Survivability ends when the
-container exits, by design.
+**Survivability.** The launcher creates a named host `tmux` session and
+runs `docker run` inside it. Ghostty attaches to that session. If Ghostty
+crashes or is closed, the host tmux daemon keeps `docker run` alive and the
+container continues running. Reattach from any new terminal with
+`tmux attach -t <session-name>` (see Launcher section for the naming
+scheme). Survivability ends when the container exits, by design.
 
 ---
 
@@ -582,7 +584,7 @@ target; it is not propagated into the container.
 
 1. Validate the argument: zero or one positional argument; if present,
    must be a positive integer Issue ID.
-2. Verify host prerequisites (`docker`, `secret-tool`); fail fast with
+2. Verify host prerequisites (`docker`, `secret-tool`, `tmux`); fail fast with
    installation hints if anything is missing.
 3. Source `scripts/claude-dev.env`; verify required variables are set.
 4. Read the pinned image digest from `.devcontainer/image.digest`.
@@ -591,14 +593,22 @@ target; it is not propagated into the container.
    - `secret-tool lookup service claude-dev account github-token`
    Fail fast with a bootstrap-procedure pointer if either is empty.
 6. Detect the host timezone from `/etc/timezone` or `/etc/localtime`.
-7. `docker run --rm -it` with the pinned image, an interactive TTY,
-   resource limits (`--memory`, `--cpus`), capability drop
-   (`--cap-drop=ALL` plus `--cap-add=NET_ADMIN` for firewall init),
+7. Assemble the `docker run --rm -it` invocation with the pinned image,
+   an interactive TTY, resource limits (`--memory`, `--cpus`), capability
+   drop (`--cap-drop=ALL` plus `--cap-add=NET_ADMIN` for firewall init),
    `--security-opt no-new-privileges`, read-only root filesystem with
    tmpfs for required writable paths, and the env vars `GH_OWNER`,
    `GH_REPO`, `CLAUDE_CODE_OAUTH_TOKEN`, `GH_TOKEN`, `TZ`, plus
    `ISSUE_ID` when an Issue ID was provided. No bind mounts.
-8. On exit, print the final `git status` and `git log origin/main..HEAD`
+8. Launch the container inside a host tmux session:
+   - If already running inside tmux (`$TMUX` is set): exec `docker run`
+     directly — no nesting.
+   - Otherwise: generate a 4-character alphanumeric suffix, build a
+     session name (`{GH_OWNER}-{GH_REPO}-{ISSUE_ID}-{suffix}` when an
+     Issue ID was provided, `{GH_OWNER}-{GH_REPO}-{suffix}` otherwise),
+     and exec `tmux new-session -s <name> docker run ...`. The session
+     name is printed so the Project Owner can use it with `tmux attach`.
+9. On exit, print the final `git status` and `git log origin/main..HEAD`
    from the container so the Project Owner sees what was pushed and what
    was not before the container is destroyed.
 
@@ -632,7 +642,7 @@ with an Issue ID.
 5. Install project development tooling and and dependencies (in case of `uv` and Python project via `uv sync --frozen` against the project's locked manifests. `uv` resolves and installs Python itself (per the project's `.python-version` / `pyproject.toml`) at this step; no Python is baked into the image).
 6. Print a brief summary: Issue title (if any), current phase, branch
    state (fresh start vs resuming, commits ahead of `main` if resuming).
-7. Start a `tmux` session and exec `claude` inside it.
+7. Exec `claude` directly.
 
 **Branch lookup uses GitHub's first-class linkage**, not the branch
 naming convention. The SDLC creates the link when the branch is created

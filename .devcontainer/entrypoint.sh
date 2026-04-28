@@ -1,6 +1,6 @@
 #!/bin/bash
 # ======================================================================
-# entrypoint.sh — Claude Code dev environment bootstrap (Phase 2, Step 6)
+# entrypoint.sh — Claude Code dev environment bootstrap
 #
 # Runs as the container's ENTRYPOINT. Receives configuration via env
 # vars from the launcher (claude-dev.sh on the host):
@@ -230,6 +230,5 @@ if [[ "${COMMITS_AHEAD}" -gt 0 ]]; then
 fi
 echo
 
-# Hand off to whatever the image's CMD specifies (bash for Step 6,
-# tmux+claude for Step 7).
+# Hand off to the image's CMD (claude).
 exec "$@"
