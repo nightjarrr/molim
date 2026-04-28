@@ -215,7 +215,8 @@ fi
 if [[ -n "${TMUX:-}" ]]; then
     exec docker "${DOCKER_ARGS[@]}"
 else
-    SUFFIX=$(LC_ALL=C tr -dc 'a-zA-Z0-9' </dev/urandom | head -c 4)
+    SUFFIX=$(printf '%x' "$(date +%s%N)")
+    SUFFIX="${SUFFIX: -4}"
     if [[ -n "$ISSUE_ID" ]]; then
         TMUX_SESSION="${GH_OWNER}-${GH_REPO}-${ISSUE_ID}-${SUFFIX}"
     else
