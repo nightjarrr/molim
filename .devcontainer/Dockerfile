@@ -10,7 +10,7 @@
 #
 #   2. PROJECT — molim-specific tooling. Replaceable per project.
 #
-# Hardening (firewall enforcement, capability drops, read-only root) is
+# [TODO] Hardening (firewall enforcement, capability drops, read-only root) is
 # not yet implemented.
 # ======================================================================
 
@@ -159,9 +159,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Reuse the `node` user (UID/GID 1000) that ships with the base image.
 # Pre-create /workspace owned by node so the entrypoint's git clone can
 # write into it. WORKDIR alone would create /workspace as root.
-# TODO Phase 3: when /workspace becomes a tmpfs mount, this RUN line
-# becomes redundant (tmpfs uid/gid is set by the mount flags) and
-# should be removed.
+# [TODO] when /workspace becomes a tmpfs mount, this RUN line becomes
+# redundant (tmpfs uid/gid is set by the mount flags) and should be removed.
 RUN mkdir -p /workspace && chown -R node:node /workspace
 USER node
 WORKDIR /workspace

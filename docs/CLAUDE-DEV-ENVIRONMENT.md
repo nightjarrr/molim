@@ -205,7 +205,7 @@ One container instance corresponds to one in-flight feature:
 | One feature workflow | One Claude Code session |
 | One Claude Code session | One `claude` process |
 | One `claude` process | One container |
-| One container | One host `tmux` window |
+| One container | One host `tmux` session |
 
 Claude Code subagents run inside the parent `claude` process and do not
 require their own containers.
