@@ -484,7 +484,6 @@ environment.
 ```
 .devcontainer/
   Dockerfile                 # image definition
-  devcontainer.json          # devcontainer metadata
   init-firewall.sh           # outbound network policy initialization
   entrypoint.sh              # in-container start: clone, checkout, exec claude
   image.digest               # pinned digest of the published image
