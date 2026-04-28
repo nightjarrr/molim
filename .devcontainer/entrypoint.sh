@@ -26,7 +26,7 @@ set -euo pipefail
 # Helpers
 # ----------------------------------------------------------------------
 section() {
-    printf '\n==> %s\n' "$*"
+    printf '\n\033[1;32m==> %s\033[0m\n' "$*"
 }
 
 die() {
@@ -38,6 +38,9 @@ die() {
 # ======================================================================
 # BASE — generic Claude Code dev environment bootstrap
 # ======================================================================
+
+section "Welcome to ephemeral Claude Code dev environment"
+
 
 # ----------------------------------------------------------------------
 # Validate required environment
@@ -230,5 +233,28 @@ if [[ "${COMMITS_AHEAD}" -gt 0 ]]; then
 fi
 echo
 
-# Hand off to the image's CMD (claude).
-exec "$@"
+# ----------------------------------------------------------------------
+# Final steps:
+# - define exit trap to report git status trail
+# - exec CMD (claude by default) with args passed from the launcher
+# - drop into interactive bash when CMD exits
+# ----------------------------------------------------------------------
+
+git_trail() {
+    section "Git state on exit"
+    git -C /workspace status
+    if git -C /workspace rev-parse @{u} >/dev/null 2>&1; then
+        git --no-pager -C /workspace log --oneline @{u}..HEAD
+    else
+        echo "(branch not yet pushed to remote)"
+    fi
+    read -r -s -n 1 -p $'\nPress any key to exit the container...' _
+}
+
+trap git_trail EXIT
+
+# run CMD (claude by default, or any override)
+"$@"
+# drop into interactive bash when CMD exits
+# when bash exits → trap fires → git trail → container exits
+bash    
