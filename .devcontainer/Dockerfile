@@ -97,7 +97,8 @@ RUN curl -fsSL "https://github.com/cli/cli/releases/download/v2.91.0/gh_2.91.0_l
 # ----------------------------------------------------------------------
 # Claude Code — official npm package, version-pinned
 # ----------------------------------------------------------------------
-RUN npm install -g @anthropic-ai/claude-code@2.1.112
+ENV CLAUDE_CODE_VERSION=2.1.112
+RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
 # ----------------------------------------------------------------------
 # Pre-create Claude Code's per-user state directory
@@ -107,6 +108,13 @@ RUN npm install -g @anthropic-ai/claude-code@2.1.112
 # the directory exists with the right owner.
 # ----------------------------------------------------------------------
 RUN mkdir -p /home/node/.claude && chown -R node:node /home/node/.claude
+
+# ----------------------------------------------------------------------
+# Claude Code startup configuration template.
+# Copied to ~/.claude.json by the entrypoint at container start.
+# Source of truth for CLAUDE_CODE_VERSION is the ENV declaration above.
+# ----------------------------------------------------------------------
+COPY .devcontainer/.claude.json.template /etc/claude-dev/.claude.json.template
 
 # ----------------------------------------------------------------------
 # Bootstrap entrypoint script

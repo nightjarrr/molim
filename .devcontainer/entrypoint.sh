@@ -183,6 +183,20 @@ else
     esac
 fi
 
+# ----------------------------------------------------------------------
+# Write ~/.claude.json
+# Suppresses the first-run onboarding wizard (theme picker, login method
+# screen). hasCompletedOnboarding is the gate; lastOnboardingVersion
+# must match the installed Claude Code version. Template lives at
+# /etc/claude-dev/.claude.json.template (baked into the image); we stamp 
+# in the version and write to the home dir.
+# ----------------------------------------------------------------------
+section "Writing ~/.claude.json"
+sed "s/__CLAUDE_CODE_VERSION__/${CLAUDE_CODE_VERSION}/" \
+    /etc/claude-dev/.claude.json.template > "${HOME}/.claude.json"
+chmod 600 "${HOME}/.claude.json"
+echo "lastOnboardingVersion: ${CLAUDE_CODE_VERSION}"
+
 
 # ======================================================================
 # PROJECT — molim-specific dependency installation
