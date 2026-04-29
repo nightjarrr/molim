@@ -149,7 +149,11 @@ source "$ENV_FILE"
 
 require_var GH_OWNER
 require_var GH_REPO
+
 require_var DEVENV_IMAGE
+require_var CLAUDE_PROXY_SOCKET_CONTAINER_PATH
+require_var CLAUDE_PROXY_PORT
+
 require_var ENVOY_IMAGE
 require_var ENVOY_ADMIN_HOST_PORT
 require_var ENVOY_ADMIN_CONTAINER_PORT
@@ -275,12 +279,13 @@ start_envoy() {
         -c /run/claude-dev-proxy/envoy.yaml
 }
 
-wait_for_envoy() {
-    local socket_host_path="${RUN_DIR}/$(basename "$ENVOY_SOCKET_CONTAINER_PATH")"
+# Envoy socket on host system
+ENVOY_SOCKET_HOST_PATH="${RUN_DIR}/$(basename "$ENVOY_SOCKET_CONTAINER_PATH")"
 
+wait_for_envoy() {
     for _ in {1..100}; do
-        if [[ -S "$socket_host_path" ]]; then
-            echo "Envoy proxy socket ready: ${socket_host_path}"
+        if [[ -S "$ENVOY_SOCKET_HOST_PATH" ]]; then
+            echo "Envoy proxy socket ready: ${ENVOY_SOCKET_HOST_PATH}"
             return 0
         fi
 
@@ -293,7 +298,7 @@ wait_for_envoy() {
     done
 
     docker logs "${ENVOY_CONTAINER}" >&2 || true
-    die "Envoy did not create proxy socket at ${socket_host_path}"
+    die "Envoy did not create proxy socket at ${ENVOY_SOCKET_HOST_PATH}"
 }
 
 # ----------------------------------------------------------------------
@@ -307,6 +312,11 @@ DOCKER_ARGS=(
     -e GH_OWNER -e GH_REPO
     -e CLAUDE_CODE_OAUTH_TOKEN -e GH_TOKEN
     -e TZ
+
+    # Proxy config
+    -v "${ENVOY_SOCKET_HOST_PATH}:${CLAUDE_PROXY_SOCKET_CONTAINER_PATH}"
+    -e "CLAUDE_DEV_PROXY_SOCKET=${CLAUDE_PROXY_SOCKET_CONTAINER_PATH}"
+    -e "CLAUDE_DEV_PROXY_PORT=${CLAUDE_PROXY_PORT}"
 )
 
 if [[ -n "$ISSUE_ID" ]]; then

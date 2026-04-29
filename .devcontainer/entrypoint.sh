@@ -30,7 +30,7 @@ section() {
 }
 
 die() {
-    echo "Error: $*" >&2
+    echo "\033[1;31mError:\033[0m $*" >&2
     exit 1
 }
 
@@ -47,6 +47,12 @@ section "Welcome to ephemeral Claude Code dev environment"
 # ----------------------------------------------------------------------
 section "Validating environment"
 
+validation_failure() {
+    printf '\n\033[1;31m==> %s\033[0m\n' "Entrypoint validation failed, Claude container cannot proceed."
+    read -r -s -n 1 -p $'\nPress any key to exit the container...' _
+}
+trap validation_failure EXIT
+
 require_env() {
     local var="$1"
     if [[ -z "${!var:-}" ]]; then
@@ -59,6 +65,8 @@ require_env GH_REPO
 require_env GH_TOKEN
 require_env CLAUDE_CODE_OAUTH_TOKEN
 require_env TZ
+require_env CLAUDE_DEV_PROXY_SOCKET
+require_env CLAUDE_DEV_PROXY_PORT
 
 echo "GH_OWNER=${GH_OWNER}"
 echo "GH_REPO=${GH_REPO}"
@@ -81,6 +89,68 @@ if [[ -n "$(ls -A /workspace 2>/dev/null)" ]]; then
     die "/workspace is not empty. Container is in an unexpected state; aborting."
 fi
 echo "/workspace is clean"
+
+
+# ----------------------------------------------------------------------
+# Local proxy configuration
+# The real Envoy proxy is exposed on a bind-mounted socket at $CLAUDE_DEV_PROXY_SOCKET.
+# socat is used as a bridge to connect to the proxy.
+# ----------------------------------------------------------------------
+start_proxy_bridge() {
+    if [[ -z "${CLAUDE_DEV_PROXY_SOCKET:-}" ]]; then
+        echo "Claude dev proxy bridge: disabled"
+        return 0
+    fi
+
+    local socket_path="${CLAUDE_DEV_PROXY_SOCKET}"
+    local proxy_port="${CLAUDE_DEV_PROXY_PORT:-8080}"
+    local proxy_url="http://127.0.0.1:${proxy_port}"
+    local log_file="/tmp/claude-dev-proxy-socat.log"
+
+    if [[ ! -S "${socket_path}" ]]; then
+        die "Claude dev proxy socket not found or not a socket: ${socket_path}"
+    fi
+
+    section "Starting Claude dev proxy bridge"
+
+    : > "${log_file}"
+
+    socat -d -d \
+        "TCP-LISTEN:${proxy_port},bind=127.0.0.1,reuseaddr,fork" \
+        "UNIX-CONNECT:${socket_path}" \
+        2>"${log_file}" &
+
+    local socat_pid="$!"
+
+    # Wait until the local TCP listener is reachable.
+    for _ in {1..50}; do
+        if ! kill -0 "${socat_pid}" >/dev/null 2>&1; then
+            cat "${log_file}" >&2 || true
+            die "Claude dev proxy bridge process exited before becoming ready"
+        fi
+
+        if timeout 1 bash -c ":</dev/tcp/127.0.0.1/${proxy_port}" >/dev/null 2>&1; then
+            export HTTP_PROXY="${proxy_url}"
+            export HTTPS_PROXY="${proxy_url}"
+            export http_proxy="${proxy_url}"
+            export https_proxy="${proxy_url}"
+            export NO_PROXY="${NO_PROXY:-localhost,127.0.0.1,::1}"
+            export no_proxy="${no_proxy:-localhost,127.0.0.1,::1}"
+
+            echo "Proxy socket: ${socket_path}"
+            echo "Proxy bridge: ${proxy_url}"
+            echo "socat log: ${log_file}"
+            return 0
+        fi
+
+        sleep 0.1
+    done
+
+    cat "${log_file}" >&2 || true
+    die "Claude dev proxy bridge did not become ready on 127.0.0.1:${proxy_port}"
+}
+
+start_proxy_bridge
 
 # ----------------------------------------------------------------------
 # Configure GitHub authentication via gh
