@@ -25,10 +25,15 @@
 set -euo pipefail
 
 # ----------------------------------------------------------------------
-# Locate this script's directory (so we can find claude-dev.env beside it)
+# Locate required directories and files
 # ----------------------------------------------------------------------
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SCRIPT_PATH="${SCRIPT_DIR}/$(basename "${BASH_SOURCE[0]}")"
+PROJECT_DIR="$( cd "${SCRIPT_DIR}/.." && pwd )"
+
 ENV_FILE="${SCRIPT_DIR}/claude-dev.env"
+ENVOY_DIR="${PROJECT_DIR}/.devcontainer/envoy"
+ENVOY_TEMPLATE="${ENVOY_DIR}/envoy.yaml.template"
 
 # ----------------------------------------------------------------------
 # Helpers
@@ -44,11 +49,9 @@ Usage: claude-dev.sh [<issue-id>] [-- <cmd> [args...]]
 
   <issue-id>     Optional. Positive integer GitHub Issue number to work on.
                  If omitted, the container starts without a specific Issue
-                 context (suitable for the "New Issue" skill or general work).
+                 context.
 
-  -- <cmd>...    Optional. Override the image's default command. Useful for
-                 one-off troubleshooting against a freshly bootstrapped
-                 workspace.
+  -- <cmd>...    Optional. Override the image's default command.
 
 Examples:
   claude-dev.sh                              # session with no Issue
@@ -56,6 +59,25 @@ Examples:
   claude-dev.sh -- ls -la /workspace         # one-off ls, no Issue
   claude-dev.sh 42 -- uv run pytest -q       # one-off pytest for Issue #42
 EOF
+}
+
+require_tool() {
+    local tool="$1"
+    local hint="$2"
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        die "required tool '$tool' not found in PATH. ${hint}"
+    fi
+}
+
+require_var() {
+    local var="$1"
+    if [[ -z "${!var:-}" ]]; then
+        die "required variable '${var}' is not set in ${ENV_FILE}."
+    fi
+}
+
+quote_command() {
+    printf '%q ' "$@"
 }
 
 # ----------------------------------------------------------------------
@@ -110,17 +132,10 @@ fi
 # ----------------------------------------------------------------------
 # Prerequisite tool checks
 # ----------------------------------------------------------------------
-require_tool() {
-    local tool="$1"
-    local hint="$2"
-    if ! command -v "$tool" >/dev/null 2>&1; then
-        die "required tool '$tool' not found in PATH. ${hint}"
-    fi
-}
-
 require_tool docker      "Install Docker Engine (https://docs.docker.com/engine/install/)."
 require_tool secret-tool "Install libsecret-tools (apt install libsecret-tools)."
 require_tool tmux        "Install tmux (apt install tmux)."
+require_tool openssl     "Install OpenSSL (apt install openssl)."
 
 # ----------------------------------------------------------------------
 # Load and validate claude-dev.env
@@ -132,18 +147,37 @@ fi
 # shellcheck disable=SC1090
 source "$ENV_FILE"
 
-require_var() {
-    local var="$1"
-    if [[ -z "${!var:-}" ]]; then
-        die "required variable '${var}' is not set in ${ENV_FILE}."
-    fi
-}
-
 require_var GH_OWNER
 require_var GH_REPO
 require_var DEVENV_IMAGE
+require_var ENVOY_IMAGE
+require_var ENVOY_ADMIN_HOST_PORT
+require_var ENVOY_ADMIN_CONTAINER_PORT
+require_var ENVOY_ADMIN_ADDRESS
+require_var ENVOY_SOCKET_CONTAINER_PATH
 
 export GH_OWNER GH_REPO
+
+# ----------------------------------------------------------------------
+# If not already inside tmux, re-enter this launcher inside a tmux session.
+#
+# This differs from the original script, which ran docker directly as the
+# tmux command. Running the launcher itself inside tmux lets us keep Envoy
+# lifecycle cleanup in the same process as the Claude container run.
+# ----------------------------------------------------------------------
+if [[ -z "${TMUX:-}" ]]; then
+    SUFFIX="$(openssl rand -hex 2)"
+    if [[ -n "$ISSUE_ID" ]]; then
+        TMUX_SESSION="${GH_OWNER}-${GH_REPO}-${ISSUE_ID}-${SUFFIX}"
+    else
+        TMUX_SESSION="${GH_OWNER}-${GH_REPO}-${SUFFIX}"
+    fi
+
+    echo "tmux session: ${TMUX_SESSION}"
+
+    TMUX_COMMAND="$(quote_command "$SCRIPT_PATH" "$@")"
+    exec tmux new-session -s "${TMUX_SESSION}" "${TMUX_COMMAND}"
+fi
 
 # ----------------------------------------------------------------------
 # Retrieve auth tokens from the host Secret Service keyring
@@ -179,7 +213,94 @@ TZ="$(detect_host_tz)"
 export TZ
 
 # ----------------------------------------------------------------------
-# Build docker run argument list
+# Envoy sidecar runtime setup
+# ----------------------------------------------------------------------
+RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$(openssl rand -hex 8)"
+RUN_BASE="${XDG_RUNTIME_DIR:-/tmp}/claude-dev"
+RUN_DIR="${RUN_BASE}/${RUN_ID}"
+
+ENVOY_CONTAINER="claude-dev-envoy-${RUN_ID}"
+ENVOY_RUNTIME_CONFIG="${RUN_DIR}/envoy.yaml"
+
+cleanup_envoy() {
+    local status=$?
+    trap - EXIT INT TERM
+
+    if [[ -n "${ENVOY_CONTAINER:-}" ]]; then
+        docker stop "${ENVOY_CONTAINER}" >/dev/null 2>&1 || true
+    fi
+
+    if [[ -n "${RUN_DIR:-}" ]]; then
+        rm -rf "${RUN_DIR}" >/dev/null 2>&1 || true
+    fi
+
+    exit "$status"
+}
+
+trap cleanup_envoy EXIT INT TERM
+
+prepare_envoy() {
+    if [[ ! -f "$ENVOY_TEMPLATE" ]]; then
+        die "Envoy config template not found at ${ENVOY_TEMPLATE}"
+    fi
+
+    mkdir -p "$RUN_DIR"
+    chmod 700 "$RUN_DIR"
+
+    sed \
+        -e "s|__ENVOY_SOCKET_PATH__|${ENVOY_SOCKET_CONTAINER_PATH}|g" \
+        -e "s|__ENVOY_ADMIN_ADDRESS__|${ENVOY_ADMIN_ADDRESS}|g" \
+        -e "s|__ENVOY_ADMIN_PORT__|${ENVOY_ADMIN_CONTAINER_PORT}|g" \
+        "$ENVOY_TEMPLATE" > "$ENVOY_RUNTIME_CONFIG"
+
+    chmod 600 "$ENVOY_RUNTIME_CONFIG"
+}
+
+start_envoy() {
+    prepare_envoy
+
+    echo "Starting Envoy perimeter sidecar: ${ENVOY_CONTAINER}"
+    echo "Envoy admin UI: http://127.0.0.1:${ENVOY_ADMIN_HOST_PORT}/"
+
+    docker run --rm -d \
+        --name "${ENVOY_CONTAINER}" \
+        --user "$(id -u):$(id -g)" \
+        --cap-drop ALL \
+        --security-opt no-new-privileges \
+        --read-only \
+        --tmpfs /tmp:rw,nosuid,nodev,noexec,size=16m \
+        -p "127.0.0.1:${ENVOY_ADMIN_HOST_PORT}:${ENVOY_ADMIN_CONTAINER_PORT}" \
+        -v "${RUN_DIR}:/run/claude-dev-proxy:rw" \
+        "${ENVOY_IMAGE}" \
+        -c /run/claude-dev-proxy/envoy.yaml
+}
+
+wait_for_envoy() {
+    local socket_host_path="${RUN_DIR}/$(basename "$ENVOY_SOCKET_CONTAINER_PATH")"
+
+    for _ in {1..100}; do
+        if [[ -S "$socket_host_path" ]]; then
+            echo "Envoy proxy socket ready: ${socket_host_path}"
+            return 0
+        fi
+
+        if ! docker inspect -f '{{.State.Running}}' "${ENVOY_CONTAINER}" >/dev/null 2>&1; then
+            docker logs "${ENVOY_CONTAINER}" >&2 || true
+            die "Envoy container exited before creating proxy socket"
+        fi
+
+        sleep 0.1
+    done
+
+    docker logs "${ENVOY_CONTAINER}" >&2 || true
+    die "Envoy did not create proxy socket at ${socket_host_path}"
+}
+
+# ----------------------------------------------------------------------
+# Build Claude container docker run argument list
+#
+# Intentionally unchanged for this draft. We are only validating that the
+# Envoy sidecar can start, expose admin, and be cleaned up correctly.
 # ----------------------------------------------------------------------
 DOCKER_ARGS=(
     run --rm -it
@@ -204,24 +325,10 @@ if [[ ${#CMD_OVERRIDE[@]} -gt 0 ]]; then
 fi
 
 # ----------------------------------------------------------------------
-# Run — inside a named host tmux session for survivability.
-#
-# If Ghostty (or any other terminal) crashes, the tmux session on the
-# host keeps docker run alive. Reattach with: tmux attach -t <name>
-#
-# If already inside tmux ($TMUX is set), run docker directly to avoid
-# nesting sessions.
+# Run
 # ----------------------------------------------------------------------
-if [[ -n "${TMUX:-}" ]]; then
-    exec docker "${DOCKER_ARGS[@]}"
-else
-    SUFFIX=$(printf '%x' "$(date +%s%N)")
-    SUFFIX="${SUFFIX: -4}"
-    if [[ -n "$ISSUE_ID" ]]; then
-        TMUX_SESSION="${GH_OWNER}-${GH_REPO}-${ISSUE_ID}-${SUFFIX}"
-    else
-        TMUX_SESSION="${GH_OWNER}-${GH_REPO}-${SUFFIX}"
-    fi
-    echo "tmux session: ${TMUX_SESSION}"
-    exec tmux new-session -s "${TMUX_SESSION}" docker "${DOCKER_ARGS[@]}"
-fi
+start_envoy
+wait_for_envoy
+
+echo "Starting Claude dev container..."
+docker "${DOCKER_ARGS[@]}"

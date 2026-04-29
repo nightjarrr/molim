@@ -1,0 +1,53 @@
+# Minimal Envoy smoke-test config.
+#
+# This is intentionally NOT a real egress proxy yet.
+# It only:
+#   - enables the Envoy admin interface
+#   - creates a Unix domain socket listener
+#   - returns HTTP 200 for any request sent to that socket
+
+admin:
+  address:
+    socket_address:
+      protocol: TCP
+      address: __ENVOY_ADMIN_ADDRESS__
+      port_value: __ENVOY_ADMIN_PORT__
+
+static_resources:
+  listeners:
+    - name: claude_dev_proxy_socket
+      address:
+        pipe:
+          path: __ENVOY_SOCKET_PATH__
+          # 0666 in decimal. Safe enough for first smoke test because
+          # the parent runtime dir is private and per-run.
+          # [TODO] Tighten later to 0660 once UID/GID behavior is settled.
+          mode: 438
+
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                # [TODO] Smoke test filter. to be replaced with a real proxy confiuration.
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: claude_dev_proxy_smoke_test
+                codec_type: AUTO
+
+                route_config:
+                  name: smoke_test_route
+                  virtual_hosts:
+                    - name: smoke_test
+                      domains:
+                        - "*"
+                      routes:
+                        - match:
+                            prefix: "/"
+                          direct_response:
+                            status: 200
+                            body:
+                              inline_string: "Envoy Claude dev proxy smoke test OK\n"
+
+                http_filters:
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router

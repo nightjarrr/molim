@@ -32,6 +32,7 @@ Prerequisites:
 - `tmux` (session manager; keeps the container alive across terminal crashes).
 - `libsecret-tools` (provides `secret-tool` for keyring access).
 - `seahorse` (GUI for browsing and auditing the keyring).
+- `openssl` (needed for pseudo-random generation of identifiers and names)
 - An active GNOME (or compatible Secret Service) login session, so the keyring is unlocked.
 
 Notably *not* required on the host: `git`, `gh`, `claude`, any language
@@ -141,7 +142,8 @@ issue bodies, fetched files) reaches Claude's context and attempts to
 manipulate it. *Recognized.* Mitigated by ephemeral container isolation
 (blast radius bounded to one session, one branch, one repository) and by
 narrow GitHub Token scope (a manipulated Claude cannot push to other
-repositories or modify account-level resources). Residual risk: hostile content may be pushed to the feature branch until caught at PR review.
+repositories or modify account-level resources). Residual risk: hostile 
+content may be pushed to the feature branch until caught at PR review.
 
 **Malicious dependencies.** A package on a public registry runs hostile
 code at install or test time. *Recognized.* Mitigated by Dependabot
@@ -583,8 +585,8 @@ target; it is not propagated into the container.
 
 1. Validate the argument: zero or one positional argument; if present,
    must be a positive integer Issue ID.
-2. Verify host prerequisites (`docker`, `secret-tool`, `tmux`); fail fast with
-   installation hints if anything is missing.
+2. Verify host prerequisites (`docker`, `secret-tool`, `tmux`, `openssl`);
+   fail fast with installation hints if anything is missing.
 3. Source `scripts/claude-dev.env`; verify required variables are set.
 4. Read the pinned image digest from `.devcontainer/image.digest`.
 5. Retrieve auth tokens from the Secret Service keyring:
