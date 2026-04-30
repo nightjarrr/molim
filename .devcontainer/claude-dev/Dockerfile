@@ -49,19 +49,15 @@ ENV DEBIAN_FRONTEND=noninteractive \
 #
 # Claude operational tooling:
 #   - bubblewrap: namespace-based sandbox used by Claude's `bash --sandbox`
-#   - socat: socket relay used alongside bubblewrap for fine-grained
-#     network access from sandboxed bash invocations
 #   - ripgrep: Claude's preferred fast code search; significant speedup
 #     vs grep on non-trivial repositories
 #   - fd-find: Claude's preferred fast file finder; ergonomic counterpart
 #     to ripgrep
 #
-# Firewall toolchain (used by init-firewall.sh at Phase 3):
-#   - iptables: packet filtering
-#   - ipset: efficient IP/CIDR set management
-#   - iproute2: ip/route/link CLI; needed for bridge gateway detection
-#   - dnsutils: dig/nslookup for hostname resolution
-#   - aggregate: CIDR range compression for compact iptables rules
+# Network isolation tooling:
+#   - socat: socket relay used to create a proxy bridge from
+#     container-internal HTTP proxy (e.g., 127.0.0.1:8080) to
+#     the sidecar proxy listening socket (mounted as Unix socket) 
 # ----------------------------------------------------------------------
 RUN apt-get update && apt-get install -y --no-install-recommends \
         locales \
@@ -74,11 +70,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         socat \
         ripgrep \
         fd-find \
-        iptables \
-        ipset \
-        iproute2 \
-        dnsutils \
-        aggregate \
     && sed -i '/^#.* en_US.UTF-8 /s/^#//' /etc/locale.gen \
     && locale-gen en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
@@ -112,14 +103,14 @@ RUN mkdir -p /home/node/.claude && chown -R node:node /home/node/.claude
 # Copied to ~/.claude.json by the entrypoint at container start.
 # Source of truth for CLAUDE_CODE_VERSION is the ENV declaration above.
 # ----------------------------------------------------------------------
-COPY .devcontainer/.claude.json.template /etc/claude-dev/.claude.json.template
+COPY .devcontainer/claude-dev/.claude.json.template /etc/claude-dev/.claude.json.template
 
 # ----------------------------------------------------------------------
 # Bootstrap entrypoint script
 # Copied from .devcontainer/entrypoint.sh into the image at build time;
 # invoked as the container's ENTRYPOINT (see COMMON section below).
 # ----------------------------------------------------------------------
-COPY .devcontainer/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY .devcontainer/claude-dev/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 
