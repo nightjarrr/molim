@@ -38,6 +38,10 @@ warning() {
     printf '\033[1;33mWarning:\033[0m %s\n' "$*" >&2
 }
 
+success() {
+    printf '\033[1;32m✓\033[0m %s\n' "$*"
+}
+
 # ======================================================================
 # BASE — generic Claude Code dev environment bootstrap
 # ======================================================================
@@ -48,6 +52,7 @@ section "Welcome to ephemeral Claude Code dev environment"
 # ----------------------------------------------------------------------
 # Validate required environment
 # ----------------------------------------------------------------------
+
 section "Validating environment"
 
 validation_failure() {
@@ -58,26 +63,32 @@ trap validation_failure EXIT
 
 require_env() {
     local var="$1"
+    local show_value="${2:-false}"
     if [[ -z "${!var:-}" ]]; then
         die "required environment variable '${var}' is not set; check the launcher."
     fi
+    local text="$var"
+    if [[ "$show_value" == "true" ]]; then
+        text="${text}=${!var}"
+    fi
+    success $text
 }
 
-require_env GH_OWNER
-require_env GH_REPO
+require_env GH_OWNER true
+require_env GH_REPO true
 require_env GH_TOKEN
 require_env CLAUDE_CODE_OAUTH_TOKEN
-require_env TZ
+require_env TZ true
 require_env CLAUDE_DEV_PROXY_SOCKET
 require_env CLAUDE_DEV_PROXY_PORT
 
-echo "GH_OWNER=${GH_OWNER}"
-echo "GH_REPO=${GH_REPO}"
-echo "TZ=${TZ}"
+# ----------------------------------------------------------------------
+# Issue ID handling
+# ----------------------------------------------------------------------
 if [[ -n "${ISSUE_ID:-}" ]]; then
-    echo "ISSUE_ID=${ISSUE_ID}"
+    success "ISSUE_ID=${ISSUE_ID}"
 else
-    echo "ISSUE_ID=(not set; no specific Issue context)"
+    success "ISSUE_ID=(not set; no specific Issue context)"
 fi
 
 # ----------------------------------------------------------------------
@@ -101,7 +112,7 @@ export PS1='\\[\\033[1;36m\\][claude-dev ${context}]\\[\\033[0m\\] \\w\\$ '
 EOF
 }
 configure_bash_prompt
-echo "Configured bash prompt"
+success "Configured bash prompt"
 
 # ----------------------------------------------------------------------
 # Verify /workspace is empty
@@ -114,7 +125,7 @@ section "Verifying /workspace is empty"
 if [[ -n "$(ls -A /workspace 2>/dev/null)" ]]; then
     die "/workspace is not empty. Container is in an unexpected state; aborting."
 fi
-echo "/workspace is clean"
+success "/workspace is clean"
 
 # ----------------------------------------------------------------------
 # Check container network mode - expected --network none
@@ -162,19 +173,56 @@ warn_if_not_network_none() {
         fi
         warning "Network isolation is expected to be enforced by the host launcher."
     else
-        echo "Network mode check successful: loopback-only network observed. Expected for --network none."
+        success "Network mode check successful: loopback-only network observed. Expected for --network none."
     fi
 }
 warn_if_not_network_none
+
+# ----------------------------------------------------------------------
+# Check container capability and privilege restrictions
+# Expected: all capabilities dropped, no-new-privileges enabled.
+# Show warning if this does not appear to be the case, but do not fail.
+# ----------------------------------------------------------------------
+
+section "Checking container capability and privilege restrictions; --cap-drop ALL and --security-opt no-new-privileges expected"
+
+warn_if_not_hardened() {
+    local cap_eff=""
+    local no_new_privs=""
+
+    if [[ ! -r /proc/self/status ]]; then
+        warning "Cannot inspect /proc/self/status; unable to verify capability/no-new-privileges state."
+        return 0
+    fi
+
+    cap_eff="$(awk '/^CapEff:/ {print $2}' /proc/self/status)"
+    no_new_privs="$(awk '/^NoNewPrivs:/ {print $2}' /proc/self/status)"
+
+    if [[ "$cap_eff" == "0000000000000000" ]]; then
+        success "Capability check successful: no effective capabilities observed. Expected for --cap-drop ALL."
+    else
+        warning "Container effective capabilities are not fully dropped: CapEff=${cap_eff:-unknown}"
+    fi
+
+    if [[ "$no_new_privs" == "1" ]]; then
+        success "Privilege check successful: no-new-privileges is enabled. Expected for --security-opt no-new-privileges."
+    else
+        warning "Container no-new-privileges is not enabled: NoNewPrivs=${no_new_privs:-unknown}"
+    fi
+}
+warn_if_not_hardened
 
 # ----------------------------------------------------------------------
 # Local proxy configuration
 # The real Envoy proxy is exposed on a bind-mounted socket at $CLAUDE_DEV_PROXY_SOCKET.
 # socat is used as a bridge to connect to the proxy.
 # ----------------------------------------------------------------------
+
+section "Network proxy bridge initialization"
+
 start_proxy_bridge() {
     if [[ -z "${CLAUDE_DEV_PROXY_SOCKET:-}" ]]; then
-        echo "Claude dev proxy bridge: disabled"
+        warning "Network proxy bridge: disabled"
         return 0
     fi
 
@@ -186,8 +234,6 @@ start_proxy_bridge() {
     if [[ ! -S "${socket_path}" ]]; then
         die "Claude dev proxy socket not found or not a socket: ${socket_path}"
     fi
-
-    section "Starting Claude dev proxy bridge"
 
     : > "${log_file}"
 
@@ -202,7 +248,7 @@ start_proxy_bridge() {
     for _ in {1..50}; do
         if ! kill -0 "${socat_pid}" >/dev/null 2>&1; then
             cat "${log_file}" >&2 || true
-            die "Claude dev proxy bridge process exited before becoming ready"
+            die "Network proxy bridge process exited before becoming ready"
         fi
 
         if timeout 1 bash -c ":</dev/tcp/127.0.0.1/${proxy_port}" >/dev/null 2>&1; then
@@ -216,6 +262,7 @@ start_proxy_bridge() {
             echo "Proxy socket: ${socket_path}"
             echo "Proxy bridge: ${proxy_url}"
             echo "socat log: ${log_file}"
+            success "Network proxy bridge started"
             return 0
         fi
 
@@ -223,7 +270,7 @@ start_proxy_bridge() {
     done
 
     cat "${log_file}" >&2 || true
-    die "Claude dev proxy bridge did not become ready on 127.0.0.1:${proxy_port}"
+    die "Network proxy bridge did not become ready on 127.0.0.1:${proxy_port}"
 }
 
 start_proxy_bridge
@@ -241,6 +288,7 @@ echo "$GH_TOKEN_TMP" | gh auth login --with-token --hostname github.com
 unset GH_TOKEN_TMP
 gh auth setup-git
 gh auth status
+success "GitHub authentication initialized"
 
 # ----------------------------------------------------------------------
 # Configure git identity
@@ -254,11 +302,9 @@ GH_USER_ID="$(gh api user --jq .id)"
 GH_USERNAME="$(gh api user --jq .login)"
 GIT_AUTHOR_NAME="Claude Code (authorized by ${GH_USERNAME})"
 GIT_AUTHOR_EMAIL="${GH_USER_ID}+${GH_USERNAME}@users.noreply.github.com"
-
 git config --global user.name  "${GIT_AUTHOR_NAME}"
 git config --global user.email "${GIT_AUTHOR_EMAIL}"
-
-echo "Author: ${GIT_AUTHOR_NAME} <${GIT_AUTHOR_EMAIL}>"
+success "Author: ${GIT_AUTHOR_NAME} <${GIT_AUTHOR_EMAIL}>"
 
 # ----------------------------------------------------------------------
 # Clone the project repository
@@ -267,6 +313,7 @@ section "Cloning ${GH_OWNER}/${GH_REPO} into /workspace"
 
 git clone "https://github.com/${GH_OWNER}/${GH_REPO}.git" /workspace
 cd /workspace
+success "Repository cloned"
 
 # ----------------------------------------------------------------------
 # Resolve and check out the working branch
@@ -284,7 +331,7 @@ cd /workspace
 section "Resolving working branch"
 
 if [[ -z "${ISSUE_ID:-}" ]]; then
-    echo "No ISSUE_ID; staying on main."
+    success "No ISSUE_ID; staying on main."
 else
 
     if ! gh issue view "${ISSUE_ID}" --repo "${GH_OWNER}/${GH_REPO}" --json number >/dev/null 2>&1; then
@@ -316,12 +363,12 @@ else
 
     case "${LINKED_COUNT}" in
         0)
-            echo "Issue #${ISSUE_ID}: no linked branch yet; staying on main."
+            success "Issue #${ISSUE_ID}: no linked branch yet; staying on main."
             echo "Branch creation is the SDLC's spec phase responsibility."
             ;;
         1)
             BRANCH="$(echo "${LINKED_BRANCHES}" | jq -r '.[0]')"
-            echo "Issue #${ISSUE_ID}: one linked branch (${BRANCH}); checking out."
+            success "Issue #${ISSUE_ID}: one linked branch (${BRANCH}); checking out."
             git checkout "${BRANCH}"
             ;;
         *)
@@ -340,12 +387,12 @@ fi
 # /etc/claude-dev/.claude.json.template (baked into the image); we stamp 
 # in the version and write to the home dir.
 # ----------------------------------------------------------------------
-section "Writing ~/.claude.json"
+section "Initializing CLaude configuration in ~/.claude.json"
 sed "s/__CLAUDE_CODE_VERSION__/${CLAUDE_CODE_VERSION}/" \
     /etc/claude-dev/.claude.json.template > "${HOME}/.claude.json"
 chmod 600 "${HOME}/.claude.json"
 echo "lastOnboardingVersion: ${CLAUDE_CODE_VERSION}"
-
+success "Initialized ~/.claude.json to suppress onboarding wizard"
 
 # ======================================================================
 # PROJECT — molim-specific dependency installation
@@ -361,6 +408,7 @@ section "Installing project dependencies via uv sync"
 
 uv sync --frozen
 
+success "Project dependencies installed"
 
 # ======================================================================
 # COMMON — handoff to CMD

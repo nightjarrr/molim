@@ -387,6 +387,10 @@ DOCKER_ARGS=(
     -e CLAUDE_CODE_OAUTH_TOKEN -e GH_TOKEN
     -e TZ
 
+    # Capability and privilege restrictions
+    --cap-drop ALL
+    --security-opt no-new-privileges
+
     # Network isolation and proxy config
     --network none
     -v "${ENVOY_SOCKET_HOST_PATH}:${CLAUDE_PROXY_SOCKET_CONTAINER_PATH}"
