@@ -9,6 +9,8 @@
 #   CLAUDE_CODE_OAUTH_TOKEN      consumed later by claude itself
 #   TZ                           host timezone
 #   ISSUE_ID                     optional GitHub Issue number
+#   CLAUDE_DEV_PROXY_SOCKET      path to bind-mounted proxy socket
+#   CLAUDE_DEV_PROXY_PORT        local port to expose the proxy via socat bridge
 #
 # Organized into two logical sections:
 #   1. BASE — generic Claude Code dev environment bootstrap
@@ -17,7 +19,6 @@
 # Eventually the BASE section will be extracted into a separately-
 # published base image's entrypoint; for now both live here.
 #
-# Firewall installation and self-test are added in Phase 3.
 # ======================================================================
 
 set -euo pipefail
@@ -45,14 +46,11 @@ success() {
 # ======================================================================
 # BASE — generic Claude Code dev environment bootstrap
 # ======================================================================
-
 section "Welcome to ephemeral Claude Code dev environment"
-
 
 # ----------------------------------------------------------------------
 # Validate required environment
 # ----------------------------------------------------------------------
-
 section "Validating environment"
 
 validation_failure() {
@@ -88,13 +86,12 @@ require_env CLAUDE_DEV_PROXY_PORT
 if [[ -n "${ISSUE_ID:-}" ]]; then
     success "ISSUE_ID=${ISSUE_ID}"
 else
-    success "ISSUE_ID=(not set; no specific Issue context)"
+    success "ISSUE_ID not set. No specific Issue context."
 fi
 
 # ----------------------------------------------------------------------
 # Bash prompt configuration
 # ----------------------------------------------------------------------
-
 section "Configuring bash prompt"
 
 configure_bash_prompt() {
@@ -112,7 +109,7 @@ export PS1='\\[\\033[1;36m\\][claude-dev ${context}]\\[\\033[0m\\] \\w\\$ '
 EOF
 }
 configure_bash_prompt
-success "Configured bash prompt"
+success "Configured bash prompt."
 
 # ----------------------------------------------------------------------
 # Verify /workspace is empty
@@ -125,14 +122,13 @@ section "Verifying /workspace is empty"
 if [[ -n "$(ls -A /workspace 2>/dev/null)" ]]; then
     die "/workspace is not empty. Container is in an unexpected state; aborting."
 fi
-success "/workspace is clean"
+success "/workspace is clean."
 
 # ----------------------------------------------------------------------
 # Check container network mode - expected --network none
 # No routes, only loopback interface.
 # Show warning if this does not appear to be the case, but do not fail.
 # ----------------------------------------------------------------------
-
 section "Checking container network mode; --network none expected"
 
 warn_if_not_network_none() {
@@ -183,7 +179,6 @@ warn_if_not_network_none
 # Expected: all capabilities dropped, no-new-privileges enabled.
 # Show warning if this does not appear to be the case, but do not fail.
 # ----------------------------------------------------------------------
-
 section "Checking container capability and privilege restrictions; --cap-drop ALL and --security-opt no-new-privileges expected"
 
 warn_if_not_hardened() {
@@ -217,15 +212,9 @@ warn_if_not_hardened
 # The real Envoy proxy is exposed on a bind-mounted socket at $CLAUDE_DEV_PROXY_SOCKET.
 # socat is used as a bridge to connect to the proxy.
 # ----------------------------------------------------------------------
-
 section "Network proxy bridge initialization"
 
 start_proxy_bridge() {
-    if [[ -z "${CLAUDE_DEV_PROXY_SOCKET:-}" ]]; then
-        warning "Network proxy bridge: disabled"
-        return 0
-    fi
-
     local socket_path="${CLAUDE_DEV_PROXY_SOCKET}"
     local proxy_port="${CLAUDE_DEV_PROXY_PORT:-8080}"
     local proxy_url="http://127.0.0.1:${proxy_port}"
@@ -248,7 +237,7 @@ start_proxy_bridge() {
     for _ in {1..50}; do
         if ! kill -0 "${socat_pid}" >/dev/null 2>&1; then
             cat "${log_file}" >&2 || true
-            die "Network proxy bridge process exited before becoming ready"
+            die "Network proxy bridge process exited before becoming ready."
         fi
 
         if timeout 1 bash -c ":</dev/tcp/127.0.0.1/${proxy_port}" >/dev/null 2>&1; then
@@ -262,7 +251,7 @@ start_proxy_bridge() {
             echo "Proxy socket: ${socket_path}"
             echo "Proxy bridge: ${proxy_url}"
             echo "socat log: ${log_file}"
-            success "Network proxy bridge started"
+            success "Network proxy bridge started."
             return 0
         fi
 
@@ -272,7 +261,6 @@ start_proxy_bridge() {
     cat "${log_file}" >&2 || true
     die "Network proxy bridge did not become ready on 127.0.0.1:${proxy_port}"
 }
-
 start_proxy_bridge
 
 # ----------------------------------------------------------------------
@@ -288,7 +276,7 @@ echo "$GH_TOKEN_TMP" | gh auth login --with-token --hostname github.com
 unset GH_TOKEN_TMP
 gh auth setup-git
 gh auth status
-success "GitHub authentication initialized"
+success "GitHub authentication initialized."
 
 # ----------------------------------------------------------------------
 # Configure git identity
@@ -304,7 +292,7 @@ GIT_AUTHOR_NAME="Claude Code (authorized by ${GH_USERNAME})"
 GIT_AUTHOR_EMAIL="${GH_USER_ID}+${GH_USERNAME}@users.noreply.github.com"
 git config --global user.name  "${GIT_AUTHOR_NAME}"
 git config --global user.email "${GIT_AUTHOR_EMAIL}"
-success "Author: ${GIT_AUTHOR_NAME} <${GIT_AUTHOR_EMAIL}>"
+success "Author: ${GIT_AUTHOR_NAME} <${GIT_AUTHOR_EMAIL}>."
 
 # ----------------------------------------------------------------------
 # Clone the project repository
@@ -313,7 +301,7 @@ section "Cloning ${GH_OWNER}/${GH_REPO} into /workspace"
 
 git clone "https://github.com/${GH_OWNER}/${GH_REPO}.git" /workspace
 cd /workspace
-success "Repository cloned"
+success "Repository cloned."
 
 # ----------------------------------------------------------------------
 # Resolve and check out the working branch
@@ -330,54 +318,58 @@ success "Repository cloned"
 # ----------------------------------------------------------------------
 section "Resolving working branch"
 
-if [[ -z "${ISSUE_ID:-}" ]]; then
-    success "No ISSUE_ID; staying on main."
-else
+resolve_working_branch() {
+    if [[ -z "${ISSUE_ID:-}" ]]; then
+        success "No ISSUE_ID; staying on main."
+    else
 
-    if ! gh issue view "${ISSUE_ID}" --repo "${GH_OWNER}/${GH_REPO}" --json number >/dev/null 2>&1; then
-        die "Issue #${ISSUE_ID} not found in ${GH_OWNER}/${GH_REPO}."
-    fi
+        if ! gh issue view "${ISSUE_ID}" --repo "${GH_OWNER}/${GH_REPO}" --json number >/dev/null 2>&1; then
+            die "Issue #${ISSUE_ID} not found in ${GH_OWNER}/${GH_REPO}."
+        fi
 
-    QUERY_RESULT="$(gh api graphql \
-        -F owner="${GH_OWNER}" \
-        -F repo="${GH_REPO}" \
-        -F number="${ISSUE_ID}" \
-        -f query='
-            query($owner: String!, $repo: String!, $number: Int!) {
-              repository(owner: $owner, name: $repo) {
-                issue(number: $number) {
-                  linkedBranches(first: 2) {
-                    nodes { ref { name } }
-                  }
+        QUERY_RESULT="$(gh api graphql \
+            -F owner="${GH_OWNER}" \
+            -F repo="${GH_REPO}" \
+            -F number="${ISSUE_ID}" \
+            -f query='
+                query($owner: String!, $repo: String!, $number: Int!) {
+                repository(owner: $owner, name: $repo) {
+                    issue(number: $number) {
+                    linkedBranches(first: 2) {
+                        nodes { ref { name } }
+                    }
+                    }
                 }
-              }
-            }')"
+                }')"
 
-    # Issue not found -> .data.repository.issue is null
-    if [[ "$(echo "${QUERY_RESULT}" | jq '.data.repository.issue')" == "null" ]]; then
-        die "Issue #${ISSUE_ID} not returned by GraphQL API in ${GH_OWNER}/${GH_REPO}."
+        # Issue not found -> .data.repository.issue is null
+        if [[ "$(echo "${QUERY_RESULT}" | jq '.data.repository.issue')" == "null" ]]; then
+            die "Issue #${ISSUE_ID} not returned by GraphQL API in ${GH_OWNER}/${GH_REPO}."
+        fi
+
+        LINKED_BRANCHES="$(echo "${QUERY_RESULT}" | jq -r '.data.repository.issue.linkedBranches.nodes | map(.ref.name)')"
+        LINKED_COUNT="$(echo "${LINKED_BRANCHES}" | jq 'length')"
+
+        case "${LINKED_COUNT}" in
+            0)
+                success "Issue #${ISSUE_ID}: no linked branch yet; staying on main."
+                echo "Branch creation is the SDLC's spec phase responsibility."
+                ;;
+            1)
+                BRANCH="$(echo "${LINKED_BRANCHES}" | jq -r '.[0]')"
+                echo "Issue #${ISSUE_ID}: one linked branch (${BRANCH}); checking out."
+                git checkout "${BRANCH}"
+                success "Checked out linked branch ${BRANCH} for Issue #${ISSUE_ID}."
+                ;;
+            *)
+                echo "Issue #${ISSUE_ID}: multiple linked branches found:" >&2
+                echo "${LINKED_BRANCHES}" | jq -r '.[]' | sed 's/^/  - /' >&2
+                die "Ambiguous branch state. Resolve in GitHub (Issue page → Development sidebar → unlink unwanted branches) and retry."
+                ;;
+        esac
     fi
-
-    LINKED_BRANCHES="$(echo "${QUERY_RESULT}" | jq -r '.data.repository.issue.linkedBranches.nodes | map(.ref.name)')"
-    LINKED_COUNT="$(echo "${LINKED_BRANCHES}" | jq 'length')"
-
-    case "${LINKED_COUNT}" in
-        0)
-            success "Issue #${ISSUE_ID}: no linked branch yet; staying on main."
-            echo "Branch creation is the SDLC's spec phase responsibility."
-            ;;
-        1)
-            BRANCH="$(echo "${LINKED_BRANCHES}" | jq -r '.[0]')"
-            success "Issue #${ISSUE_ID}: one linked branch (${BRANCH}); checking out."
-            git checkout "${BRANCH}"
-            ;;
-        *)
-            echo "Issue #${ISSUE_ID}: multiple linked branches found:" >&2
-            echo "${LINKED_BRANCHES}" | jq -r '.[]' | sed 's/^/  - /' >&2
-            die "ambiguous branch state. Resolve in GitHub (Issue page → Development sidebar → unlink unwanted branches) and retry."
-            ;;
-    esac
-fi
+}
+resolve_working_branch
 
 # ----------------------------------------------------------------------
 # Write ~/.claude.json
@@ -388,11 +380,12 @@ fi
 # in the version and write to the home dir.
 # ----------------------------------------------------------------------
 section "Initializing CLaude configuration in ~/.claude.json"
+
 sed "s/__CLAUDE_CODE_VERSION__/${CLAUDE_CODE_VERSION}/" \
     /etc/claude-dev/.claude.json.template > "${HOME}/.claude.json"
 chmod 600 "${HOME}/.claude.json"
 echo "lastOnboardingVersion: ${CLAUDE_CODE_VERSION}"
-success "Initialized ~/.claude.json to suppress onboarding wizard"
+success "Initialized ~/.claude.json."
 
 # ======================================================================
 # PROJECT — molim-specific dependency installation
@@ -407,8 +400,7 @@ success "Initialized ~/.claude.json to suppress onboarding wizard"
 section "Installing project dependencies via uv sync"
 
 uv sync --frozen
-
-success "Project dependencies installed"
+success "Project dependencies installed."
 
 # ======================================================================
 # COMMON — handoff to CMD
@@ -418,12 +410,12 @@ section "Bootstrap complete"
 
 if [[ -n "${ISSUE_ID:-}" ]]; then
     ISSUE_TITLE="$(gh issue view "${ISSUE_ID}" --repo "${GH_OWNER}/${GH_REPO}" --json title --jq .title 2>/dev/null || echo '(unable to fetch)')"
-    echo "Issue: #${ISSUE_ID} — ${ISSUE_TITLE}"
+    echo "Issue: #${ISSUE_ID} — ${ISSUE_TITLE}."
 fi
 echo "Branch: $(git rev-parse --abbrev-ref HEAD)"
 COMMITS_AHEAD="$(git rev-list --count origin/main..HEAD 2>/dev/null || echo 0)"
 if [[ "${COMMITS_AHEAD}" -gt 0 ]]; then
-    echo "Commits ahead of origin/main: ${COMMITS_AHEAD}"
+    echo "Commits ahead of origin/main: ${COMMITS_AHEAD}."
 fi
 echo
 
