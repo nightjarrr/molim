@@ -387,7 +387,8 @@ DOCKER_ARGS=(
     -e CLAUDE_CODE_OAUTH_TOKEN -e GH_TOKEN
     -e TZ
 
-    # Proxy config
+    # Network isolation and proxy config
+    --network none
     -v "${ENVOY_SOCKET_HOST_PATH}:${CLAUDE_PROXY_SOCKET_CONTAINER_PATH}"
     -e "CLAUDE_DEV_PROXY_SOCKET=${CLAUDE_PROXY_SOCKET_CONTAINER_PATH}"
     -e "CLAUDE_DEV_PROXY_PORT=${CLAUDE_PROXY_PORT}"

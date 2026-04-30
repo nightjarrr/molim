@@ -34,6 +34,9 @@ die() {
     exit 1
 }
 
+warning() {
+    printf '\033[1;33mWarning:\033[0m %s\n' "$*" >&2
+}
 
 # ======================================================================
 # BASE — generic Claude Code dev environment bootstrap
@@ -98,7 +101,7 @@ export PS1='\\[\\033[1;36m\\][claude-dev ${context}]\\[\\033[0m\\] \\w\\$ '
 EOF
 }
 configure_bash_prompt
-echo "Configured bash prompt to $PS1"
+echo "Configured bash prompt"
 
 # ----------------------------------------------------------------------
 # Verify /workspace is empty
@@ -113,6 +116,56 @@ if [[ -n "$(ls -A /workspace 2>/dev/null)" ]]; then
 fi
 echo "/workspace is clean"
 
+# ----------------------------------------------------------------------
+# Check container network mode - expected --network none
+# No routes, only loopback interface.
+# Show warning if this does not appear to be the case, but do not fail.
+# ----------------------------------------------------------------------
+
+section "Checking container network mode; --network none expected"
+
+warn_if_not_network_none() {
+    local interfaces=""
+    local has_non_loopback=0
+    local has_default_route=0
+
+    # /sys/class/net is available without iproute2/net-tools.
+    if [[ -d /sys/class/net ]]; then
+        interfaces="$(basename -a /sys/class/net/* 2>/dev/null | sort | tr '\n' ' ')"
+
+        while IFS= read -r iface; do
+            if [[ "$iface" != "lo" ]]; then
+                has_non_loopback=1
+                break
+            fi
+        done < <(basename -a /sys/class/net/* 2>/dev/null)
+    else
+        warning "Cannot inspect /sys/class/net; unable to verify container network mode."
+        return 0
+    fi
+
+    # /proc/net/route exposes kernel route table without requiring iproute2.
+    # A default route has destination 00000000.
+    if [[ -r /proc/net/route ]]; then
+        if awk 'NR > 1 && $2 == "00000000" { found=1 } END { exit found ? 0 : 1 }' /proc/net/route; then
+            has_default_route=1
+        fi
+    else
+        warning "Cannot inspect /proc/net/route; unable to verify default route state."
+    fi
+
+    if [[ "$has_non_loopback" -eq 1 || "$has_default_route" -eq 1 ]]; then
+        warning "Container does not appear to be running with Docker --network none."
+        warning "Detected network interfaces: ${interfaces:-unknown}"
+        if [[ "$has_default_route" -eq 1 ]]; then
+            warning "Detected a default route in /proc/net/route."
+        fi
+        warning "Network isolation is expected to be enforced by the host launcher."
+    else
+        echo "Network mode check successful: loopback-only network observed. Expected for --network none."
+    fi
+}
+warn_if_not_network_none
 
 # ----------------------------------------------------------------------
 # Local proxy configuration
