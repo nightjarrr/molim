@@ -90,15 +90,6 @@ ENV CLAUDE_CODE_VERSION=2.1.112
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
 # ----------------------------------------------------------------------
-# Pre-create Claude Code's per-user state directory
-# Claude Code expects ~/.claude to exist and be writable at first run;
-# pre-creating it with correct ownership avoids first-run errors.
-# Container is ephemeral so contents do not persist; this only ensures
-# the directory exists with the right owner.
-# ----------------------------------------------------------------------
-RUN mkdir -p /home/node/.claude && chown -R node:node /home/node/.claude
-
-# ----------------------------------------------------------------------
 # Claude Code startup configuration template.
 # Copied to ~/.claude.json by the entrypoint at container start.
 # Source of truth for CLAUDE_CODE_VERSION is the ENV declaration above.
@@ -148,11 +139,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ======================================================================
 
 # Reuse the `node` user (UID/GID 1000) that ships with the base image.
-# Pre-create /workspace owned by node so the entrypoint's git clone can
-# write into it. WORKDIR alone would create /workspace as root.
-# [TODO] when /workspace becomes a tmpfs mount, this RUN line becomes
-# redundant (tmpfs uid/gid is set by the mount flags) and should be removed.
-RUN mkdir -p /workspace && chown -R node:node /workspace
 USER node
 WORKDIR /workspace
 

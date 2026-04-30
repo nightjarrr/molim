@@ -379,12 +379,13 @@ resolve_working_branch
 # /etc/claude-dev/.claude.json.template (baked into the image); we stamp 
 # in the version and write to the home dir.
 # ----------------------------------------------------------------------
-section "Initializing CLaude configuration in ~/.claude.json"
+section "Initializing Claude configuration in ~/.claude.json"
 
 sed "s/__CLAUDE_CODE_VERSION__/${CLAUDE_CODE_VERSION}/" \
     /etc/claude-dev/.claude.json.template > "${HOME}/.claude.json"
 chmod 600 "${HOME}/.claude.json"
 echo "lastOnboardingVersion: ${CLAUDE_CODE_VERSION}"
+mkdir -p "${HOME}/.claude"
 success "Initialized ~/.claude.json."
 
 # ======================================================================

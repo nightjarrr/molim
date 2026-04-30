@@ -157,9 +157,14 @@ source "$ENV_FILE"
 require_var GH_OWNER
 require_var GH_REPO
 
-require_var DEVENV_IMAGE
-require_var CLAUDE_PROXY_SOCKET_CONTAINER_PATH
-require_var CLAUDE_PROXY_PORT
+require_var CLAUDE_DEV_IMAGE
+require_var CLAUDE_DEV_USER
+require_var CLAUDE_DEV_UID
+require_var CLAUDE_DEV_GID
+require_var CLAUDE_DEV_HOME_TMPFS_SIZE
+require_var CLAUDE_DEV_WORKSPACE_TMPFS_SIZE
+require_var CLAUDE_DEV_PROXY_SOCKET_CONTAINER_PATH
+require_var CLAUDE_DEV_PROXY_PORT
 
 require_var ENVOY_IMAGE
 require_var ENVOY_ADMIN_HOST_PORT
@@ -391,11 +396,20 @@ DOCKER_ARGS=(
     --cap-drop ALL
     --security-opt no-new-privileges
 
+    # readonly root and tmpfs mounts
+    --read-only
+    --tmpfs "/tmp:rw,nosuid,nodev,size=64m,mode=700,uid=${CLAUDE_DEV_UID},gid=${CLAUDE_DEV_GID}"
+    --tmpfs "/run:rw,nosuid,nodev,noexec,size=32m,mode=700,uid=${CLAUDE_DEV_UID},gid=${CLAUDE_DEV_GID}"
+    --tmpfs "/var/tmp:rw,nosuid,nodev,size=64m,mode=700,uid=${CLAUDE_DEV_UID},gid=${CLAUDE_DEV_GID}"
+    --tmpfs "/home/${CLAUDE_DEV_USER}:rw,exec,nosuid,nodev,size=${CLAUDE_DEV_HOME_TMPFS_SIZE},mode=700,uid=${CLAUDE_DEV_UID},gid=${CLAUDE_DEV_GID}"
+    --tmpfs "/workspace:rw,exec,nosuid,nodev,size=${CLAUDE_DEV_WORKSPACE_TMPFS_SIZE},mode=700,uid=${CLAUDE_DEV_UID},gid=${CLAUDE_DEV_GID}"
+
     # Network isolation and proxy config
     --network none
-    -v "${ENVOY_SOCKET_HOST_PATH}:${CLAUDE_PROXY_SOCKET_CONTAINER_PATH}"
-    -e "CLAUDE_DEV_PROXY_SOCKET=${CLAUDE_PROXY_SOCKET_CONTAINER_PATH}"
-    -e "CLAUDE_DEV_PROXY_PORT=${CLAUDE_PROXY_PORT}"
+    # This socket mount is expected to happen atop of the tmpfs-mounted /run in the container.
+    --mount "type=bind,source=${ENVOY_SOCKET_HOST_PATH},target=${CLAUDE_DEV_PROXY_SOCKET_CONTAINER_PATH},readonly"
+    -e "CLAUDE_DEV_PROXY_SOCKET=${CLAUDE_DEV_PROXY_SOCKET_CONTAINER_PATH}"
+    -e "CLAUDE_DEV_PROXY_PORT=${CLAUDE_DEV_PROXY_PORT}"
 )
 
 if [[ -n "$ISSUE_ID" ]]; then
@@ -404,7 +418,7 @@ if [[ -n "$ISSUE_ID" ]]; then
 fi
 
 # Local image tag for v0; switch to digest-pinned GHCR reference at Step 13.
-DOCKER_ARGS+=("${DEVENV_IMAGE}:dev")
+DOCKER_ARGS+=("${CLAUDE_DEV_IMAGE}:dev")
 
 # If a command override was given, append it after the image reference.
 # Docker passes everything after the image to the container's CMD, which
