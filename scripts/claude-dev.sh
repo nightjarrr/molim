@@ -35,12 +35,19 @@ ENV_FILE="${SCRIPT_DIR}/claude-dev.env"
 ENVOY_DIR="${PROJECT_DIR}/.devcontainer/envoy"
 ENVOY_TEMPLATE="${ENVOY_DIR}/envoy.yaml.template"
 
+TMUX_SEED_CONFIG="${SCRIPT_DIR}/claude-dev.tmux.conf"
+TMUX_USER_CONFIG="${HOME}/.tmux.conf"
+
 # ----------------------------------------------------------------------
 # Helpers
 # ----------------------------------------------------------------------
 die() {
     echo "Error: $*" >&2
     exit 1
+}
+
+warning() {
+    printf '\033[1;33mWarning:\033[0m %s\n' "$*" >&2
 }
 
 usage() {
@@ -164,19 +171,60 @@ export GH_OWNER GH_REPO
 
 # ----------------------------------------------------------------------
 # If not already inside tmux, re-enter this launcher inside a tmux session.
-#
-# This differs from the original script, which ran docker directly as the
-# tmux command. Running the launcher itself inside tmux lets us keep Envoy
-# lifecycle cleanup in the same process as the Claude container run.
 # ----------------------------------------------------------------------
+
+ensure_tmux_config() {
+    if [[ -z "${HOME:-}" ]]; then
+        warning "HOME is not set; cannot determine ~/.tmux.conf location. Continuing with tmux defaults."
+        return 0
+    fi
+
+    if [[ -f "$TMUX_USER_CONFIG" ]]; then
+        echo "tmux config: ${TMUX_USER_CONFIG} exists; using it as-is, no modifications applied."
+    else
+        if [[ ! -f "$TMUX_SEED_CONFIG" ]]; then
+            warning "tmux seed config not found at ${TMUX_SEED_CONFIG}; continuing with tmux defaults."
+            return 0
+        fi
+
+        echo "tmux config: ${TMUX_USER_CONFIG} not found; seeding from ${TMUX_SEED_CONFIG}."
+
+        # # Do not chmod ~/.tmux.conf after copying.
+        # Let cp + user's umask determine permissions.
+        if ! cp "$TMUX_SEED_CONFIG" "$TMUX_USER_CONFIG"; then
+            warning "failed to copy tmux seed config to ${TMUX_USER_CONFIG}; continuing with tmux defaults."
+            return 0
+        fi
+    fi
+
+    # If a default tmux server already exists, it has already loaded its
+    # startup config. Try to source ~/.tmux.conf explicitly. Failure is not
+    # fatal because tmux configuration is only a UX enhancement.
+    local source_output
+    if source_output="$(tmux source-file "$TMUX_USER_CONFIG" 2>&1)"; then
+        echo "tmux config: sourced into existing tmux server."
+    else
+        if grep -qi "no server running" <<<"$source_output"; then
+            echo "tmux config: no existing tmux server; config will be loaded when tmux starts."
+        else
+            warning "failed to source tmux config ${TMUX_USER_CONFIG}; continuing."
+            if [[ -n "$source_output" ]]; then
+                printf '%s\n' "$source_output" | sed 's/^/  tmux: /' >&2
+            fi
+        fi
+    fi
+}
+
 if [[ -z "${TMUX:-}" ]]; then
+    ensure_tmux_config
+
     SUFFIX="$(openssl rand -hex 2)"
     if [[ -n "$ISSUE_ID" ]]; then
         TMUX_SESSION="${GH_OWNER}-${GH_REPO}-${ISSUE_ID}-${SUFFIX}"
     else
         TMUX_SESSION="${GH_OWNER}-${GH_REPO}-${SUFFIX}"
     fi
-
+    export TMUX_SESSION
     echo "tmux session: ${TMUX_SESSION}"
 
     TMUX_COMMAND="$(quote_command "$SCRIPT_PATH" "$@")"
@@ -260,10 +308,34 @@ prepare_envoy() {
     chmod 600 "$ENVOY_RUNTIME_CONFIG"
 }
 
+start_envoy_logs_tmux() {
+    if [[ -z "${TMUX_SESSION:-}" ]]; then
+        warning "TMUX_SESSION is not set; Envoy logs tmux session not started."
+        return 0
+    fi
+
+    local tmux_session="${TMUX_SESSION}-envoy-logs"
+
+    if tmux has-session -t "${tmux_session}" >/dev/null 2>&1; then
+        warning "Envoy logs tmux session already existed; not launching a second one."
+        return 0
+    fi
+
+    if tmux new-session -d \
+        -s "${tmux_session}" \
+        "docker logs -f ${ENVOY_CONTAINER}"; then
+
+        echo "Envoy logs tmux session: ${tmux_session}"
+        echo "Attach with: tmux attach -t ${tmux_session}"
+    else
+        warning "failed to start Envoy logs tmux session; continuing without it."
+    fi
+}
+
 start_envoy() {
     prepare_envoy
 
-    echo "Starting Envoy perimeter sidecar: ${ENVOY_CONTAINER}"
+    echo "Starting Envoy proxy sidecar: ${ENVOY_CONTAINER}"
     echo "Envoy admin UI: http://127.0.0.1:${ENVOY_ADMIN_HOST_PORT}/"
 
     docker run --rm -d \
@@ -277,6 +349,8 @@ start_envoy() {
         -v "${RUN_DIR}:/run/claude-dev-proxy:rw" \
         "${ENVOY_IMAGE}" \
         -c /run/claude-dev-proxy/envoy.yaml
+
+    start_envoy_logs_tmux
 }
 
 # Envoy socket on host system
