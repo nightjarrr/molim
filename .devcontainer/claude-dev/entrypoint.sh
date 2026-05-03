@@ -4,8 +4,14 @@
 #
 # Runs as the container's ENTRYPOINT. Receives configuration via env
 # vars from the launcher (claude-dev.sh on the host):
-#   GH_OWNER, GH_REPO            project identity
-#   GH_TOKEN                     GitHub Token (read/write per scoping)
+#   GITHUB_OWNER, GITHUB_REPO    project identity (logical names; the
+#                                entrypoint constructs the gh-recognized
+#                                GH_REPO=OWNER/REPO from these)
+#   GITHUB_TOKEN_                GitHub Token (read/write per scoping).
+#                                Trailing underscore is intentional: it
+#                                avoids gh's reserved GH_TOKEN/GITHUB_TOKEN
+#                                names so gh auth login works without the
+#                                pre-unset dance.
 #   CLAUDE_CODE_OAUTH_TOKEN      consumed later by claude itself
 #   TZ                           host timezone
 #   ISSUE_ID                     optional GitHub Issue number
@@ -72,9 +78,9 @@ require_env() {
     success "$text"
 }
 
-require_env GH_OWNER true
-require_env GH_REPO true
-require_env GH_TOKEN
+require_env GITHUB_OWNER true
+require_env GITHUB_REPO true
+require_env GITHUB_TOKEN_
 require_env CLAUDE_CODE_OAUTH_TOKEN
 require_env TZ true
 require_env CLAUDE_DEV_PROXY_SOCKET
@@ -96,7 +102,7 @@ fi
 section "Configuring shell prompt"
 
 configure_prompt() {
-    local context="${GH_REPO}"
+    local context="${GITHUB_REPO}"
 
     if [[ -n "${ISSUE_ID:-}" ]]; then
         context="${context} #${ISSUE_ID}"
@@ -513,17 +519,24 @@ start_proxy_bridge
 # Configure GitHub authentication via gh
 # This installs gh's git credential helper as a side effect, so both
 # `gh` and `git` work against github.com without further setup.
+#
+# GITHUB_TOKEN_ (with trailing underscore) is the launcher → container
+# contract; gh does not recognize it, so we can pipe it directly to
+# `gh auth login` without first unsetting a reserved env var. After
+# auth, the token lives in gh's credential helper config, so we drop
+# GITHUB_TOKEN_ from the environment.
 # ----------------------------------------------------------------------
 section "Configuring GitHub authentication"
 
-GH_TOKEN_TMP="$GH_TOKEN"
-# gh auth is not working properly with GH_TOKEN env var present, so need to move it to a temp var and unset.
-unset GH_TOKEN
-echo "$GH_TOKEN_TMP" | gh auth login --with-token --hostname github.com
-# After gh authentication, the token is stored in gh's credential helper config and the GH_TOKEN/GH_TOKEN_TMP env var is no longer needed.
-unset GH_TOKEN_TMP
+echo "$GITHUB_TOKEN_" | gh auth login --with-token --hostname github.com
+unset GITHUB_TOKEN_
 gh auth setup-git
 gh auth status
+
+# Set gh's reserved GH_REPO so subsequent gh calls (entrypoint's own
+# and the user's interactive ones) target the project repo by default.
+export GH_REPO="${GITHUB_OWNER}/${GITHUB_REPO}"
+
 success "GitHub authentication initialized."
 
 # ----------------------------------------------------------------------
@@ -545,9 +558,9 @@ success "Author: ${GIT_AUTHOR_NAME} <${GIT_AUTHOR_EMAIL}>."
 # ----------------------------------------------------------------------
 # Clone the project repository
 # ----------------------------------------------------------------------
-section "Cloning ${GH_OWNER}/${GH_REPO} into /workspace"
+section "Cloning ${GH_REPO} into /workspace"
 
-git clone "https://github.com/${GH_OWNER}/${GH_REPO}.git" /workspace
+git clone "https://github.com/${GH_REPO}.git" /workspace
 cd /workspace
 success "Repository cloned."
 
@@ -571,13 +584,13 @@ resolve_working_branch() {
         success "No ISSUE_ID; staying on main."
     else
 
-        if ! gh issue view "${ISSUE_ID}" --repo "${GH_OWNER}/${GH_REPO}" --json number >/dev/null 2>&1; then
-            die "issue #${ISSUE_ID} not found in ${GH_OWNER}/${GH_REPO}."
+        if ! gh issue view "${ISSUE_ID}" --json number >/dev/null 2>&1; then
+            die "issue #${ISSUE_ID} not found in ${GH_REPO}."
         fi
 
         local query_result="$(gh api graphql \
-            -F owner="${GH_OWNER}" \
-            -F repo="${GH_REPO}" \
+            -F owner="${GITHUB_OWNER}" \
+            -F repo="${GITHUB_REPO}" \
             -F number="${ISSUE_ID}" \
             -f query='
                 query($owner: String!, $repo: String!, $number: Int!) {
@@ -592,7 +605,7 @@ resolve_working_branch() {
 
         # Issue not found -> .data.repository.issue is null
         if [[ "$(echo "${query_result}" | jq '.data.repository.issue')" == "null" ]]; then
-            die "issue #${ISSUE_ID} not returned by GraphQL API in ${GH_OWNER}/${GH_REPO}."
+            die "issue #${ISSUE_ID} not returned by GraphQL API in ${GH_REPO}."
         fi
 
         local linked_branches="$(echo "${query_result}" | jq -r '.data.repository.issue.linkedBranches.nodes | map(.ref.name)')"
@@ -658,7 +671,7 @@ success "Project dependencies installed."
 section "Bootstrap complete"
 
 if [[ -n "${ISSUE_ID:-}" ]]; then
-    ISSUE_TITLE="$(gh issue view "${ISSUE_ID}" --repo "${GH_OWNER}/${GH_REPO}" --json title --jq .title 2>/dev/null || echo '(unable to fetch)')"
+    ISSUE_TITLE="$(gh issue view "${ISSUE_ID}" --json title --jq .title 2>/dev/null || echo '(unable to fetch)')"
     echo "Issue: #${ISSUE_ID} — ${ISSUE_TITLE}."
 fi
 echo "Branch: $(git rev-parse --abbrev-ref HEAD)"

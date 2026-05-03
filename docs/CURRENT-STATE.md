@@ -201,9 +201,9 @@ Policy clarification:
   * no unexpected writable non-tmpfs mounts
 * Starts `socat` proxy bridge before any GitHub/git/uv network work.
 * GitHub auth:
-  * stores `GH_TOKEN` in temp variable
-  * unsets `GH_TOKEN`
-  * pipes token to `gh auth login --with-token --hostname github.com`
+  * pipes `GITHUB_TOKEN_` (the launcher → container contract; trailing underscore avoids gh's reserved `GH_TOKEN`/`GITHUB_TOKEN` so no pre-unset dance) to `gh auth login --with-token --hostname github.com`
+  * unsets `GITHUB_TOKEN_` after auth
+  * exports `GH_REPO=${GITHUB_OWNER}/${GITHUB_REPO}` so subsequent gh calls (entrypoint and interactive) default to the project repo
   * runs `gh auth setup-git`
   * runs `gh auth status`
 * Configures git author using GitHub API user id/login.
@@ -263,8 +263,8 @@ Policy clarification:
 
 Host/project launcher variables include at least:
 
-* `GH_OWNER`
-* `GH_REPO`
+* `GITHUB_OWNER`
+* `GITHUB_REPO`
 * `ENVOY_IMAGE`
 * `ENVOY_ADMIN_HOST_PORT`
 * `ENVOY_ADMIN_CONTAINER_PORT`

@@ -151,7 +151,7 @@ Recognized. The container must hold credentials or credential material to functi
 
 * GitHub Token is single-repository and has no administration permissions.
 * Claude OAuth token is revocable.
-* `GH_TOKEN` is used for `gh auth login` and then removed from the process environment before handing off to Claude Code, where practical.
+* The GitHub token is used for `gh auth login` and then removed from the process environment before handing off to Claude Code, where practical.
 * Exfiltration routes are constrained by Envoy's allow-list.
 * Tokens are never stored in plaintext on host disk.
 
@@ -281,7 +281,7 @@ The launcher retrieves both tokens at runtime:
 
 ```bash
 CLAUDE_CODE_OAUTH_TOKEN=$(secret-tool lookup service claude-dev account claude-oauth)
-GH_TOKEN=$(secret-tool lookup service claude-dev account github-token)
+GITHUB_TOKEN_=$(secret-tool lookup service claude-dev account github-token)
 ```
 
 If either lookup returns empty, the launcher fails fast with a bootstrap-procedure pointer.
@@ -617,9 +617,9 @@ The launcher reads `scripts/claude-dev.env`.
 Required target variables:
 
 ```bash
-#Github repo 
-GH_OWNER=
-GH_REPO=
+#Github repo
+GITHUB_OWNER=
+GITHUB_REPO=
 
 # Claude dev container image configuration
 CLAUDE_DEV_IMAGE=
@@ -717,11 +717,11 @@ Container-side script. It validates the runtime contract, starts the local proxy
 
 8. Configure GitHub authentication using `gh auth login --with-token`.
 
-9. Remove `GH_TOKEN` from the process environment after GitHub authentication is initialized, where practical.
+9. Remove `GITHUB_TOKEN_` from the process environment after GitHub authentication is initialized. Set `GH_REPO=${GITHUB_OWNER}/${GITHUB_REPO}` so subsequent gh calls have a repo default.
 
 10. Configure git identity.
 
-11. Clone `https://github.com/${GH_OWNER}/${GH_REPO}.git` into `/workspace`.
+11. Clone `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}.git` into `/workspace`.
 
 12. Resolve working branch:
 

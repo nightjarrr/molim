@@ -154,8 +154,8 @@ fi
 # shellcheck disable=SC1090
 source "$ENV_FILE"
 
-require_var GH_OWNER
-require_var GH_REPO
+require_var GITHUB_OWNER
+require_var GITHUB_REPO
 
 require_var CLAUDE_DEV_IMAGE
 require_var CLAUDE_DEV_USER
@@ -172,7 +172,7 @@ require_var ENVOY_ADMIN_CONTAINER_PORT
 require_var ENVOY_ADMIN_ADDRESS
 require_var ENVOY_SOCKET_CONTAINER_PATH
 
-export GH_OWNER GH_REPO
+export GITHUB_OWNER GITHUB_REPO
 
 # ----------------------------------------------------------------------
 # If not already inside tmux, re-enter this launcher inside a tmux session.
@@ -225,9 +225,9 @@ if [[ -z "${TMUX:-}" ]]; then
 
     SUFFIX="$(openssl rand -hex 2)"
     if [[ -n "$ISSUE_ID" ]]; then
-        TMUX_SESSION="${GH_OWNER}-${GH_REPO}-${ISSUE_ID}-${SUFFIX}"
+        TMUX_SESSION="${GITHUB_OWNER}-${GITHUB_REPO}-${ISSUE_ID}-${SUFFIX}"
     else
-        TMUX_SESSION="${GH_OWNER}-${GH_REPO}-${SUFFIX}"
+        TMUX_SESSION="${GITHUB_OWNER}-${GITHUB_REPO}-${SUFFIX}"
     fi
     export TMUX_SESSION
     echo "tmux session: ${TMUX_SESSION}"
@@ -250,8 +250,8 @@ keyring_lookup() {
 }
 
 CLAUDE_CODE_OAUTH_TOKEN="$(keyring_lookup claude-oauth)"
-GH_TOKEN="$(keyring_lookup github-token)"
-export CLAUDE_CODE_OAUTH_TOKEN GH_TOKEN
+GITHUB_TOKEN_="$(keyring_lookup github-token)"
+export CLAUDE_CODE_OAUTH_TOKEN GITHUB_TOKEN_
 
 # ----------------------------------------------------------------------
 # Detect host timezone
@@ -388,8 +388,8 @@ wait_for_envoy() {
 # ----------------------------------------------------------------------
 DOCKER_ARGS=(
     run --rm -it
-    -e GH_OWNER -e GH_REPO
-    -e CLAUDE_CODE_OAUTH_TOKEN -e GH_TOKEN
+    -e GITHUB_OWNER -e GITHUB_REPO
+    -e CLAUDE_CODE_OAUTH_TOKEN -e GITHUB_TOKEN_
     -e TZ
 
     # Capability and privilege restrictions
