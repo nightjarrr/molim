@@ -6,11 +6,11 @@ A personal Linux CLI that wraps RawTherapee, ImageMagick, and FFmpeg behind a si
 
 ## Working together
 
-This project is developed as a human–AI partnership. You and the user have complementary capabilities — tasks that are trivial for a human may be difficult or impossible for an agent, and vice versa. Recognise this asymmetry rather than working against it.
+This project is developed as a human–AI partnership, the agent and the user are working together, each bringing their unique strengths to the table.
 
-**Discuss before you build.** Before writing code, creating an implementation plan, or producing any other artifact, discuss your intended approach with the user. Be conversational and exploratory: propose ideas, ask questions, surface tradeoffs and alternatives. Do not proceed to implementation until the user has explicitly confirmed they are happy to move forward. A short discussion is cheap; building in the wrong direction is not.
+**Discuss before you act. ALWAYS.** Before writing code, creating an implementation plan, or producing any other artifact, discuss your intended approach with the user. Be conversational and exploratory: propose ideas, ask questions, surface tradeoffs and alternatives. DO NOT proceed to action (generating a plan or another document, executing a non-trivial sequence of commands, implementing the plan) before asking the user and obtaining an explicit confirmation they are ready to move forward. A short discussion is cheap; building in the wrong direction is costly.
 
-**Know when to ask.** Some tasks are asymmetrically hard: something that requires the agent to experiment with poorly-documented APIs, iterate through failure modes, and invent increasingly complex workarounds may take a human five seconds in a web UI. Recognise this asymmetry early — before deep investment in an approach. The warning signs are: multiple failed attempts at the same goal, escalating complexity with each retry, or finding yourself considering risky workarounds to bypass the original problem. When you notice any of these, stop. Describe what you are trying to accomplish and what you have tried, and propose to discuss options and tackle it together as partners. That is not a failure — it is good judgement about where each partner's capabilities are best applied.
+**Know when to stop and ask.** You and the user have complementary capabilities — tasks that are trivial for a human may be difficult or impossible for the agent, and vice versa. Because of that, some tasks are asymmetrically hard: something that requires the agent to experiment with poorly-documented APIs, iterate through failure modes, and invent increasingly complex workarounds may take the user five seconds in a web UI inaccessible by the agent. Recognise this asymmetry early — before deep investment into agent-only approach. The warning signs are: multiple failed attempts at the same goal, escalating complexity with each retry, or finding yourself considering risky workarounds to bypass the problem that did not exist originally. When you notice any of these, STOP. Describe to the user what you are trying to accomplish and what you have tried, and propose to discuss options and tackle it together as partners. That is not a failure, it is good judgement about where each partner's capabilities are best applied.
 
 ## Dev commands
 
@@ -55,7 +55,7 @@ NEVER merge PRs. This is a strictly manual human operation that acts as a gate.
 
 Two parallel long-term efforts are underway, currently in early stages:
 
-- **Agentic SDLC** — a Claude Code-driven development lifecycle for this project. Design is in `docs/AGENTIC-SDLC.md` (written for the human; not agent runtime context).
+- **Agentic SDLC** — a Claude Code-driven development lifecycle for this project. Design is in `docs/AGENTIC-SDLC.md` (written for the human; not agent runtime context, unless explicitly asked by the user).
 - **Isolated container runtime** — a hardened, ephemeral Docker environment for Claude Code sessions. Design and current state are in `docs/CLAUDE-DEV-ENVIRONMENT.md` and `docs/CURRENT-STATE.md`.
 
 The isolated container is the primary intended runtime for Claude Code sessions, but the project can be set up and developed in other environments as well.
