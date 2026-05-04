@@ -85,6 +85,15 @@ Audience: AI agent or maintainer continuing implementation.
 
 ---
 
+## Installed developer tooling
+
+* Micro 2.0.15 — TUI text editor, static binary at `/usr/local/bin/micro`.
+* delta 0.19.2 — syntax-highlighting git diff pager, static binary at `/usr/local/bin/delta`. Wired in via `/etc/gitconfig` (system-level): `core.pager`, `interactive.diffFilter`, `delta.line-numbers = true`, `delta.navigate = true`.
+* `EDITOR=micro` and `VISUAL=micro` set via Dockerfile `ENV`; inherited by all container processes including non-interactive subshells.
+* No Micro config is included; defaults are used. `~/.config/micro/` is not pre-populated (it would live on the ephemeral `/home/node` tmpfs).
+
+---
+
 ## Claude container current `docker run` shape
 
 Current important flags:
