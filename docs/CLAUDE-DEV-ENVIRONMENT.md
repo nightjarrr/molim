@@ -218,6 +218,8 @@ Claude Code is a TUI. The container provides a real PTY (`docker run -it`), `TER
 
 Micro is installed as the default TUI editor (`EDITOR=micro`, `VISUAL=micro`). It is available for interactive file editing and is the fallback editor for CLI tools that open `$EDITOR` (e.g. `git commit`, `gh pr create`).
 
+delta is installed as the git diff pager. All `git diff`, `git show`, `git log -p`, and `git add -p` output is automatically routed through delta for syntax highlighting, line numbers, and hunk navigation (n/N).
+
 ### Survivability
 
 The launcher creates a named host `tmux` session and re-enters itself inside that session. This keeps the launcher, Envoy sidecar lifecycle, and `docker run` under tmux control. If the terminal emulator crashes or closes, the tmux server keeps the session alive. Reattach using the printed tmux session name.
