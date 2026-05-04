@@ -1,11 +1,16 @@
 ---
 name: ensure-github-labels
-description: Ensures all required SDLC GitHub labels exist on the current repo. Creates any missing labels with correct descriptions; skips labels that already exist. Invoke this skill whenever the user asks to set up, initialize, or check GitHub labels for the project, mentions missing phase or type labels, or asks to ensure the repo is configured for the agentic SDLC workflow.
+description: Ensures all GitHub labels required by SDLC exist on the current repo. Creates any missing labels with correct descriptions; skips labels that already exist.
+disable-model-invocation: true
+context: fork
+model: Haiku
+allowed-tools: Bash(gh label *) Bash(jq)
 ---
 
 # ensure-github-labels
 
-Ensure all required SDLC labels exist on the current GitHub repo. Create missing ones; skip existing ones.
+Ensure all labels required by SDLC exist on the current GitHub repo. Create missing ones; skip existing ones.
+**This skill is only modifying GitHub labels, not the files. It does NOT create or modify any files.**
 
 ## Required labels
 
@@ -27,20 +32,20 @@ Ensure all required SDLC labels exist on the current GitHub repo. Create missing
 
 ## Steps
 
-1. Fetch existing labels from the repo (supports up to 200 existing labels):
+1. Fetch existing labels from the repo:
    ```bash
-   gh label list --limit 200 --json name
+   gh label list --json name | | jq -r '.[].name
    ```
 
-2. Parse the JSON to extract the list of existing label names.
+2. Returned output is the plain text list of existing label names, one label name per line.
 
 3. For each label in the required table above, check if it already exists (case-sensitive match).
 
-4. For each **missing** label, attempt to create it:
+4. For each **missing** label, attempt to create it, using the row from the table:
    ```bash
    gh label create "<name>" --description "<description>"
    ```
-   If the command fails for any reason (e.g. the label was created concurrently, or already exists despite not appearing in the list), do not abort — record a warning for that label and continue with the rest.
+   If the command fails for any reason (e.g. there's and underlying API error, or the label was created concurrently, or already exists despite not appearing in the list), do not abort the whole operation, record a warning for that label and continue with the rest.
 
 5. Report results: list which labels were **created**, which were **already present** (skipped), and any **warnings** from failed create attempts.
 
@@ -53,12 +58,14 @@ Created:
   ✓ phase: triage
   ✓ phase: spec
 
-Already present (skipped):
+Already existing (skipped):
   • feature
   • bug
 
 Warnings:
-  ⚠ chore — label create failed: already exists
+  ⚠ phase: impl-plan: not created (API error: <error text>)
+  ⚠ chore: not created (alreay exists)
+
 ```
 
-If all labels already exist, say so and confirm no changes were made. Warnings are informational; the skill succeeds as long as all required labels are present after the run.
+If all labels already exist, say so and confirm no changes were made. Warnings are informational; the skill succeeds when it makes a best-effort attempt to create all missing labels and reports the results.

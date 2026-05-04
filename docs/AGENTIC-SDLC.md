@@ -246,7 +246,7 @@ The following skills are part of the PM's capability set and execute within PM s
 
 #### Ensure GitHub Labels
 
-- **Purpose:** Ensure all required SDLC labels (type labels and phase labels) exist on the GitHub repository. Fetches existing labels (supports up to 200), creates any that are missing, and skips those already present. If a `gh label create` call fails (e.g. a label was created concurrently), a warning is recorded and execution continues — the skill does not abort on individual create errors.
+- **Purpose:** Ensure all required SDLC labels (type labels and phase labels) exist on the GitHub repository. Fetches existing labels, creates any that are missing, and skips those already present. If a `gh label create` call fails, a warning is recorded and execution continues — the skill does not abort on individual create errors.
 - **Inputs:** None (operates on the current repository).
 - **Outputs:** Report listing created labels, already-present labels, and any warnings from failed create attempts.
 - **Permissions required:** `github:read`, `github:write`.
