@@ -216,6 +216,8 @@ Multiple features may run concurrently. Each invocation gets its own Claude cont
 
 Claude Code is a TUI. The container provides a real PTY (`docker run -it`), `TERM=xterm-256color` or compatible behavior, and a UTF-8 locale.
 
+Micro is installed as the default TUI editor (`EDITOR=micro`, `VISUAL=micro`). It is available for interactive file editing and is the fallback editor for CLI tools that open `$EDITOR` (e.g. `git commit`, `gh pr create`).
+
 ### Survivability
 
 The launcher creates a named host `tmux` session and re-enters itself inside that session. This keeps the launcher, Envoy sidecar lifecycle, and `docker run` under tmux control. If the terminal emulator crashes or closes, the tmux server keeps the session alive. Reattach using the printed tmux session name.

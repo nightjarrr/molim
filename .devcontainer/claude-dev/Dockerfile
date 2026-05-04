@@ -84,6 +84,20 @@ RUN curl -fsSL "https://github.com/cli/cli/releases/download/v2.91.0/gh_2.91.0_l
     && rm -rf /var/lib/apt/lists/*
 
 # ----------------------------------------------------------------------
+# Micro — TUI text editor, installed from official GitHub release.
+# Static binary; no runtime dependencies.
+# ----------------------------------------------------------------------
+ENV MICRO_VERSION=2.0.15 \
+    EDITOR=micro \
+    VISUAL=micro
+RUN curl -fsSL "https://github.com/micro-editor/micro/releases/download/v${MICRO_VERSION}/micro-${MICRO_VERSION}-linux64-static.tar.gz" \
+        -o /tmp/micro.tar.gz \
+    && tar -xzf /tmp/micro.tar.gz -C /tmp \
+    && mv /tmp/micro-${MICRO_VERSION}/micro /usr/local/bin/micro \
+    && rm /tmp/micro.tar.gz \
+    && rm -rf /tmp/micro-${MICRO_VERSION}
+
+# ----------------------------------------------------------------------
 # Claude Code — official npm package, version-pinned
 # ----------------------------------------------------------------------
 ENV CLAUDE_CODE_VERSION=2.1.112
