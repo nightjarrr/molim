@@ -98,6 +98,22 @@ RUN curl -fsSL "https://github.com/micro-editor/micro/releases/download/v${MICRO
     && rm -rf /tmp/micro-${MICRO_VERSION}
 
 # ----------------------------------------------------------------------
+# delta — syntax-highlighting diff pager for git, from official GitHub release.
+# Static (musl) binary; no runtime dependencies.
+# ----------------------------------------------------------------------
+ENV DELTA_VERSION=0.19.2
+RUN curl -fsSL "https://github.com/dandavison/delta/releases/download/${DELTA_VERSION}/delta-${DELTA_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
+        -o /tmp/delta.tar.gz \
+    && tar -xzf /tmp/delta.tar.gz -C /tmp \
+    && mv /tmp/delta-${DELTA_VERSION}-x86_64-unknown-linux-musl/delta /usr/local/bin/delta \
+    && rm /tmp/delta.tar.gz \
+    && rm -rf /tmp/delta-${DELTA_VERSION}-x86_64-unknown-linux-musl \
+    && git config --system core.pager delta \
+    && git config --system interactive.diffFilter "delta --color-only" \
+    && git config --system delta.line-numbers true \
+    && git config --system delta.navigate true
+
+# ----------------------------------------------------------------------
 # Claude Code — official npm package, version-pinned
 # ----------------------------------------------------------------------
 ENV CLAUDE_CODE_VERSION=2.1.112
