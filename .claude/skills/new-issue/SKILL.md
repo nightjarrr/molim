@@ -9,7 +9,7 @@ allowed-tools: Bash(gh issue create)
 
 # New Issue
 
-This skill creates a new GitHub Issue in the initial state of the SDLC. It is a manual skill - user always invokes it manually.
+This skill creates a new GitHub Issue in the initial state of the SDLC.
 
 ## Why this skill exists
 
@@ -26,12 +26,14 @@ Collect three things from the user before creating the Issue:
    - `bug` — defect fix
    - `chore` — non-functional work (CI, dependencies, configuration, releases)
    - `docs` — documentation-only changes
-2. **Title** — a single-line description of the Issue, always starting with a Capitalized word.
+2. **Title** — a single-line description of the Issue in sentence case: first word capitalized, rest lowercase unless proper nouns.
 3. **Body** (optional) — free-form markdown details.
 
 If the user gives you a description but not a type, **ask**. Don't guess: picking the wrong type misroutes the Issue through the SDLC.
 
-If the description spans multiple lines, create the title by summarizing the description into 3-5 words. Use the whole description as the issue body. The GitHub Issue title field is single-line and asking the user to restructure their input is friction we don't need.
+If the description spans multiple lines, create the title by summarizing the description into 3-7 words. Use the whole description as the issue body. The GitHub Issue title field is single-line and asking the user to restructure their input is friction we don't need.
+
+If the user's input begins with a `type:` prefix (e.g. `chore: bump pre-commit hook versions`), strip that prefix before using the text as the title or body — the type is already captured via the label.
 
 ## Creating the Issue
 
@@ -72,7 +74,7 @@ Do **not** auto-fill structured sections (problem statement, acceptance criteria
 
 Surface failures clearly and stop. Do not paper over them — these are usually configuration issues that the user needs to fix outside this skill, and silent retries can produce duplicate Issues or hide setup gaps.
 
-- **Missing labels.** If `gh issue create` fails because `feature`/`bug`/`chore`/`docs` or `phase: triage` doesn't exist in the repo, report which label is missing and stop. Provisioning labels is project-setup work, intentionally out of scope here. If `ensure-github-issue` skill is available, suggest that the user uses it to create the required labels.
+- **Missing labels.** If `gh issue create` fails because `feature`/`bug`/`chore`/`docs` or `phase: triage` doesn't exist in the repo, report which label is missing and stop. Provisioning labels is project-setup work, intentionally out of scope here. If `ensure-github-labels` skill is available, suggest that the user uses it to create the required labels.
 - **`gh` unauthenticated or wrong repo.** Report the verbatim error and stop.
 - **API failure.** Report the error and stop. Do not retry — repeated retries on an unclear failure can create duplicate Issues.
 
@@ -100,7 +102,7 @@ Then proceed as in Example 1 with `--label "bug"`.
 
 **Example 3 — multi-line description:**
 
-> Project Owner: "/new issue chore: bump pre-commit hook versions. The repo is pinned to versions from 2024 and we should refresh to current."
+> Project Owner: "/new-issue chore: bump pre-commit hook versions. The repo is pinned to versions from 2024 and we should refresh to current."
 
 Title: `Refresh pre-commit hook versions to current versions`
 Body: `Bump pre-commit hook versions. The repo is pinned to versions from 2024 and we should refresh to current.`
