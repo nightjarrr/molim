@@ -284,14 +284,13 @@ Host/project launcher variables include at least:
 ## Current implementation intentionally not complete
 
 This list is a starting point for future implementation plan:
-* Envoy allow-list not enforced yet; currently allow-all for dogfooding.
-* GHCR image publishing not done / not prioritized immediately.
-* Digest pinning not done / not prioritized immediately.
-* Image provenance / scheduled rebuild workflow not complete.
-* Image split into base and project not done.
-* Base/project split of entrypoint not done.
-* Project bootstrap still lives directly in entrypoint.
-* Web Fetch / broad web research retrieval design deferred.
-* Live Envoy allow-list management/control plane deferred.
-* Credential-hiding via proxy/gateway deferred.
-* Stronger isolation such as gVisor/VM deferred.
+* Enforce Envoy allow-list (currently allow-all for dogfooding).
+* Implement GHCR image publishing.
+* Implement Digest pinning.
+* Implement Image provenance / scheduled rebuild workflow.
+* Implement Image split into base and project.
+* Implement Base/project split of entrypoint.
+* Web Fetch / broad web research retrieval design.
+* Design Live Envoy allow-list management/control plane.
+* Design Credential-hiding via proxy/gateway.
+* Consider Stronger isolation such as gVisor.
