@@ -3,7 +3,7 @@ name: new-issue
 description: Create a new GitHub Issue in the correct initial triage state for this project's agentic SDLC. Applies one type label (`feature`, `bug`, `chore`, or `docs`) plus `phase: triage`. Invoked manually by the user, never by the model.
 disable-model-invocation: true
 context: fork
-model: Sonnet
+model: Haiku
 allowed-tools: Bash(gh issue create)
 ---
 
