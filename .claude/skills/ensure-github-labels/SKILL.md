@@ -34,7 +34,7 @@ Ensure all labels required by SDLC exist on the current GitHub repo. Create miss
 
 1. Fetch existing labels from the repo:
    ```bash
-   gh label list --json name | jq -r '.[].name
+   gh label list --json name | jq -r '.[].name'
    ```
 
 2. Returned output is the plain text list of existing label names, one label name per line.
