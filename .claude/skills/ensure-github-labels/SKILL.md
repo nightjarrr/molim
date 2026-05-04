@@ -1,6 +1,6 @@
 ---
 name: ensure-github-labels
-description: Ensures all GitHub labels required by SDLC exist on the current repo. Creates any missing labels with correct descriptions; skips labels that already exist.
+description: Ensures all GitHub labels required by SDLC exist on the current repo. Creates any missing labels with correct descriptions; skips labels that already exist. Only first 200 existing labels are inspected.
 disable-model-invocation: true
 context: fork
 model: Haiku
@@ -34,7 +34,7 @@ Ensure all labels required by SDLC exist on the current GitHub repo. Create miss
 
 1. Fetch existing labels from the repo:
    ```bash
-   gh label list --json name | jq -r '.[].name'
+   gh label list --limit 200 --json name | jq -r '.[].name'
    ```
 
 2. Returned output is the plain text list of existing label names, one label name per line.
@@ -45,7 +45,7 @@ Ensure all labels required by SDLC exist on the current GitHub repo. Create miss
    ```bash
    gh label create "<name>" --description "<description>"
    ```
-   If the command fails for any reason (e.g. there's and underlying API error, or the label was created concurrently, or already exists despite not appearing in the list), do not abort the whole operation, record a warning for that label and continue with the rest.
+   If the command fails for any reason (e.g. there's an underlying API error, or the label was created concurrently, or already exists despite not appearing in the list), do not abort the whole operation, record a warning for that label and continue with the rest.
 
 5. Report results: list which labels were **created**, which were **already present** (skipped), and any **warnings** from failed create attempts.
 
