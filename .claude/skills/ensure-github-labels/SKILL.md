@@ -64,7 +64,7 @@ Already existing (skipped):
 
 Warnings:
   ⚠ phase: impl-plan: not created (API error: <error text>)
-  ⚠ chore: not created (alreay exists)
+  ⚠ chore: not created (already exists)
 
 ```
 
