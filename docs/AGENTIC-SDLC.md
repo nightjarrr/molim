@@ -244,6 +244,14 @@ The skill owns the full atomic operation. The invoking agent (PM) does not need 
 
 The following skills are part of the PM's capability set and execute within PM sessions, but they are not invoked by PM autonomously as part of workflow execution. They are made available for the Project Owner to invoke manually through their conversation with PM, supporting the Project Owner in operating the system without requiring constant switching between all involved systems (GitHub Web UI, IDE or Git CLI, AI Coding Agent interface).
 
+#### Ensure GitHub Labels
+
+- **Purpose:** Ensure all required SDLC labels (type labels and phase labels) exist on the GitHub repository. Fetches existing labels, creates any that are missing, and skips those already present. If a `gh label create` call fails, a warning is recorded and execution continues — the skill does not abort on individual create errors.
+- **Inputs:** None (operates on the current repository).
+- **Outputs:** Report listing created labels, already-present labels, and any warnings from failed create attempts.
+- **Permissions required:** `github:read`, `github:write`.
+- **Invoked by:** Project Owner via PM session at project setup time (manual invocation only, never autonomous).
+
 #### New Issue
 
 - **Purpose:** Create a new Issue in the correct initial state with proper labels and phase.
