@@ -2,30 +2,7 @@
 
 A personal Linux CLI that wraps RawTherapee, ImageMagick, and FFmpeg behind a single consistent interface for batch file processing. Linux only. External PRs are not accepted.
 
-## Package layout
-
-```
-src/molim/
-  __init__.py       entry point — main()
-  cli.py            CLI setup, command registration
-  commands.py       Command base class (template method pattern)
-  processing.py     File matching, skipping, output naming, and post-processing strategies
-  config.py         TOML config loading (default: ~/.config/molim/config.toml)
-  stats.py          Timing and size statistics
-  check.py          Guard/assertion functions
-  show.py           Rich-based terminal output
-  shell.py          Shell subprocess execution via sh library
-  rename.py         SuffixCommand
-  video.py          VideoFfmpegCommand (FFmpeg)
-  images/
-    imagemagick.py  ImageMagickMixin
-    jpegify.py      JpegifyCommand
-    rawtherapee.py  RawTherapeeCommand, RawTherapeeHQCommand
-    resize.py       ResizeCommand
-
-tests/              integration tests
-docs/               project documentation
-```
+Architecture: composable CLI — commands inherit from a `Command` base class using the Template Method pattern. Source in `src/molim/`, tests in `tests/`, project docs in `docs/`.
 
 ## Dev commands
 
@@ -44,7 +21,7 @@ Pre-commit hooks run ruff on every `git commit`. If the formatter modifies stage
 
 ## Tests
 
-Tests are real integration tests that invoke the actual CLI tools. Do not mock RawTherapee, ImageMagick, or FFmpeg. The tools must be installed and available on PATH for the test suite to pass.
+Tests are real integration tests that invoke the actual CLI tools. Do not mock RawTherapee, ImageMagick, or FFmpeg. Required commands on PATH: `rawtherapee-cli`, `convert` (ImageMagick), `ffmpeg`.
 
 ## Branching
 
