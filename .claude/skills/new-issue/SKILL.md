@@ -47,9 +47,11 @@ gh issue create \
   --label "phase: triage"
 ```
 
-Both labels go in the same call.
+Both labels go in the same call as separate --label "<value>" switches.
 
 `gh issue create` prints the URL of the created Issue on success. Capture it and parse the Issue number from the trailing path segment (e.g. `https://github.com/owner/repo/issues/73` → `#73`).
+
+Once you have all the necessary inputs, use the `Bash` tool to run `gh issue create` directly — do not attempt to re-invoke this skill via the Skill tool. This skill has `disable-model-invocation: true`, meaning the model cannot trigger it; doing so will fail silently and interrupt the flow.
 
 ## Reporting back
 
