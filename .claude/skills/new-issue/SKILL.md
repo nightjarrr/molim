@@ -51,8 +51,7 @@ Both labels go in the same call as separate --label "<value>" switches.
 
 `gh issue create` prints the URL of the created Issue on success. Capture it and parse the Issue number from the trailing path segment (e.g. `https://github.com/owner/repo/issues/73` → `#73`).
 
-If your flow is interrupted because you need to solicit input from the user (e.g. asking for the type or proposing several variations of the title you derived from the description), DO NOT attempt to proceed by invoking the same skill (i.e., to run Skill tool for "new-issue") - this skill cannot be invoked by the model. Instead, always use the `Bash` tool to run the `gh issue create` command as described above once you have all the necessary information.
-
+Once you have all the necessary inputs, use the `Bash` tool to run `gh issue create` directly — do not attempt to re-invoke this skill via the Skill tool. This skill has `disable-model-invocation: true`, meaning the model cannot trigger it; doing so will fail silently and interrupt the flow.
 
 ## Reporting back
 
