@@ -277,6 +277,7 @@ RUN_BASE="${XDG_RUNTIME_DIR:-/tmp}/claude-dev"
 RUN_DIR="${RUN_BASE}/${RUN_ID}"
 
 ENVOY_CONTAINER="claude-dev-envoy-${RUN_ID}"
+CLAUDE_CONTAINER="claude-dev-claude-${RUN_ID}"
 ENVOY_RUNTIME_CONFIG="${RUN_DIR}/envoy.yaml"
 
 cleanup_envoy() {
@@ -313,29 +314,6 @@ prepare_envoy() {
     chmod 600 "$ENVOY_RUNTIME_CONFIG"
 }
 
-start_envoy_logs_tmux() {
-    if [[ -z "${TMUX_SESSION:-}" ]]; then
-        warning "TMUX_SESSION is not set; Envoy logs tmux session not started."
-        return 0
-    fi
-
-    local tmux_session="${TMUX_SESSION}-envoy-logs"
-
-    if tmux has-session -t "${tmux_session}" >/dev/null 2>&1; then
-        warning "Envoy logs tmux session already existed; not launching a second one."
-        return 0
-    fi
-
-    if tmux new-session -d \
-        -s "${tmux_session}" \
-        "docker logs -f ${ENVOY_CONTAINER}"; then
-
-        echo "Envoy logs tmux session: ${tmux_session}"
-        echo "Attach with: tmux attach -t ${tmux_session}"
-    else
-        warning "failed to start Envoy logs tmux session; continuing without it."
-    fi
-}
 
 start_envoy() {
     prepare_envoy
@@ -355,7 +333,6 @@ start_envoy() {
         "${ENVOY_IMAGE}" \
         -c /run/claude-dev-proxy/envoy.yaml
 
-    start_envoy_logs_tmux
 }
 
 # Envoy socket on host system
@@ -381,6 +358,32 @@ wait_for_envoy() {
 }
 
 # ----------------------------------------------------------------------
+# Tmux window setup
+# ----------------------------------------------------------------------
+setup_tmux_windows() {
+    if [[ -z "${TMUX_SESSION:-}" ]]; then
+        warning "TMUX_SESSION is not set; additional tmux windows not created."
+        return 0
+    fi
+
+    tmux rename-window -t "${TMUX_SESSION}:0" "claude-dev primary" || \
+        warning "failed to rename primary tmux window; continuing."
+
+    if ! tmux new-window -t "${TMUX_SESSION}" -n "claude-dev shell" \
+        "until docker inspect -f '{{.State.Running}}' ${CLAUDE_CONTAINER} 2>/dev/null | grep -q true; do sleep 1; done; docker exec -it ${CLAUDE_CONTAINER} bash"; then
+        warning "failed to create 'claude-dev shell' tmux window; to open manually: tmux new-window -t '${TMUX_SESSION}' -n 'claude-dev shell' 'docker exec -it ${CLAUDE_CONTAINER} bash'"
+    fi
+
+    if ! tmux new-window -t "${TMUX_SESSION}" -n "claude-dev envoy logs" \
+        "docker logs -f ${ENVOY_CONTAINER}"; then
+        warning "failed to create 'claude-dev envoy logs' tmux window; to open manually: tmux new-window -t '${TMUX_SESSION}' -n 'claude-dev envoy logs' 'docker logs -f ${ENVOY_CONTAINER}'"
+    fi
+
+    tmux select-window -t "${TMUX_SESSION}:claude-dev primary" || \
+        warning "failed to select primary tmux window; continuing."
+}
+
+# ----------------------------------------------------------------------
 # Build Claude container docker run argument list
 #
 # Intentionally unchanged for this draft. We are only validating that the
@@ -388,6 +391,7 @@ wait_for_envoy() {
 # ----------------------------------------------------------------------
 DOCKER_ARGS=(
     run --rm -it
+    --name "${CLAUDE_CONTAINER}"
     -e GITHUB_OWNER -e GITHUB_REPO
     -e CLAUDE_CODE_OAUTH_TOKEN -e GITHUB_TOKEN_
     -e TZ
@@ -432,6 +436,7 @@ fi
 # ----------------------------------------------------------------------
 start_envoy
 wait_for_envoy
+setup_tmux_windows
 
 echo "Starting Claude dev container..."
 docker "${DOCKER_ARGS[@]}"
