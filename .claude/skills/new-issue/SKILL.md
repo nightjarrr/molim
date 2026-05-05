@@ -4,7 +4,7 @@ description: Create a new GitHub Issue in the correct initial triage state for t
 disable-model-invocation: true
 context: fork
 model: Haiku
-allowed-tools: Bash(gh issue create)
+allowed-tools: Bash(gh issue create), AskUserQuestion
 ---
 
 # New Issue
@@ -30,6 +30,18 @@ Collect three things from the user before creating the Issue:
 3. **Body** (optional) — free-form markdown details.
 
 If the user gives you a description but not a type, **ask**. Don't guess: picking the wrong type misroutes the Issue through the SDLC.
+
+### When invoked with no input
+
+If the user calls `/new-issue` with no arguments, run a short guided flow — one question per turn:
+
+1. **Type** — use `AskUserQuestion` with four options (one per type). Each option label is the type name; the description is the one-liner from the type list above.
+2. **Title** — ask in plain text: "What should the issue title be?"
+3. **Body** — use `AskUserQuestion` with two options:
+   - "Create now" — create the issue immediately with an empty body.
+   - "Add details first" — ask the user for body content before creating.
+
+Do not ask all three questions at once. Wait for each answer before asking the next.
 
 If the description spans multiple lines, create the title by summarizing the description into 3-7 words. Use the whole description as the issue body. The GitHub Issue title field is single-line and asking the user to restructure their input is friction we don't need.
 
@@ -109,3 +121,29 @@ Then proceed as in Example 1 with `--label "bug"`.
 Title: `Refresh pre-commit hook versions to current versions`
 Body: `Bump pre-commit hook versions. The repo is pinned to versions from 2024 and we should refresh to current.`
 Labels: `chore` and `phase: triage`.
+
+**Example 4 — no arguments:**
+
+> Project Owner: "/new-issue"
+
+Use `AskUserQuestion`:
+- Question: "What type of issue is this?"
+- Options: `feature` (new functionality), `bug` (defect fix), `chore` (non-functional work), `docs` (documentation-only)
+
+> Project Owner selects: `chore`
+
+Ask in plain text: "What should the issue title be?"
+
+> Project Owner: "Refresh pre-commit hook versions"
+
+Use `AskUserQuestion`:
+- Question: "Ready to create, or would you like to add body details first?"
+- Options: "Create now" (empty body), "Add details first"
+
+> Project Owner selects: "Create now"
+
+Run:
+```bash
+gh issue create --title "Refresh pre-commit hook versions" --body "" --label "chore" --label "phase: triage"
+```
+Reply: "Created #74 — https://github.com/owner/repo/issues/74 — with labels `chore` and `phase: triage`."
