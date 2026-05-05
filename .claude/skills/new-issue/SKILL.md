@@ -31,6 +31,10 @@ Collect three things from the user before creating the Issue:
 
 If the user gives you a description but not a type, **ask**. Don't guess: picking the wrong type misroutes the Issue through the SDLC.
 
+If the description spans multiple lines, create the title by summarizing the description into 3-7 words. Use the whole description as the issue body. The GitHub Issue title field is single-line and asking the user to restructure their input is friction we don't need.
+
+If the user's input begins with a `type:` prefix (e.g. `chore: bump pre-commit hook versions`), strip that prefix before using the text as the title or body — the type is already captured via the label.
+
 ### When invoked with no input
 
 If the user calls `/new-issue` with no arguments, run a short guided flow — one question per turn:
@@ -42,10 +46,6 @@ If the user calls `/new-issue` with no arguments, run a short guided flow — on
    - "Add details first" — ask the user for body content before creating.
 
 Do not ask all three questions at once. Wait for each answer before asking the next.
-
-If the description spans multiple lines, create the title by summarizing the description into 3-7 words. Use the whole description as the issue body. The GitHub Issue title field is single-line and asking the user to restructure their input is friction we don't need.
-
-If the user's input begins with a `type:` prefix (e.g. `chore: bump pre-commit hook versions`), strip that prefix before using the text as the title or body — the type is already captured via the label.
 
 ## Creating the Issue
 
