@@ -270,14 +270,16 @@ TZ="$(detect_host_tz)"
 export TZ
 
 # ----------------------------------------------------------------------
-# Envoy sidecar runtime setup
+# Runtime initialization
 # ----------------------------------------------------------------------
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$(openssl rand -hex 8)"
 RUN_BASE="${XDG_RUNTIME_DIR:-/tmp}/claude-dev"
 RUN_DIR="${RUN_BASE}/${RUN_ID}"
 
+# ----------------------------------------------------------------------
+# Envoy sidecar runtime setup
+# ----------------------------------------------------------------------
 ENVOY_CONTAINER="claude-dev-envoy-${RUN_ID}"
-CLAUDE_CONTAINER="claude-dev-claude-${RUN_ID}"
 ENVOY_RUNTIME_CONFIG="${RUN_DIR}/envoy.yaml"
 
 cleanup_envoy() {
@@ -360,6 +362,8 @@ wait_for_envoy() {
 # ----------------------------------------------------------------------
 # Tmux window setup
 # ----------------------------------------------------------------------
+CLAUDE_CONTAINER="claude-dev-claude-${RUN_ID}"
+
 setup_tmux_windows() {
     if [[ -z "${TMUX_SESSION:-}" ]]; then
         warning "TMUX_SESSION is not set; additional tmux windows not created."

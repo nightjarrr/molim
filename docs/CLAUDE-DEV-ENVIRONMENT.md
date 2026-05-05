@@ -224,7 +224,7 @@ delta is installed as the git diff pager. All `git diff`, `git show`, `git log -
 
 The launcher creates a named host `tmux` session and re-enters itself inside that session. This keeps the launcher, Envoy sidecar lifecycle, and `docker run` under tmux control. If the terminal emulator crashes or closes, the tmux server keeps the session alive. Reattach using the printed tmux session name.
 
-The launcher also opens a `claude-dev shell` window (interactive bash in the Claude container) and a `claude-dev envoy logs` window in the same session.
+The launcher also opens a `claude-dev shell` window (interactive bash in the Claude container) and a `claude-dev envoy logs` window (`docker logs -f` on the Envoy sidecar) in the same session.
 
 ---
 
