@@ -43,7 +43,7 @@ If the user calls `/new-issue` with no arguments, run a short guided flow — on
 2. **Title** — ask in plain text: "What should the issue title be?"
 3. **Body** — use `AskUserQuestion` with two options:
    - "Create now" — create the issue immediately with an empty body.
-   - "Add details first" — ask the user for body content before creating.
+   - "Add details first" — ask in plain text: "What should the body say?" then create the issue with that text as the body.
 
 Do not ask all three questions at once. Wait for each answer before asking the next.
 
@@ -145,5 +145,19 @@ Use `AskUserQuestion`:
 Run:
 ```bash
 gh issue create --title "Refresh pre-commit hook versions" --body "" --label "chore" --label "phase: triage"
+```
+Reply: "Created #74 — https://github.com/owner/repo/issues/74 — with labels `chore` and `phase: triage`."
+
+**Example 5 — no arguments, with body:**
+
+Steps 1 and 2 are the same as Example 4. At step 3, the user selects "Add details first":
+
+Ask in plain text: "What should the body say?"
+
+> Project Owner: "The repo is pinned to versions from 2024 and we should refresh to current."
+
+Run:
+```bash
+gh issue create --title "Refresh pre-commit hook versions" --body "The repo is pinned to versions from 2024 and we should refresh to current." --label "chore" --label "phase: triage"
 ```
 Reply: "Created #74 — https://github.com/owner/repo/issues/74 — with labels `chore` and `phase: triage`."
