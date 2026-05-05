@@ -43,7 +43,7 @@ If the user calls `/new-issue` with no arguments, run a short guided flow — on
 2. **Title** — ask in plain text: "What should the issue title be?"
 3. **Body** — use `AskUserQuestion` with two options:
    - "Create now" — create the issue immediately with an empty body.
-   - "Add details first" — ask in plain text: "What should the body say?" then create the issue with that text as the body.
+   - "Add details first" — ask in plain text: "What should the body say?" then create the issue with that text as the body and type, title captured earlier.
 
 Do not ask all three questions at once. Wait for each answer before asking the next.
 
