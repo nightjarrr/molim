@@ -4,6 +4,8 @@ A personal Linux CLI that wraps RawTherapee, ImageMagick, and FFmpeg behind a si
 
 **Architecture**: composable CLI — commands inherit from the `Command` base class using the Template Method pattern. Source in `src/molim/`, tests in `tests/`, project docs in `docs/`.
 
+**Dev container** infrastructure in `.devcontainer/`, host helper scripts (e.g., launcher) in `scripts/`
+
 ## Working together
 
 This project is developed as a human–AI partnership, the agent and the user are working together, each bringing their unique strengths to the table.
