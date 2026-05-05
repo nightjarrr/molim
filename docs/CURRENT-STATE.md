@@ -70,7 +70,7 @@ Audience: AI agent or maintainer continuing implementation.
 * Launcher seeds `~/.tmux.conf` from `scripts/claude-dev.tmux.conf` only if missing.
 * Launcher sources `~/.tmux.conf` best-effort; failures are warnings, not fatal.
 * Launcher creates a named tmux session and re-enters itself inside it.
-* `TMUX_SESSION` must be exported before re-entry; Envoy logs tmux session depends on this.
+* `TMUX_SESSION` must be exported before re-entry; tmux window setup depends on this.
 * Launcher retrieves secrets from keyring:
   * `service=claude-dev account=claude-oauth`
   * `service=claude-dev account=github-token`
@@ -79,8 +79,8 @@ Audience: AI agent or maintainer continuing implementation.
 * Launcher starts Envoy sidecar detached with `--rm`.
 * Launcher exposes Envoy admin on host loopback, currently `127.0.0.1:7001`.
 * Launcher waits for Envoy socket before starting Claude container.
-* Launcher starts optional detached tmux session running `docker logs -f ${ENVOY_CONTAINER}`.
-* Launcher starts Claude container interactively with `docker run --rm -it`.
+* Launcher creates two additional windows in the primary tmux session: `claude-dev shell` (interactive bash into Claude container) and `claude-dev envoy logs` (`docker logs -f ${ENVOY_CONTAINER}`).
+* Launcher starts Claude container interactively with `docker run --rm -it --name ${CLAUDE_CONTAINER}`.
 * Launcher cleanup stops Envoy container and removes runtime dir on exit.
 
 ---
@@ -227,11 +227,11 @@ Policy clarification:
 
 ## Tmux current behavior
 
-* Launcher creates primary tmux session for Claude dev runtime.
-* Launcher may create detached tmux session for Envoy logs:
+* Launcher creates primary tmux session with three windows:
 
-  * name: `${TMUX_SESSION}-envoy-logs`
-  * command: `docker logs -f ${ENVOY_CONTAINER}`
+  * `claude-dev primary` — Claude container (`docker run`)
+  * `claude-dev shell` — interactive `docker exec bash` into Claude container
+  * `claude-dev envoy logs` — `docker logs -f ${ENVOY_CONTAINER}`
 * `Ctrl-b d` detaches from tmux without killing underlying command.
 * Tmux seed config is copied to `~/.tmux.conf` only if missing.
 * Existing user `~/.tmux.conf` is never overwritten.

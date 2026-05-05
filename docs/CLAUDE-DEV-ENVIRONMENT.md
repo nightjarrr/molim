@@ -224,7 +224,7 @@ delta is installed as the git diff pager. All `git diff`, `git show`, `git log -
 
 The launcher creates a named host `tmux` session and re-enters itself inside that session. This keeps the launcher, Envoy sidecar lifecycle, and `docker run` under tmux control. If the terminal emulator crashes or closes, the tmux server keeps the session alive. Reattach using the printed tmux session name.
 
-The launcher may also start a separate detached tmux session for easy Envoy log monitoring, named after the primary session with an `-envoy-logs` suffix.
+The launcher also opens a `claude-dev shell` window (interactive bash in the Claude container) and a `claude-dev envoy logs` window (`docker logs -f` on the Envoy sidecar) in the same session.
 
 ---
 
@@ -656,8 +656,8 @@ ENVOY_SOCKET_CONTAINER_PATH=/run/claude-dev-proxy/proxy.sock
 8. Create a private per-run runtime directory under `${XDG_RUNTIME_DIR:-/tmp}`.
 9. Render Envoy config from `.devcontainer/envoy/envoy.yaml.template` into the runtime directory.
 10. Start Envoy sidecar container with hardened flags.
-11. Start optional detached Envoy logs tmux session.
-12. Wait for the Envoy Unix socket.
+11. Wait for the Envoy Unix socket.
+12. Create `claude-dev shell` and `claude-dev envoy logs` windows in the primary tmux session.
 13. Assemble and run the Claude dev container with:
 
     * `--rm -it`
