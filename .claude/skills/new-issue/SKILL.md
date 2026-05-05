@@ -19,7 +19,7 @@ Phase 1 (Triage) of the SDLC requires every Issue to enter the system with:
 
 ## Inputs
 
-Collect three things from the user before creating the Issue:
+You need to obtain three things from the user before creating the Issue:
 
 1. **Type** — one of `feature`, `bug`, `chore`, `docs`. Their meanings (from the SDLC):
    - `feature` — new functionality
@@ -29,6 +29,8 @@ Collect three things from the user before creating the Issue:
 2. **Title** — a single-line description of the Issue in sentence case: first word capitalized, rest lowercase unless proper nouns.
 3. **Body** (optional) — free-form markdown details.
 
+The user can give you all or some of this information as input to the skill. In case both type and title are provided, you can proceed to creation immediately, without additional interactions with the user.
+
 If the user gives you a description but not a type, **ask**. Don't guess: picking the wrong type misroutes the Issue through the SDLC.
 
 If the description spans multiple lines, create the title by summarizing the description into 3-7 words. Use the whole description as the issue body. The GitHub Issue title field is single-line and asking the user to restructure their input is friction we don't need.
@@ -37,15 +39,16 @@ If the user's input begins with a `type:` prefix (e.g. `chore: bump pre-commit h
 
 ### When invoked with no input
 
-If the user calls `/new-issue` with no arguments, run a short guided flow — one question per turn:
+If the user calls `/new-issue` with no arguments, **your first action is to start the guided flow and call `AskUserQuestion` immediately** — do not describe what you are about to do, do not list the steps, just invoke the tool with the following:
+- Question: "What type of issue is this?"
+- Options: `feature` (new functionality), `bug` (defect fix), `chore` (non-functional work), `docs` (documentation-only)
 
-1. **Type** — use `AskUserQuestion` with four options (one per type). Each option label is the type name; the description is the one-liner from the type list above.
-2. **Title** — ask in plain text: "What should the issue title be?"
-3. **Body** — use `AskUserQuestion` with two options:
-   - "Create now" — create the issue immediately with an empty body.
-   - "Add details first" — ask in plain text: "What should the body say?" then create the issue with that text as the body and type, title captured earlier.
+After receiving the type, ask for the title in plain text.
+After receiving the title, call `AskUserQuestion` for the body step with two options:
+ - "Create now" — create the issue immediately with an empty body and type, title captured earlier.
+ - "Add details first" — ask in plain text: "What should the body say?", capture user input,then create the issue with that text as the body and type, title captured earlier.
 
-Do not ask all three questions at once. Wait for each answer before asking the next.
+One question per turn — never ask more than one at a time.
 
 ## Creating the Issue
 
