@@ -233,7 +233,7 @@ if [[ -z "${TMUX:-}" ]]; then
     echo "tmux session: ${TMUX_SESSION}"
 
     TMUX_COMMAND="$(quote_command "$SCRIPT_PATH" "$@")"
-    exec tmux new-session -s "${TMUX_SESSION}" "${TMUX_COMMAND}"
+    exec tmux new-session -s "${TMUX_SESSION}" -n "claude-dev primary" "${TMUX_COMMAND}"
 fi
 
 # ----------------------------------------------------------------------
@@ -316,7 +316,6 @@ prepare_envoy() {
     chmod 600 "$ENVOY_RUNTIME_CONFIG"
 }
 
-
 start_envoy() {
     prepare_envoy
 
@@ -334,7 +333,6 @@ start_envoy() {
         -v "${RUN_DIR}:/run/claude-dev-proxy:rw" \
         "${ENVOY_IMAGE}" \
         -c /run/claude-dev-proxy/envoy.yaml
-
 }
 
 # Envoy socket on host system
@@ -370,11 +368,8 @@ setup_tmux_windows() {
         return 0
     fi
 
-    tmux rename-window -t "${TMUX_SESSION}:0" "claude-dev primary" || \
-        warning "failed to rename primary tmux window; continuing."
-
     if ! tmux new-window -t "${TMUX_SESSION}" -n "claude-dev shell" \
-        "until docker inspect -f '{{.State.Running}}' ${CLAUDE_CONTAINER} 2>/dev/null | grep -q true; do sleep 1; done; docker exec -it ${CLAUDE_CONTAINER} bash"; then
+        "c=0; until docker inspect -f '{{.State.Running}}' ${CLAUDE_CONTAINER} 2>/dev/null | grep -q true; do sleep 1; c=\$((c+1)); if [[ \$c -ge 30 ]]; then echo 'Timed out waiting for Claude container'; exit 1; fi; done; docker exec -it ${CLAUDE_CONTAINER} bash"; then
         warning "failed to create 'claude-dev shell' tmux window; to open manually: tmux new-window -t '${TMUX_SESSION}' -n 'claude-dev shell' 'docker exec -it ${CLAUDE_CONTAINER} bash'"
     fi
 
