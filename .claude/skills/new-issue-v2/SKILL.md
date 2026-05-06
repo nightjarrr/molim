@@ -32,15 +32,16 @@ Three things are needed to create an issue:
 
 Before asking anything, inspect the current conversation for information already available:
 - If the type is evident (e.g. the user said "there's a bug" or "I want a new feature"), use it without asking.
-- If a sufficient description is present, infer a 3–8 word title from it.
-- If the body is already described in the conversation, capture it.
+- If the issue is sufficiently described in the conversation, infer a 3–8 word title from it.
+- If the issue is sufficiently described in the conversation, capture it and summarize into a dense, structured body.
+- If nothing relevant can be inferred from the earlier conversation, start with all empty fields and go through the full Step 2 (starting from type selection).
 
 ### Step 2 — Fill gaps
 
 Work through any missing pieces one at a time:
 
 1. **Type unknown** — use `AskUserQuestion` with four options, one per type, each with its one-line description.
-2. **Title unknown** — ask in plain text: "What should the issue title be?"
+2. **Title unknown** — ask in plain text: "What should the issue title say?" and capture user input as the title value.
 
 Never ask more than one question at a time.
 
@@ -57,13 +58,15 @@ Body:  <body content, or "(empty)" if none>
 ```
 
 Then call `AskUserQuestion`:
-- Question: "Ready to proceed?"
+- Question: "Ready to create?"
 - Options:
   - "Create now" — create the issue with the fields shown above.
-  - "Write body" — ask in plain text: "What should the body say?" (replaces any existing body), then return to this confirmation step.
-  - "Go back" — discard all fields and restart from Step 2 (type selection).
+  - "Write body" — ask in plain text: "What should the body say?" (replaces any existing body), then repeat this confirmation step.
+  - "Revise" — discard all fields and restart from Step 2 (type selection).
 
 ### Step 4 — Create
+
+Use Bash tool to invoke `gh` CLI:
 
 ```bash
 gh issue create \
@@ -76,12 +79,6 @@ gh issue create \
 Both labels go in the same call as separate `--label "<value>"` switches.
 
 `gh issue create` prints the URL of the created issue on success. Parse the issue number from the trailing path segment (e.g. `https://github.com/owner/repo/issues/73` → `#73`).
-
-## Input parsing rules
-
-- If the input has a `<type>:` prefix (e.g. `chore: bump pre-commit hook versions`), strip the prefix before using the text as the title — the type is already captured via the label.
-- If the description spans multiple lines, summarize into a 3–8 word title and use the full description as the body. The GitHub issue title field is single-line.
-- If the type is unclear, ask rather than guess — picking the wrong type misroutes the issue through the SDLC. Use `AskUserQuestion` with type choices as in Step 2.
 
 ## Reporting back
 
@@ -120,7 +117,7 @@ Title: Support AVIF input in the jpegify command
 Body:  (empty)
 ```
 
-`AskUserQuestion`: "Ready to proceed?" → "Create now", "Write body", "Go back"
+`AskUserQuestion`: "Ready to create?" → "Create now", "Write body", "Revise"
 
 > selects: "Create now"
 
@@ -146,7 +143,7 @@ Title: Rawtherapee times out on large RAW files
 Body:  (empty)
 ```
 
-`AskUserQuestion`: "Ready to proceed?" → "Create now", "Write body", "Go back"
+`AskUserQuestion`: "Ready to create?" → "Create now", "Write body", "Revise"
 
 > selects: "Create now"
 
@@ -159,23 +156,25 @@ Reply: "Created #73 — Rawtherapee times out on large RAW files — https://git
 
 **Example 3 — body inferred from multi-sentence input:**
 
-> "/new-issue-v2 chore: bump pre-commit hook versions. The repo is pinned to versions from 2024 and we should refresh to current."
+> "We need to pre-commit hook versions."
+> "The repo is pinned to stable versions from 2024 and we should refresh to current."
+> "Please file a chore task for this."
 
-All fields inferred. Output:
+All fields inferred, title and body summarized from multiline description. Output:
 ```
 Type:  chore
-Title: Bump pre-commit hook versions
-Body:  The repo is pinned to versions from 2024 and we should refresh to current.
+Title: Update pre-commit hook versions to latest stable
+Body:  Currently the repo is using versions pinning, and version update was last done in 2024. Need to run a refresh to current stable versions.
 ```
 
-`AskUserQuestion`: "Ready to proceed?" → "Create now", "Write body", "Go back"
+`AskUserQuestion`: "Ready to create?" → "Create now", "Write body", "Revise"
 
 > selects: "Create now"
 
 ```bash
-gh issue create --title "Bump pre-commit hook versions" --body "The repo is pinned to versions from 2024 and we should refresh to current." --label "chore" --label "phase: triage"
+gh issue create --title "Update pre-commit hook versions to latest stable" --body "Currently the repo is using versions pinning, and version update was last done in 2024. Need to run a refresh to current stable versions." --label "chore" --label "phase: triage"
 ```
-Reply: "Created #73 — Bump pre-commit hook versions — https://github.com/owner/repo/issues/73 — labels `chore` and `phase: triage`."
+Reply: "Created #73 — Update pre-commit hook versions to latest stable — https://github.com/owner/repo/issues/73 — labels `chore` and `phase: triage`."
 
 ---
 
@@ -183,11 +182,11 @@ Reply: "Created #73 — Bump pre-commit hook versions — https://github.com/own
 
 > "/new-issue-v2"
 
-Nothing to infer. Use `AskUserQuestion` with 4 type choices.
+Nothing to infer from. Use `AskUserQuestion` with 4 type choices.
 
 > selects: `chore`
 
-Ask in plain text: "What should the issue title be?"
+Ask in plain text: "What should the issue title say?"
 
 > "Refresh pre-commit hook versions"
 
@@ -198,7 +197,7 @@ Title: Refresh pre-commit hook versions
 Body:  (empty)
 ```
 
-`AskUserQuestion`: "Ready to proceed?" → "Create now", "Write body", "Go back"
+`AskUserQuestion`: "Ready to create?" → "Create now", "Write body", "Revise"
 
 > selects: "Create now"
 
@@ -224,7 +223,7 @@ Title: Refresh pre-commit hook versions
 Body:  The repo is pinned to versions from 2024 and we should refresh to current.
 ```
 
-`AskUserQuestion`: "Ready to proceed?" → "Create now", "Write body", "Go back"
+`AskUserQuestion`: "Ready to create?" → "Create now", "Write body", "Revise"
 
 > selects: "Create now"
 
@@ -237,7 +236,7 @@ Reply: "Created #74 — Refresh pre-commit hook versions — https://github.com/
 
 **Example 6 — model-triggered with context inference:**
 
-Earlier in conversation: "the ffmpeg timeout on large files is really annoying, we should track that"
+Earlier in conversation: "the ffmpeg timeout on large files is really annoying, we should fix that"
 
 > "track this as an issue"
 
@@ -248,7 +247,7 @@ Title: FFmpeg times out on large files
 Body:  (empty)
 ```
 
-`AskUserQuestion`: "Ready to proceed?" → "Create now", "Write body", "Go back"
+`AskUserQuestion`: "Ready to create?" → "Create now", "Write body", "Revise"
 
 > selects: "Create now"
 
@@ -259,30 +258,30 @@ Reply: "Created #75 — FFmpeg times out on large files — https://github.com/o
 
 ---
 
-**Example 7 — going back to amend:**
+**Example 7 — going back to revise:**
 
-Same as Example 6 up to confirmation. User selects "Go back":
+Same as Example 6 up to confirmation. User selects "Revise":
 
 All fields discarded. Use `AskUserQuestion` with 4 type choices.
 
 > selects: `feature`
 
-Ask in plain text: "What should the issue title be?"
+Ask in plain text: "What should the issue title say?"
 
-> "Configurable timeout for FFmpeg commands"
+> "Add configurable timeout for FFmpeg commands"
 
 Output:
 ```
 Type:  feature
-Title: Configurable timeout for FFmpeg commands
+Title: Add configurable timeout for FFmpeg commands
 Body:  (empty)
 ```
 
-`AskUserQuestion`: "Ready to proceed?" → "Create now", "Write body", "Go back"
+`AskUserQuestion`: "Ready to create?" → "Create now", "Write body", "Revise"
 
 > selects: "Create now"
 
 ```bash
-gh issue create --title "Configurable timeout for FFmpeg commands" --body "" --label "feature" --label "phase: triage"
+gh issue create --title "Add configurable timeout for FFmpeg commands" --body "" --label "feature" --label "phase: triage"
 ```
-Reply: "Created #74 — Configurable timeout for FFmpeg commands — https://github.com/owner/repo/issues/74 — labels `feature` and `phase: triage`."
+Reply: "Created #74 — Add configurable timeout for FFmpeg commands — https://github.com/owner/repo/issues/74 — labels `feature` and `phase: triage`."
