@@ -111,7 +111,13 @@ RUN curl -fsSL "https://github.com/dandavison/delta/releases/download/${DELTA_VE
     && git config --system core.pager delta \
     && git config --system interactive.diffFilter "delta --color-only" \
     && git config --system delta.line-numbers true \
-    && git config --system delta.navigate true
+    && git config --system delta.navigate true \
+    && mkdir -p /etc/delta \
+    && curl -fsSL "https://raw.githubusercontent.com/dandavison/delta/${DELTA_VERSION}/themes.gitconfig" \
+        -o /etc/delta/themes.gitconfig \
+    && git config --system include.path /etc/delta/themes.gitconfig \
+    && git config --system delta.features mellow-barbet \
+    && git config --system delta.side-by-side false
 
 # ----------------------------------------------------------------------
 # Claude Code — official npm package, version-pinned
