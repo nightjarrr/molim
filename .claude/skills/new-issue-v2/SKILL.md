@@ -1,6 +1,6 @@
 ---
 name: new-issue-v2
-description: Create a new GitHub issue in the correct initial triage state for this project's agentic SDLC. Applies one type label (feature, bug, chore, or docs) plus phase: triage. Triggered by phrases like "create a new issue", "let's create an issue", "track this as an issue", "open an issue for this", "file a bug", "let's file an issue", "add chore issue", "submit a docs issue".
+description: Create a new GitHub issue in the correct initial triage state for this project's agentic SDLC. Applies one type label (feature, bug, chore, or docs) plus phase: triage. Use this skill whenever the user wants to log, track, record, or capture something as a GitHub issue — even if they don't use the word "issue". Triggered by phrases like "create a new issue", "let's create an issue", "track this as an issue", "open an issue for this", "file a bug", "let's file an issue", "add chore issue", "submit a docs issue".
 allowed-tools: Bash(gh issue create)
 ---
 
@@ -32,8 +32,7 @@ Three things are needed to create an issue:
 
 Before asking anything, inspect the current conversation for information already available:
 - If the type is evident (e.g. the user said "there's a bug" or "I want a new feature"), use it without asking.
-- If the issue is sufficiently described in the conversation, infer a 3–8 word title from it.
-- If the issue is sufficiently described in the conversation, capture it and summarize into a dense, structured body.
+- If the issue is sufficiently described in the conversation, infer a 3–8 word title and summarize the context into a dense, structured body.
 - If nothing relevant can be inferred from the earlier conversation, start with all empty fields and go through the full Step 2 (starting from type selection).
 
 ### Step 2 — Fill gaps
@@ -43,7 +42,7 @@ Work through any missing pieces one at a time:
 1. **Type unknown** — use `AskUserQuestion` with four options, one per type, each with its one-line description.
 2. **Title unknown** — ask in plain text: "What should the issue title say?" and capture user input as the title value.
 
-Never ask more than one question at a time.
+Ask one question at a time and wait for the answer before proceeding — multi-question flows feel like forms and users abandon them.
 
 ### Step 3 — Confirm
 
@@ -58,7 +57,7 @@ Body:  <body content, or "(empty)" if none>
 ```
 
 Then call `AskUserQuestion`:
-- Question: "Ready to create?"
+- Question: "How would you like to proceed?"
 - Options:
   - "Create now" — create the issue with the fields shown above.
   - "Write body" — ask in plain text: "What should the body say?" (replaces any existing body), then repeat this confirmation step.
@@ -117,7 +116,7 @@ Title: Support AVIF input in the jpegify command
 Body:  (empty)
 ```
 
-`AskUserQuestion`: "Ready to create?" → "Create now", "Write body", "Revise"
+`AskUserQuestion`: "How would you like to proceed?" → "Create now", "Write body", "Revise"
 
 > selects: "Create now"
 
@@ -143,7 +142,7 @@ Title: Rawtherapee times out on large RAW files
 Body:  (empty)
 ```
 
-`AskUserQuestion`: "Ready to create?" → "Create now", "Write body", "Revise"
+`AskUserQuestion`: "How would you like to proceed?" → "Create now", "Write body", "Revise"
 
 > selects: "Create now"
 
@@ -156,7 +155,7 @@ Reply: "Created #73 — Rawtherapee times out on large RAW files — https://git
 
 **Example 3 — body inferred from multi-sentence input:**
 
-> "We need to pre-commit hook versions."
+> "We need to update pre-commit hook versions."
 > "The repo is pinned to stable versions from 2024 and we should refresh to current."
 > "Please file a chore task for this."
 
@@ -167,7 +166,7 @@ Title: Update pre-commit hook versions to latest stable
 Body:  Currently the repo is using versions pinning, and version update was last done in 2024. Need to run a refresh to current stable versions.
 ```
 
-`AskUserQuestion`: "Ready to create?" → "Create now", "Write body", "Revise"
+`AskUserQuestion`: "How would you like to proceed?" → "Create now", "Write body", "Revise"
 
 > selects: "Create now"
 
@@ -197,7 +196,7 @@ Title: Refresh pre-commit hook versions
 Body:  (empty)
 ```
 
-`AskUserQuestion`: "Ready to create?" → "Create now", "Write body", "Revise"
+`AskUserQuestion`: "How would you like to proceed?" → "Create now", "Write body", "Revise"
 
 > selects: "Create now"
 
@@ -223,7 +222,7 @@ Title: Refresh pre-commit hook versions
 Body:  The repo is pinned to versions from 2024 and we should refresh to current.
 ```
 
-`AskUserQuestion`: "Ready to create?" → "Create now", "Write body", "Revise"
+`AskUserQuestion`: "How would you like to proceed?" → "Create now", "Write body", "Revise"
 
 > selects: "Create now"
 
@@ -247,7 +246,7 @@ Title: FFmpeg times out on large files
 Body:  (empty)
 ```
 
-`AskUserQuestion`: "Ready to create?" → "Create now", "Write body", "Revise"
+`AskUserQuestion`: "How would you like to proceed?" → "Create now", "Write body", "Revise"
 
 > selects: "Create now"
 
@@ -277,7 +276,7 @@ Title: Add configurable timeout for FFmpeg commands
 Body:  (empty)
 ```
 
-`AskUserQuestion`: "Ready to create?" → "Create now", "Write body", "Revise"
+`AskUserQuestion`: "How would you like to proceed?" → "Create now", "Write body", "Revise"
 
 > selects: "Create now"
 
