@@ -45,13 +45,11 @@ After obtaining the issue number, read it using `gh` CLI and extract all useful 
 
 ## Branching and dev flow
 
-Branch names follow the pattern `{type}/{issue-id}-{slug}`.
+All development happens in feature branches. Branch names follow the pattern `{type}/{issue-id}-{slug}` — for example: `feature/42-avif-support`, `chore/37-add-claude-md`, `docs/51-timeout-handling`.
 
-Examples: `feature/42-avif-support`, `chore/37-add-claude-md`, `docs/51-timeout-handling`.
+**Before modifying any repository files**, check the current branch. If it is `main`, create the feature branch first. Use `gh issue develop {issue-id}` to create the branch and link it to the issue. If you are on a feature branch already, no need to create another one. Ensuring that development will go to a feature branch, not `main`, is the required first step of every plan execution, even when the plan does not list it explicitly.
 
-All development happens in feature branches. NEVER commit to `main` directly. Create feature branches using `gh issue develop` to link it to the issue.
-
-NEVER merge PRs. This is a strictly manual human operation that acts as a gate.
+NEVER commit to `main` directly. NEVER merge PRs — merging is a strictly manual human operation that acts as a gate.
 
 ## Ongoing initiatives
 
