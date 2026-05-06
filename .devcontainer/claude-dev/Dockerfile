@@ -34,7 +34,8 @@ FROM node:24.15.0-bookworm-slim
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 \
-    TERM=xterm-256color
+    TERM=xterm-256color \
+    COLORTERM=truecolor
 
 # ----------------------------------------------------------------------
 # System packages required by the Claude Code dev environment
@@ -111,7 +112,13 @@ RUN curl -fsSL "https://github.com/dandavison/delta/releases/download/${DELTA_VE
     && git config --system core.pager delta \
     && git config --system interactive.diffFilter "delta --color-only" \
     && git config --system delta.line-numbers true \
-    && git config --system delta.navigate true
+    && git config --system delta.navigate true \
+    && mkdir -p /etc/delta \
+    && curl -fsSL "https://raw.githubusercontent.com/dandavison/delta/${DELTA_VERSION}/themes.gitconfig" \
+        -o /etc/delta/themes.gitconfig \
+    && git config --system include.path /etc/delta/themes.gitconfig \
+    && git config --system delta.features mellow-barbet \
+    && git config --system delta.side-by-side false
 
 # ----------------------------------------------------------------------
 # Claude Code — official npm package, version-pinned
