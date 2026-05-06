@@ -12,7 +12,7 @@
       "Bash(gh pr diff *)",
       "Bash(gh pr status *)",
       "Bash(gh pr checks *)",
-      "Bash(echo *)",
+      "Bash(printenv *)",
       "Bash(uv run pytest *)",
       "Bash(uv run ruff *)",
       "Bash(uv run pre-commit *)",
