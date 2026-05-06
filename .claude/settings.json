@@ -6,12 +6,13 @@
     "allow": [
       "Bash(git *)",
       "Bash(gh issue *)",
-      "Bash(gh pr create)",
+      "Bash(gh pr create *)",
       "Bash(gh pr view *)",
-      "Bash(gh pr list)",
-      "Bash(gh pr diff)",
-      "Bash(gh pr status)",
-      "Bash(gh pr checks)",
+      "Bash(gh pr list *)",
+      "Bash(gh pr diff *)",
+      "Bash(gh pr status *)",
+      "Bash(gh pr checks *)",
+      "Bash(echo *)",
       "Bash(uv run pytest *)",
       "Bash(uv run ruff *)",
       "Bash(uv run pre-commit *)",
@@ -23,9 +24,11 @@
       "WebFetch(domain:docs.python.org)"
     ],
     "deny": [
-      "Bash(gh pr merge)",
-      "Bash(git push --force)",
-      "Bash(git push --force-with-lease)",
+      "Bash(gh pr merge *)",
+      "Bash(git push --force *)",
+      "Bash(git push * --force *)",
+      "Bash(git push --force-with-lease *)",
+      "Bash(git push * --force-with-lease *)",
       "Bash(gh secret *)",
       "Bash(gh auth *)",
       "Bash(gh repo delete *)"
