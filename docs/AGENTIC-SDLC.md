@@ -242,7 +242,7 @@ The skill owns the full atomic operation. The invoking agent (PM) does not need 
 
 ### Project Owner helper skills
 
-The following skills are part of the PM's capability set and execute within PM sessions, but they are not invoked by PM autonomously as part of workflow execution. They are made available for the Project Owner to invoke manually through their conversation with PM, supporting the Project Owner in operating the system without requiring constant switching between all involved systems (GitHub Web UI, IDE or Git CLI, AI Coding Agent interface).
+The following skills are part of the PM's capability set and execute within PM sessions. They are designed primarily for the Project Owner to invoke manually through their conversation with PM, reducing the need to switch between systems (GitHub Web UI, IDE or Git CLI, AI Coding Agent interface). Where context makes it beneficial, PM may also invoke these skills proactively — for example, offering to create a missing issue at the start of a session.
 
 #### Ensure GitHub Labels
 
@@ -258,7 +258,7 @@ The following skills are part of the PM's capability set and execute within PM s
 - **Inputs:** Type label (`feature`, `bug`, `chore`, `docs`), one-line description, optional details.
 - **Outputs:** Created Issue ID and link.
 - **Permissions required:** `github:write`.
-- **Invoked by:** Project Owner via PM session (manual invocation only, never autonomous).
+- **Invoked by:** Project Owner or PM (model-invocable; PM may invoke proactively when context warrants).
 
 Produces a new issue in `phase: triage` state.
 
@@ -395,7 +395,7 @@ protocol before proceeding with the rest of the phase.
 
 ### Phase 1 — Triage
 
-**Trigger:** new Issue created (by Project Owner manually, by Project Owner using New Issue skill, externally, or via security report).
+**Trigger:** new Issue created (by Project Owner manually, by PM using New Issue skill, externally, or via security report).
 
 | Step | Executor | Skills |
 |---|---|---|

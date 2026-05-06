@@ -39,7 +39,7 @@ Tests are required for new Python code. Each bugfix must be covered by a set of 
 
 All work is tracked in GitHub issues. As a first step of every development you need to understand which issue number is tracking it. Run `printenv ISSUE_ID` to check the environment variable, then confirm with the user. The user can give you a different number.
 
-If there is no issue yet, suggest that the user creates it using /new-issue skill.
+If there is no issue yet, use the /new-issue skill to create one.
 
 After obtaining the issue number, read it using `gh` CLI and extract all useful information from it.
 

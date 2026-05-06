@@ -1,58 +1,71 @@
 ---
 name: new-issue
-description: Create a new GitHub Issue in the correct initial triage state for this project's agentic SDLC. Applies one type label (`feature`, `bug`, `chore`, or `docs`) plus `phase: triage`. Invoked manually by the user, never by the model.
-disable-model-invocation: true
-context: fork
-model: Haiku
-allowed-tools: Bash(gh issue create), AskUserQuestion
+description: Create a new GitHub issue in the correct initial triage state for this project's agentic SDLC. Applies one type label (feature, bug, chore, or docs) plus phase: triage. Use this skill whenever the user wants to log, track, record, or capture something as a GitHub issue — even if they don't use the word "issue". Triggered by phrases like "create a new issue", "let's create an issue", "track this as an issue", "open an issue for this", "file a bug", "let's file an issue", "add chore issue", "submit a docs issue".
+allowed-tools: Bash(gh issue create)
 ---
 
-# New Issue
+# New Issue (v2)
 
-This skill creates a new GitHub Issue in the initial state of the SDLC.
+This skill creates a new GitHub issue in the initial state of the SDLC.
 
 ## Why this skill exists
 
-Phase 1 (Triage) of the SDLC requires every Issue to enter the system with:
+Phase 1 (Triage) of the SDLC requires every issue to enter the system with:
 - Exactly one **type label**: `feature`, `bug`, `chore`, or `docs`.
 - The phase label `phase: triage`.
 
 ## Inputs
 
-You need to obtain three things from the user before creating the Issue:
+Three things are needed to create an issue:
 
-1. **Type** — one of `feature`, `bug`, `chore`, `docs`. Their meanings (from the SDLC):
+1. **Type** — one of `feature`, `bug`, `chore`, `docs`. Their meanings:
    - `feature` — new functionality
    - `bug` — defect fix
    - `chore` — non-functional work (CI, dependencies, configuration, releases)
    - `docs` — documentation-only changes
-2. **Title** — a single-line description of the Issue in sentence case: first word capitalized, rest lowercase unless proper nouns.
+2. **Title** — a single-line description in sentence case: first word capitalized, rest lowercase unless proper nouns.
 3. **Body** (optional) — free-form markdown details.
 
-The user can give you all or some of this information as input to the skill. In case both type and title are provided, you can proceed to creation immediately, without additional interactions with the user.
+## Flow
 
-If the user gives you a description but not a type, **ask**. Don't guess: picking the wrong type misroutes the Issue through the SDLC.
+### Step 1 — Infer from context
 
-If the description spans multiple lines, create the title by summarizing the description into 3-7 words. Use the whole description as the issue body. The GitHub Issue title field is single-line and asking the user to restructure their input is friction we don't need.
+Before asking anything, inspect the current conversation for information already available:
+- If the type is evident (e.g. the user said "there's a bug" or "I want a new feature"), use it without asking.
+- If the issue is sufficiently described in the conversation, infer a 3–8 word title and summarize the context into a dense, structured body.
+- If nothing relevant can be inferred from the earlier conversation, start with all empty fields and go through the full Step 2 (starting from type selection).
 
-If the user's input begins with a `type:` prefix (e.g. `chore: bump pre-commit hook versions`), strip that prefix before using the text as the title or body — the type is already captured via the label.
+### Step 2 — Fill gaps
 
-### When invoked with no input
+Work through any missing pieces one at a time:
 
-If the user calls `/new-issue` with no arguments, **your first action is to start the guided flow and call `AskUserQuestion` immediately** — do not describe what you are about to do, do not list the steps, just invoke the tool with the following:
-- Question: "What type of issue is this?"
-- Options: `feature` (new functionality), `bug` (defect fix), `chore` (non-functional work), `docs` (documentation-only)
+1. **Type unknown** — use `AskUserQuestion` with four options, one per type, each with its one-line description.
+2. **Title unknown** — ask in plain text: "What should the issue title say?" and capture user input as the title value.
 
-After receiving the type, ask for the title in plain text.
-After receiving the title, call `AskUserQuestion` for the body step with two options:
- - "Create now" — create the issue immediately with an empty body and type, title captured earlier.
- - "Add details first" — ask in plain text: "What should the body say?", capture user input,then create the issue with that text as the body and type, title captured earlier.
+Ask one question at a time and wait for the answer before proceeding — multi-question flows feel like forms and users abandon them.
 
-One question per turn — never ask more than one at a time.
+### Step 3 — Confirm
 
-## Creating the Issue
+Always run this step, regardless of how the fields were gathered.
 
-Use the `gh` CLI. The command should look like:
+First, output the current field values as plain text:
+
+```
+Type:  <type>
+Title: <title>
+Body:  <body content, or "(empty)" if none>
+```
+
+Then call `AskUserQuestion`:
+- Question: "How would you like to proceed?"
+- Options:
+  - "Create now" — create the issue with the fields shown above.
+  - "Write body" — ask in plain text: "What should the body say?" (replaces any existing body), then repeat this confirmation step.
+  - "Revise" — discard all fields and restart from Step 2 (type selection).
+
+### Step 4 — Create
+
+Use Bash tool to invoke `gh` CLI:
 
 ```bash
 gh issue create \
@@ -62,105 +75,212 @@ gh issue create \
   --label "phase: triage"
 ```
 
-Both labels go in the same call as separate --label "<value>" switches.
+Both labels go in the same call as separate `--label "<value>"` switches.
 
-`gh issue create` prints the URL of the created Issue on success. Capture it and parse the Issue number from the trailing path segment (e.g. `https://github.com/owner/repo/issues/73` → `#73`).
-
-Once you have all the necessary inputs, use the `Bash` tool to run `gh issue create` directly — do not attempt to re-invoke this skill via the Skill tool. This skill has `disable-model-invocation: true`, meaning the model cannot trigger it; doing so will fail silently and interrupt the flow.
+`gh issue create` prints the URL of the created issue on success. Parse the issue number from the trailing path segment (e.g. `https://github.com/owner/repo/issues/73` → `#73`).
 
 ## Reporting back
 
 Report to the user:
 - Issue number (e.g. `#73`).
+- Issue title.
+- The two labels applied (the chosen type and `phase: triage`).
 - Issue URL.
-- The two labels that were applied (the chosen type and `phase: triage`).
 
-That is all. Do **not**:
+This is the final step. Do **not**:
 - Drive triage.
 - Create a branch or any spec/design/plan files.
 - Open a PR.
 - Call other skills.
 
-## Body content guidance
-
-Pass through whatever optional details the user provided, verbatim. If they provided nothing, leave the body empty.
-
-Do **not** auto-fill structured sections (problem statement, acceptance criteria, reproduction steps, etc.).
-
 ## Failure handling
 
-Surface failures clearly and stop. Do not paper over them — these are usually configuration issues that the user needs to fix outside this skill, and silent retries can produce duplicate Issues or hide setup gaps.
+Surface failures clearly and stop. Do not paper over them or retry silently — these are usually configuration issues the user needs to fix, and silent retries can produce duplicate issues.
 
-- **Missing labels.** If `gh issue create` fails because `feature`/`bug`/`chore`/`docs` or `phase: triage` doesn't exist in the repo, report which label is missing and stop. Provisioning labels is project-setup work, intentionally out of scope here. If `ensure-github-labels` skill is available, suggest that the user uses it to create the required labels.
+- **Missing labels.** If `gh issue create` fails because a required label doesn't exist, report which label is missing and stop. Suggest using the `ensure-github-labels` skill if it is available.
 - **`gh` unauthenticated or wrong repo.** Report the verbatim error and stop.
-- **API failure.** Report the error and stop. Do not retry — repeated retries on an unclear failure can create duplicate Issues.
+- **API failure.** Report the error and stop.
 
 ## Examples
 
-**Example 1 — type provided:**
+**Example 1 — type and title clear from conversational input:**
 
-> Project Owner: "/new-issue feature: support AVIF input in the jpegify command"
+> "let's create a new feature issue to support AVIF input in the jpegify command"
 
-Run:
+Type (`feature`) and title inferred. Proceed to confirmation.
+
+Output:
+```
+Type:  feature
+Title: Support AVIF input in the jpegify command
+Body:  (empty)
+```
+
+`AskUserQuestion`: "How would you like to proceed?" → "Create now", "Write body", "Revise"
+
+> selects: "Create now"
+
 ```bash
 gh issue create --title "Support AVIF input in the jpegify command" --body "" --label "feature" --label "phase: triage"
 ```
-Reply: "Created #73 — https://github.com/owner/repo/issues/73 — with labels `feature` and `phase: triage`."
+Reply: "Created #73 — Support AVIF input in the jpegify command — https://github.com/owner/repo/issues/73 — labels `feature` and `phase: triage`."
 
-**Example 2 — type missing, ask first:**
+---
 
-> Project Owner: "/new-issue rawtherapee times out on large RAW files"
+**Example 2 — type unclear, ask first:**
 
-Reply: "Should this be a `bug` (defect in current behavior) or a `feature` (new behavior)?"
+> "/new-issue-v2 rawtherapee times out on large RAW files"
 
-> Project Owner: "bug"
+Title inferred, type unclear. Use `AskUserQuestion` with 4 type choices.
 
-Then proceed as in Example 1 with `--label "bug"`.
+> selects: `bug`
 
-**Example 3 — multi-line description:**
+Output:
+```
+Type:  bug
+Title: Rawtherapee times out on large RAW files
+Body:  (empty)
+```
 
-> Project Owner: "/new-issue chore: bump pre-commit hook versions. The repo is pinned to versions from 2024 and we should refresh to current."
+`AskUserQuestion`: "How would you like to proceed?" → "Create now", "Write body", "Revise"
 
-Title: `Refresh pre-commit hook versions to current versions`
-Body: `Bump pre-commit hook versions. The repo is pinned to versions from 2024 and we should refresh to current.`
-Labels: `chore` and `phase: triage`.
+> selects: "Create now"
+
+```bash
+gh issue create --title "Rawtherapee times out on large RAW files" --body "" --label "bug" --label "phase: triage"
+```
+Reply: "Created #73 — Rawtherapee times out on large RAW files — https://github.com/owner/repo/issues/73 — labels `bug` and `phase: triage`."
+
+---
+
+**Example 3 — body inferred from multi-sentence input:**
+
+> "We need to update pre-commit hook versions."
+> "The repo is pinned to stable versions from 2024 and we should refresh to current."
+> "Please file a chore task for this."
+
+All fields inferred, title and body summarized from multiline description. Output:
+```
+Type:  chore
+Title: Update pre-commit hook versions to latest stable
+Body:  Currently the repo is using versions pinning, and version update was last done in 2024. Need to run a refresh to current stable versions.
+```
+
+`AskUserQuestion`: "How would you like to proceed?" → "Create now", "Write body", "Revise"
+
+> selects: "Create now"
+
+```bash
+gh issue create --title "Update pre-commit hook versions to latest stable" --body "Currently the repo is using versions pinning, and version update was last done in 2024. Need to run a refresh to current stable versions." --label "chore" --label "phase: triage"
+```
+Reply: "Created #73 — Update pre-commit hook versions to latest stable — https://github.com/owner/repo/issues/73 — labels `chore` and `phase: triage`."
+
+---
 
 **Example 4 — no arguments:**
 
-> Project Owner: "/new-issue"
+> "/new-issue-v2"
 
-Use `AskUserQuestion`:
-- Question: "What type of issue is this?"
-- Options: `feature` (new functionality), `bug` (defect fix), `chore` (non-functional work), `docs` (documentation-only)
+Nothing to infer from. Use `AskUserQuestion` with 4 type choices.
 
-> Project Owner selects: `chore`
+> selects: `chore`
 
-Ask in plain text: "What should the issue title be?"
+Ask in plain text: "What should the issue title say?"
 
-> Project Owner: "Refresh pre-commit hook versions"
+> "Refresh pre-commit hook versions"
 
-Use `AskUserQuestion`:
-- Question: "Ready to create, or would you like to add body details first?"
-- Options: "Create now" (empty body), "Add details first"
+Output:
+```
+Type:  chore
+Title: Refresh pre-commit hook versions
+Body:  (empty)
+```
 
-> Project Owner selects: "Create now"
+`AskUserQuestion`: "How would you like to proceed?" → "Create now", "Write body", "Revise"
 
-Run:
+> selects: "Create now"
+
 ```bash
 gh issue create --title "Refresh pre-commit hook versions" --body "" --label "chore" --label "phase: triage"
 ```
-Reply: "Created #74 — https://github.com/owner/repo/issues/74 — with labels `chore` and `phase: triage`."
+Reply: "Created #74 — Refresh pre-commit hook versions — https://github.com/owner/repo/issues/74 — labels `chore` and `phase: triage`."
 
-**Example 5 — no arguments, with body:**
+---
 
-Steps 1 and 2 are the same as Example 4. At step 3, the user selects "Add details first":
+**Example 5 — writing a body:**
 
-Ask in plain text: "What should the body say?"
+Same as Example 4 up to confirmation. User selects "Write body":
 
-> Project Owner: "The repo is pinned to versions from 2024 and we should refresh to current."
+Ask: "What should the body say?"
 
-Run:
+> "The repo is pinned to versions from 2024 and we should refresh to current."
+
+Output:
+```
+Type:  chore
+Title: Refresh pre-commit hook versions
+Body:  The repo is pinned to versions from 2024 and we should refresh to current.
+```
+
+`AskUserQuestion`: "How would you like to proceed?" → "Create now", "Write body", "Revise"
+
+> selects: "Create now"
+
 ```bash
 gh issue create --title "Refresh pre-commit hook versions" --body "The repo is pinned to versions from 2024 and we should refresh to current." --label "chore" --label "phase: triage"
 ```
-Reply: "Created #74 — https://github.com/owner/repo/issues/74 — with labels `chore` and `phase: triage`."
+Reply: "Created #74 — Refresh pre-commit hook versions — https://github.com/owner/repo/issues/74 — labels `chore` and `phase: triage`."
+
+---
+
+**Example 6 — model-triggered with context inference:**
+
+Earlier in conversation: "the ffmpeg timeout on large files is really annoying, we should fix that"
+
+> "track this as an issue"
+
+Infer: type=`bug`, title="FFmpeg times out on large files". Output:
+```
+Type:  bug
+Title: FFmpeg times out on large files
+Body:  (empty)
+```
+
+`AskUserQuestion`: "How would you like to proceed?" → "Create now", "Write body", "Revise"
+
+> selects: "Create now"
+
+```bash
+gh issue create --title "FFmpeg times out on large files" --body "" --label "bug" --label "phase: triage"
+```
+Reply: "Created #75 — FFmpeg times out on large files — https://github.com/owner/repo/issues/75 — labels `bug` and `phase: triage`."
+
+---
+
+**Example 7 — going back to revise:**
+
+Same as Example 6 up to confirmation. User selects "Revise":
+
+All fields discarded. Use `AskUserQuestion` with 4 type choices.
+
+> selects: `feature`
+
+Ask in plain text: "What should the issue title say?"
+
+> "Add configurable timeout for FFmpeg commands"
+
+Output:
+```
+Type:  feature
+Title: Add configurable timeout for FFmpeg commands
+Body:  (empty)
+```
+
+`AskUserQuestion`: "How would you like to proceed?" → "Create now", "Write body", "Revise"
+
+> selects: "Create now"
+
+```bash
+gh issue create --title "Add configurable timeout for FFmpeg commands" --body "" --label "feature" --label "phase: triage"
+```
+Reply: "Created #74 — Add configurable timeout for FFmpeg commands — https://github.com/owner/repo/issues/74 — labels `feature` and `phase: triage`."
