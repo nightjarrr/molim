@@ -313,7 +313,7 @@ Profile name: `--profile` CLI argument → config `profile` key → default `mol
 - **Test categories per class**: input validation, dry-run behavior, core logic.
 - **Runner**: pytest with branch coverage (`pytest-cov`); reports uploaded to Codecov in CI.
 - **Coverage requirement**: tests are not optional. Every new class or method requires tests.
-  Every bug fix requires a regression test that validates the corrected behaviour and catches
+  Every bug fix requires a regression test that validates the corrected behavior and catches
   future regressions at the test stage.
 
 ---
