@@ -296,8 +296,10 @@ Profile name: `--profile` CLI argument → config `profile` key → default `mol
 
 ## 12. Tests
 
-- **Approach**: real integration tests — `rawtherapee-cli`, `convert`, and `ffmpeg` are
-  invoked for real. No mocking of external tools.
+- **Approach**: the suite contains both focused unit tests and integration tests that invoke
+  real external tools (`rawtherapee-cli`, `convert`, `ffmpeg`). External tools are not mocked.
+  The three test categories map naturally to this split: input validation and dry-run tests
+  do not invoke external tools; core logic tests do.
 - **Location**: `tests/` at repo root, alongside `src/`.
 - **File naming**: `{module}_test.py` (e.g. `video_test.py`). When a module's tests are
   large enough to split: `{module}_{aspect}_test.py` (e.g. `processing_files_test.py`,

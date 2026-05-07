@@ -123,7 +123,7 @@ Import from the module that owns the concept. Avoid broad dependency reach-throu
    - `name` (`@property`) → `str` — CLI subcommand name
    - `help` (`@property`) → `str` — help text
    - `_add_arguments(parser)` → adds command-specific argparse arguments; returns parser
-   - `_get_common_arguments_defaults()` → returns `(extension, greater_than, no_skip_processed, originals)` tuple; pass `None` for any optional common argument to suppress it
+   - `_get_common_arguments_defaults()` → returns `(extension, greater_than, no_skip_processed, originals)` tuple; `extension` must always be a non-`None` string (`--extension` is always present); pass `None` for any of the other three to suppress that argument
    - `_get_output_file_path_strategy(args)` → returns an `OutputFilePathStrategy`
    - `_get_file_processor(args, output_namer, post_processor)` → returns a `FileProcessor`
    - `_get_file_skip_strategy(args)` → returns a `FileSkipStrategy`
@@ -172,7 +172,7 @@ Import from the module that owns the concept. Avoid broad dependency reach-throu
    - **Package-level** (e.g., `images/__init__.py`): a shared domain fact used by multiple commands in the same package (`JPEG_QUALITY`, `JPEG_PROCESSED_EXTENSION`).
 
    Name class-level constants according to their role:
-   - **Common arg slot defaults** — constants that supply default values for the four shared CLI arguments (`extension`, `greater_than`, `no_skip_processed`, `originals`) use **unprefixed** names: `EXTENSION`, `GREATER_THAN`, `NO_SKIP_PROCESSED`, `ORIGINALS`. The same name appears in every command that sets that slot, making cross-command comparison immediate.
+   - **Common arg slot defaults** — constants that supply default values for the common CLI arguments (`extension`, `greater_than`, `no_skip_processed`, `originals`) use **unprefixed** names: `EXTENSION`, `GREATER_THAN`, `NO_SKIP_PROCESSED`, `ORIGINALS`. `EXTENSION` is always a non-`None` string; the other three may be `None` to suppress the argument. The same name appears in every command that sets that slot, making cross-command comparison immediate.
    - **Command-specific constants** — constants tied to a command's own functionality (not a common slot) use a **command-prefixed** name: `VIDEO_FFMPEG_CODEC`, `RAWTHERAPEE_PROCESSED_SUFFIX`.
 5. Use kebab-case for all CLI flags: `--dry-run`, `--greater-than`, `--imagemagick-quality`.
 6. Register the command in `cli.py` by instantiating it in `run()` and passing it to `_create_parser(...)`.
@@ -347,7 +347,7 @@ Every new behaviour requires tests. Every bug fix requires a regression test.
 
 - Test files: `{module}_test.py` (e.g., `video_test.py`) — not `test_{module}.py`. When a module's tests are large enough to warrant splitting, use `{module}_{aspect}_test.py` (e.g., `processing_files_test.py`, `processing_folders_test.py`).
 - Test functions: `test_{Subject}_{description}` where `Subject` is a class name or module-level function name, and `description` is a free label — typically a section keyword (`input_validation`, `dry_run`, `core_logic`) or a specific method or scenario (`name`, `create_parser`, `empty_folder`).
-- Use `tmp_path` (function-scoped) and `tmp_path_factory` (module-scoped) for temporary filesystem state
+- Use `tmp_path` (function-scoped) and `tmp_path_factory` (module-scoped) for temporary filesystem state. Pytest cleans up both automatically. Do not create test state outside these fixtures; if unavoidable, add an explicit teardown that runs whether the test passes or fails.
 - Static test data (sample media files, config files) goes in `tests/data/{module}/` — create the folder only when the module's tests actually need static files
 - Shared fixtures and path constants used across multiple test modules go in `tests/common.py`
 
