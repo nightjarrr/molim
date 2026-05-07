@@ -12,10 +12,10 @@ folder according to the command's rules.
 
 ---
 
-## 2. Tooling
+## 2. Toolchain and development environment
 
 - **Package manager**: `uv` exclusively. No `pip`, no `poetry`, no direct venv activation or
-  deactivation. All interactions go through `uv` subcommands.
+  deactivation. All interactions go through `uv` subcommands. `uv pip` must also be avoided. 
 - **Running**: `uv run <command>` — e.g. `uv run pytest`, `uv run ruff format .`,
   `uv run molim`. `uv run` resolves the project virtualenv automatically.
 - **Dependencies**: `uv sync --frozen` installs the locked set from `uv.lock` (committed).
@@ -23,18 +23,19 @@ folder according to the command's rules.
 - **Building**: `uv build` produces wheel and sdist in `dist/`.
 - **Python version**: managed by uv from `.python-version` / `requires-python` in
   `pyproject.toml`. No assumption about system Python.
-- **Self-contained**: after `uv sync --frozen`, the project can be built, tested, and run
-  with no further setup. The only external prerequisites are the three CLI tools on PATH
-  (`rawtherapee-cli`, `convert`, `ffmpeg`) — their installation is a documented requirement,
-  not a hidden assumption. No other system-level dependencies exist. Self-containment is a
-  design goal: new features must be designed to preserve it. Introducing a dependency on a
-  new system tool or library requires explicit justification.
+
+  The development environment is **Self-contained**: after `uv sync --frozen`, the project 
+  can be built, tested, and run with no further setup. The only external prerequisites are 
+  the three CLI tools on PATH (`rawtherapee-cli`, `convert`, `ffmpeg`) — their installation 
+  is a documented requirement, not a hidden assumption. No other system-level dependencies 
+  exist. Self-containment is a design goal: new features must be designed to preserve it. 
+  Introducing a dependency on a new system tool or library requires explicit justification.
 
 ---
 
 ## 3. Package layout
 
-Source lives under `src/molim/`. Image-specific commands are grouped in `src/molim/images/`.
+Source lives under `src/molim/`. Image-specific functionality is grouped in `src/molim/images/`.
 
 | Module | Responsibility |
 |---|---|
@@ -48,18 +49,18 @@ Source lives under `src/molim/`. Image-specific commands are grouped in `src/mol
 | `show.py` | All user-facing output via Rich; progress bars, size/time formatting, verbose gating |
 | `stats.py` | `FileStats` and `FolderStats` context managers for per-file and summary statistics |
 | `video.py` | `VideoFfmpegCommand` and `FfmpegFileProcessor` |
-| `rename.py` | `SuffixCommand` and `RenameFileProcessor` (filesystem rename, no shell) |
-| `images/__init__.py` | Shared image-domain constants (`JPEG_QUALITY`, `JPEG_PROCESSED_EXTENSION`, etc.) |
+| `rename.py` | `SuffixCommand` and `RenameFileProcessor` (filesystem rename, no shell, pure Python stdlib) |
+| `images/__init__.py` | Shared `images` package-wide constants (`JPEG_QUALITY`, `JPEG_PROCESSED_EXTENSION`, etc.) |
 | `images/imagemagick.py` | `ImageMagickMixin` and `ImageMagickFileProcessor` |
 | `images/jpegify.py` | `JpegifyCommand` — converts PNG / WebP / AVIF / HEIC to JPEG via ImageMagick |
 | `images/resize.py` | `ResizeCommand` — resizes JPEG via ImageMagick `-resize` |
-| `images/rawtherapee.py` | `RawTherapeeCommand`, `RawTherapeeHQCommand`, `RawTherapeeFileProcessor` |
+| `images/rawtherapee.py` | `RawTherapeeCommand`, `RawTherapeeHQCommand`, `RawTherapeeFileProcessor` ([TODO]: need short explanation as in other rows) |
 
 ---
 
 ## 4. Processing pipeline
 
-Execution flow from invocation to filesystem output:
+Execution nesting from CLI invocation to external tool run:
 
 ```
 molim <cmd> FOLDER              # __init__.main() → cli.run(sys.argv[1:])
@@ -84,20 +85,22 @@ Strategy composition in `Command._execute()`:
 8. Run `FolderProcessor(folder, matcher, skipper, processor).process(dry_run, show_size)`.
 9. Display `FolderStats`.
 
+[TODO]: add details on the code-level composition approach: manual dependency injection (constructor-based, no DI framework, just classess accepting their deps as __init__ params), no singleton or shared instances, Command as a composition root for processors and strategy instances (inside `_execute`). This approach to DI and composition is a design goal and should be followed.
+
 ---
 
 ## 5. Command framework
 
 `Command` in `commands.py` is the abstract base class. It implements the Template Method
 pattern: `_execute()` is the fixed template that orchestrates every processing run.
-Subclasses implement hook methods; they do not override `_execute()`.
+Subclasses implement hook methods; they do not override `_execute()`. [TODO]: refer to conventions.md for the _execute() override rules and consistently reflect it here.
 
-**Hook methods subclasses must implement:**
+**Hooks subclasses must implement:**
 
-| Method | Returns |
+| Method or property | Returns |
 |---|---|
 | `name` (property) | CLI subcommand name string |
-| `help` (property) | Help text string |
+| `help` (property) | CLI help text string |
 | `_add_arguments(parser)` | Adds command-specific argparse arguments |
 | `_get_common_arguments_defaults()` | Tuple of defaults / `None` values for the four common slots |
 | `_get_output_file_path_strategy(args)` | An `OutputFilePathStrategy` instance |
@@ -106,7 +109,7 @@ Subclasses implement hook methods; they do not override `_execute()`.
 
 `configure_parser()` calls `_add_arguments()` then `_add_common_arguments()` —
 command-specific arguments appear first in help output. `__call__(args)` delegates to
-`_execute()`; commands are callable objects registered via `parser.set_defaults(command=self)`.
+`_execute()`; commands are callable objects registered via `parser.set_defaults(command=self)` and called by `argparse`.
 
 **Registered commands** (instantiated in `cli.run()`):
 
@@ -117,24 +120,24 @@ command-specific arguments appear first in help output. `__call__(args)` delegat
 | `resize` | `ResizeCommand` | `images/resize.py` | `convert` (ImageMagick) |
 | `rawtherapee` | `RawTherapeeCommand` | `images/rawtherapee.py` | `rawtherapee-cli` |
 | `rawtherapee-hq` | `RawTherapeeHQCommand` | `images/rawtherapee.py` | `rawtherapee-cli` |
-| `suffix` | `SuffixCommand` | `rename.py` | — (filesystem only) |
+| `suffix` | `SuffixCommand` | `rename.py` | — (Python stdlib only) |
 
 **Mixin pattern**: `JpegifyCommand` and `ResizeCommand` inherit
 `(commands.Command, ImageMagickMixin)`. Because `Command` is listed first in the MRO,
 subclasses must explicitly delegate `_add_arguments` and `_get_file_processor` to
-`ImageMagickMixin`.
+`ImageMagickMixin`. [TODO]: add details what the mixin is doing. Refer to conventions.md
 
 ---
 
 ## 6. CLI composability
 
-The CLI uses argparse subparsers — one per command, each with a fully isolated argument
-namespace. Adding a new command requires no changes to the dispatch machinery: instantiate
+The CLI uses argparse subparsers: one per command, each with a fully isolated argument
+namespace. Adding a new command requires no changes to the dispatch machinery in `cli` module; it just needs to instantiate
 the class and pass it to `_create_parser()`.
 
-**Two-tier argument structure:**
+**Three-tier argument structure:**
 
-- *Always-present* — every command unconditionally: `FOLDER` (positional), `--config`,
+- *Always-present* — every command must support unconditionally: `FOLDER` (positional), `--config`,
   `--dry-run`, `--verbose`. Added by `_add_common_arguments()`; cannot be suppressed.
 - *Optional common slots* — four shared arguments each command opts into or suppresses by
   returning a default value or `None` from `_get_common_arguments_defaults()`:
@@ -154,7 +157,7 @@ not appear in their help text or namespace.
 base class and all subclasses. Adding a new optional common argument requires updating
 `_add_common_arguments()`, the `_get_common_arguments_defaults()` signature, and the return
 statement in every existing subclass. This coupling is intentional — common arguments are
-shared infrastructure and changes to them are codebase-wide.
+shared concern and changes to them are codebase-wide.
 
 ---
 
@@ -234,6 +237,10 @@ Profile name: `--profile` CLI argument → config `profile` key → default `mol
   then `[global]`.
 - **Absence is valid**: if the config file does not exist, processing continues without it.
   No config file is required.
+  
+  [TODO]: Add even more specific guidance on the optional, additional nature of the configuration subsystem. No file - okay. No section in the file - okay. No entry in the section  - okay. No required entries in the config file.
+  Configuration is fully opt-in by the commands, there is nothing compulsory about it.
+  At design time, the question "should this be configurable in `config.toml`" is always good to ask, because there are no technical constraints that push towards adding configurable options.
 
 ---
 
@@ -249,12 +256,14 @@ Profile name: `--profile` CLI argument → config `profile` key → default `mol
 - **Static test data**: `tests/data/{module}/` — sample media files and config files needed
   by tests that require real inputs.
 - **Temporary filesystem state**: `tmp_path` (function-scoped) and `tmp_path_factory`
-  (module-scoped) pytest fixtures.
+  (module-scoped) pytest fixtures. Temp state must be always cleaned up as a teardown step - no matter if the test passes or fails.
 - **`monkeypatch`**: permitted only for infrastructure concerns where no real tool exists
-  (e.g. stubbing `importlib.metadata.version()` for version detection). Not used to
+  (e.g. stubbing `importlib.metadata.version()` for version detection). Never used to
   substitute external CLI tools.
 - **Test categories per class**: input validation, dry-run behavior, core logic.
 - **Runner**: pytest with branch coverage (`pytest-cov`); reports uploaded to Codecov in CI.
+
+[TODO]: add guidelines on the test coverage. Tests are not optional. Every new class or method requires tests. Every bug fix requires tests that validate the corrected behavior and ensure that regressions will be detected at unit test stage.
 
 ---
 
