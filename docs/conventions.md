@@ -20,7 +20,7 @@ Maximum line length is 128 characters (PEP 8: 79). Configured in `pyproject.toml
 
 ### Private instance attributes: double underscore prefix
 
-Private instance attributes use double underscore (`self.__attr`), not single underscore. Single underscore is a convention-only signal that a fresh reader may not immediately register as "do not touch"; double underscore makes the intent unambiguous at a glance. It also triggers Python name mangling (`_ClassName__attr`), which prevents accidental attribute collision in subclasses as a secondary benefit. Apply consistently to all instance attributes not intended for subclass or external access.
+Private names — both instance attributes and module-level functions and variables — use double underscore prefix (`self.__attr`, `__name`), not single underscore. Single underscore is a convention-only signal that a fresh reader may not immediately register as "do not touch"; double underscore makes the intent unambiguous at a glance. For instance attributes it also triggers Python name mangling (`_ClassName__attr`), which prevents accidental attribute collision in subclasses as a secondary benefit. Apply consistently to all instance attributes and module-level names not intended for external access.
 
 ---
 
@@ -48,6 +48,8 @@ Use consistent class name suffixes to communicate role and inheritance line:
 | `*FileProcessor` | File processor implementations |
 | `*Mixin` | Mixin classes |
 | `*Error` | Custom exception classes |
+| `*Type` | argparse argument converter classes |
+| `*Enum` | Enumeration classes |
 
 ---
 
@@ -109,9 +111,13 @@ Import from the module that owns the concept. Avoid broad dependency reach-throu
    - `_get_file_processor(args, output_namer, post_processor)` → returns a `FileProcessor`
    - `_get_file_skip_strategy(args)` → returns a `FileSkipStrategy`
 4. Define command defaults as named constants — do not inline literal values. Use the narrowest scope that avoids duplication:
-   - **Class-level** (default): a constant that belongs to one command lives as a class attribute (`JpegifyCommand.JPEGIFY_EXTENSION`, `ResizeCommand.RESIZE_ORIGINALS`).
-   - **Module-level**: when a constant must be referenced by non-class code in the same file (`VIDEO_FFMPEG_CODEC`).
+   - **Class-level** (default): a constant that belongs to one command lives as a class attribute.
+   - **Module-level**: when a constant must be referenced by non-class code in the same file.
    - **Package-level** (e.g., `images/__init__.py`): a shared domain fact used by multiple commands in the same package (`JPEG_QUALITY`, `JPEG_PROCESSED_EXTENSION`).
+
+   Name class-level constants according to their role:
+   - **Common arg slot defaults** — constants that supply default values for the four shared CLI arguments (`extension`, `greater_than`, `no_skip_processed`, `originals`) use **unprefixed** names: `EXTENSION`, `GREATER_THAN`, `NO_SKIP_PROCESSED`, `ORIGINALS`. The same name appears in every command that sets that slot, making cross-command comparison immediate.
+   - **Command-specific constants** — constants tied to a command's own functionality (not a common slot) use a **command-prefixed** name: `VIDEO_FFMPEG_CODEC`, `RAWTHERAPEE_PROCESSED_SUFFIX`.
 5. Use kebab-case for all CLI flags: `--dry-run`, `--greater-than`, `--imagemagick-quality`.
 6. Register the command in `cli.py` by instantiating it in `run()` and passing it to `_create_parser(...)`.
 7. Add tests covering argument parsing, input validation, dry-run behavior, and core logic.
@@ -160,8 +166,15 @@ Use the `show` module for all user-facing output. Never use `print()` or the `lo
 | `show.verbose(message)` | Detail shown only when `--verbose` is passed |
 | `show.error(message, exception)` | Fatal errors with traceback |
 | `show.rule()` | Visual separator between processing phases |
+| `show.file_stats(stats, show_size)` | Per-file result line after processing |
+| `show.folder_stats(stats, show_size)` | Summary line after a folder run |
+| `show.progress(total)` | Create a progress bar for a batch of files |
+| `show.progress_update(progress, description)` | Update the current file label in the progress bar |
+| `show.progress_advance(progress)` | Advance the progress bar by one step |
 
 `show.set_verbose(args.verbose)` is called once in `cli.py`. Call `show.verbose()` freely; the module manages the gate.
+
+The module also provides lower-level formatting helpers (`human_size`, `elapsed`, `percent`, `ext`, `ellipsis`) and `verbose_args`. Use them when appropriate rather than reimplementing equivalent formatting inline.
 
 ---
 
@@ -171,7 +184,7 @@ Validation is applied aggressively at every internal API boundary — not just a
 
 **Always use the `check` module.** Do not write inline guards (`if x is None: raise`, `if not isinstance(x, T): raise`). If no existing `check` function covers the case, add one to `check.py`.
 
-**Validate all constructor parameters** at the top of `__init__`, before any other logic:
+**Validate own constructor parameters before storing or using them.** The rule is about when values are first consumed, not about line order relative to `super()`:
 
 ```python
 def __init__(self, folder: pathlib.Path, strategy: OutputFilePathStrategy):
@@ -181,7 +194,9 @@ def __init__(self, folder: pathlib.Path, strategy: OutputFilePathStrategy):
     self.__strategy = strategy
 ```
 
-Validate at every point where values of uncertain provenance enter: constructors, strategy interface methods, and any method that first consumes user input, filesystem data, or config values. Assembly helpers that receive internally-constructed, already-validated values do not need to re-validate. Calling `super().__init__(...)` before own validation is acceptable — the parent validates its own parameters there.
+Calling `super().__init__(...)` before or after own validation is both acceptable — the parent validates its own parameters independently. Using already-validated values to assemble intermediate arguments before calling `super()` is also fine.
+
+Validate at every point where values of uncertain provenance enter: constructors, strategy interface methods, and any method that first consumes user input, filesystem data, or config values. Assembly helpers that receive internally-constructed, already-validated values do not need to re-validate.
 
 **Validation layering for paths** — always check type first, then existence and kind:
 - `check.ensure_path(x)` — confirms `x` is a `pathlib.Path`
@@ -200,12 +215,11 @@ Define custom exception classes for anticipated failure conditions:
 
 ```python
 class SomethingFailedError(Exception):
-    MESSAGE = "Descriptive message with '{placeholder}'."
-
     def __init__(self, value: str):
-        self.message = self.MESSAGE.format(placeholder=value)
-        super().__init__(self.message)
+        super().__init__(f"Something failed: '{value}'.")
 ```
+
+Message construction is flexible — use a class-level constant, a format string, or a default parameter as the case warrants.
 
 When wrapping exceptions from third-party libraries, use exception chaining:
 
@@ -273,10 +287,10 @@ Tests are integration tests that invoke real external tools (`rawtherapee-cli`, 
 
 Every new behaviour requires tests. Every bug fix requires a regression test.
 
-- Test files: `{module}_test.py` (e.g., `video_test.py`) — not `test_{module}.py`
+- Test files: `{module}_test.py` (e.g., `video_test.py`) — not `test_{module}.py`. When a module's tests are large enough to warrant splitting, use `{module}_{aspect}_test.py` (e.g., `processing_files_test.py`, `processing_folders_test.py`).
 - Test functions: `test_{Subject}_{description}` where `Subject` is a class name or module-level function name, and `description` is a free label — typically a section keyword (`input_validation`, `dry_run`, `core_logic`) or a specific method or scenario (`name`, `create_parser`, `empty_folder`).
 - Use `tmp_path` (function-scoped) and `tmp_path_factory` (module-scoped) for temporary filesystem state
-- Static test data (sample media files, config files) goes in `tests/data/{module}/`
+- Static test data (sample media files, config files) goes in `tests/data/{module}/` — create the folder only when the module's tests actually need static files
 - Shared fixtures and path constants used across multiple test modules go in `tests/common.py`
 
 `monkeypatch` is permitted for infrastructure and platform concerns where no real tool exists to invoke (e.g., stubbing `importlib.metadata.version()` to test version detection logic). It must not be used to substitute external CLI tools that commands invoke.
