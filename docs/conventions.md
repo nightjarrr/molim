@@ -4,6 +4,23 @@ PEP 8 is the base style. This document lists all points where the codebase inten
 
 ---
 
+## Status of these conventions
+
+These conventions are required for new Python code and for meaningful modifications to existing Python code.
+
+The existing codebase has known deviations from this document. Those deviations are tracked separately as technical debt and should be fixed deliberately, not opportunistically.
+
+When working on a feature or bug fix:
+
+- follow these conventions for all new code
+- bring directly touched code closer to these conventions when the change is small and local
+- do not perform broad unrelated cleanup unless the implementation plan explicitly includes it
+- do not rewrite existing working code solely to satisfy this document unless working on a dedicated technical-debt task
+
+When this document conflicts with existing code, treat this document as the intended direction for future work. Preserve existing behavior unless the task explicitly calls for changing it.
+
+---
+
 ## Scope
 
 These conventions apply to Python source code under `src/molim/` and tests under `tests/`.
@@ -79,7 +96,7 @@ src/molim/
 └── images/           # Image-specific commands and processors
 ```
 
-One module per command or functional area. Image-processing commands go under `images/`. New commands get their own module file. When adding new functionality, decide first whether it belongs in an existing cross-cutting module (`check`, `processing`, `shell`, `show`) or in a domain-specific command module — do not let `cli.py` or `commands.py` grow into catch-all implementation files.
+One module per functional area. Image-processing commands go under `images/`. New commands usually get their own module file; closely related command variants may share a module when they share most of their implementation. When adding new functionality, decide first whether it belongs in an existing cross-cutting module (`check`, `processing`, `shell`, `show`) or in a domain-specific command module — do not let `cli.py` or `commands.py` grow into catch-all implementation files.
 
 ---
 
@@ -100,7 +117,7 @@ Import from the module that owns the concept. Avoid broad dependency reach-throu
 
 ## Adding a command
 
-1. Create a new module in `src/molim/` (or `src/molim/images/` for image commands).
+1. Create or choose a module in `src/molim/` (or `src/molim/images/` for image commands). Create a new module for a new functional area; reuse an existing module for closely related command variants that share most implementation.
 2. Subclass `Command`.
 3. Implement all abstract methods and properties (each raises `NotImplementedError` in the base class):
    - `name` (`@property`) → `str` — CLI subcommand name
@@ -110,6 +127,45 @@ Import from the module that owns the concept. Avoid broad dependency reach-throu
    - `_get_output_file_path_strategy(args)` → returns an `OutputFilePathStrategy`
    - `_get_file_processor(args, output_namer, post_processor)` → returns a `FileProcessor`
    - `_get_file_skip_strategy(args)` → returns a `FileSkipStrategy`
+
+   A minimal command skeleton looks like:
+
+   ```python
+   class ExampleCommand(commands.Command):
+       EXTENSION = ".example"
+       GREATER_THAN = None
+       NO_SKIP_PROCESSED = False
+       ORIGINALS = "leave"
+
+       @property
+       def name(self) -> str:
+           return "example"
+
+       @property
+       def help(self) -> str:
+           return "Example command."
+
+       def _add_arguments(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+           return parser
+
+       def _get_common_arguments_defaults(self) -> tuple[str, str, bool, str]:
+           return (self.EXTENSION, self.GREATER_THAN, self.NO_SKIP_PROCESSED, self.ORIGINALS)
+
+       def _get_output_file_path_strategy(self, args: argparse.Namespace) -> processing.OutputFilePathStrategy:
+           return processing.ChangeExtOutputFilePathStrategy(self.EXTENSION)
+
+       def _get_file_processor(
+           self,
+           args: argparse.Namespace,
+           output_namer: processing.OutputFilePathStrategy,
+           post_processor: processing.PostProcessingStrategy,
+       ) -> processing.FileProcessor:
+           return ExampleFileProcessor(output_namer, post_processor)
+
+       def _get_file_skip_strategy(self, args: argparse.Namespace) -> processing.FileSkipStrategy:
+           return processing.NoFileSkipStrategy()
+   ```
+
 4. Define command defaults as named constants — do not inline literal values. Use the narrowest scope that avoids duplication:
    - **Class-level** (default): a constant that belongs to one command lives as a class attribute.
    - **Module-level**: when a constant must be referenced by non-class code in the same file.
@@ -123,7 +179,7 @@ Import from the module that owns the concept. Avoid broad dependency reach-throu
 7. Add tests covering argument parsing, input validation, dry-run behavior, and core logic.
 8. Run `uv run pre-commit run --all-files` and `uv run pytest` before committing.
 
-The concrete hook methods on `Command` (`_get_post_processing_strategy`, `_get_file_match_strategy`, `_get_global_skip_strategy`, `_show_size`) are intentional extension points — override them freely when the default behaviour is insufficient. Always call `super()` when augmenting rather than replacing the behaviour.
+The concrete hook methods on `Command` (`_get_post_processing_strategy`, `_get_file_match_strategy`, `_get_global_skip_strategy`, `_show_size`) are intentional extension points — override them freely when the default behaviour is insufficient. Always call `super()` when augmenting rather than replacing the behaviour. Exception: mixin delegation may call the mixin class directly, as shown in the Mixin section.
 
 Do not override `_execute` unless there is no other way to achieve the required behaviour. Overriding the template method is a conscious deviation from the established pattern and requires: explicit rationale discussed with and approved by the Project Owner, documentation in the tech design doc for the feature, and a code comment at the override site explaining why the hook methods were insufficient. If overriding is unavoidable, always call `super()._execute(args)` — augment the invocation pipeline, do not replace it.
 
@@ -137,7 +193,7 @@ The codebase uses nominal typing rather than duck typing. New implementations mu
 
 **Template Method** (`commands.py`) — `Command._execute()` orchestrates the processing pipeline. Subclasses implement the hook methods. Do not override `_execute` unless there is no other way to achieve the required behaviour — see the rule in the Adding a command section.
 
-**Strategy** (`processing.py`) — pluggable behaviours for output path naming, post-processing, file matching, and file skipping. Add new variants by subclassing the appropriate abstract base: `OutputFilePathStrategy`, `PostProcessingStrategy`, `FileMatchStrategy`, `FileSkipStrategy`, `FileProcessor`. Before adding conditionals to an existing method, consider whether the new behaviour should instead be a new strategy, a command subclass, or a mixin. Use composition for pipelines: combine behaviours through `Multi*` strategies rather than hard-coding special cases. Keep concerns separate: output naming belongs in `OutputFilePathStrategy`; moving, deleting, or replacing originals belongs in `PostProcessingStrategy`.
+**Strategy** (`processing.py`) — pluggable behaviours for output path naming, post-processing, file matching, and file skipping. Add new variants by subclassing the appropriate abstract base: `OutputFilePathStrategy`, `PostProcessingStrategy`, `FileMatchStrategy`, `FileSkipStrategy`, `FileProcessor`. Before adding conditionals to an existing method, consider whether the new behaviour should instead be a new strategy, a command subclass, or a mixin. Use composition for pipelines: combine behaviours through `Multi*` strategies rather than hard-coding special cases. `MultiOutputFilePathStrategy` applies strategies sequentially. Do not assume combined strategies are commutative; test the final output path explicitly when composing multiple strategies. Keep concerns separate: output naming belongs in `OutputFilePathStrategy`; moving, deleting, or replacing originals belongs in `PostProcessingStrategy`.
 
 **Mixin** — injects shared functionality into classes alongside their primary inheritance line. Use a mixin when multiple command classes need the same cross-cutting capability that does not belong in the `Command` base class. Example: `ImageMagickMixin` provides the complete ImageMagick integration — argument parsing, validation, and the `ImageMagickFileProcessor` that runs `convert`. Classes using the mixin are still proper `Command` subclasses; the mixin adds a second axis of behaviour without altering the primary hierarchy.
 
@@ -151,13 +207,15 @@ def _get_file_processor(self, args, output_namer, post_processor):
     return ImageMagickMixin._get_file_processor(self, args, output_namer, post_processor)
 ```
 
+This is the exception to the general "call `super()` when augmenting behaviour" rule: direct mixin delegation is expected when MRO would otherwise resolve to `Command`'s abstract implementation.
+
 **Context Manager** — for resources with bounded lifetimes (e.g., `stats.FolderStats`, `stats.FileStats`). Implement `__enter__` / `__exit__`; do not manage resource lifetimes via `__init__` and `__del__`.
 
 ---
 
 ## Output
 
-Use the `show` module for all user-facing output. Never use `print()` or the `logging` module.
+In application code, use the `show` module for all user-facing output. Never use `print()` or the `logging` module in application code.
 
 | Function | Use for |
 |---|---|
@@ -283,7 +341,7 @@ No docstring is required for concrete subclasses, simple methods, or property ge
 
 ## Testing
 
-Tests are integration tests that invoke real external tools (`rawtherapee-cli`, `convert`, `ffmpeg`). Do not mock these tools.
+The test suite contains both focused unit tests and integration tests that invoke real external tools (`rawtherapee-cli`, `convert`, `ffmpeg`). Do not mock these tools in command integration tests.
 
 Every new behaviour requires tests. Every bug fix requires a regression test.
 
