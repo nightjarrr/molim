@@ -196,11 +196,14 @@ expose and adding as many command-specific arguments as needed. Commands with no
 originals handling (e.g. `suffix`) suppress that slot by returning `None`; the argument does
 not appear in their help text or namespace.
 
-**Constraints**: the tuple returned by `_get_common_arguments_defaults()` is a fixed
-four-element contract between the base class and all subclasses. Adding a new common argument
-requires updating `_add_common_arguments()`, the `_get_common_arguments_defaults()` signature,
-and the return statement in every existing subclass. This coupling is intentional — common
-arguments are shared concern and changes to them are codebase-wide.
+**Constraints**: `_get_common_arguments_defaults()` returns a fixed four-element tuple
+`(extension, greater_than, no_skip_processed, originals)`. The first element sets the default
+for `--extension` but cannot suppress it — `--extension` is always added regardless of the
+value returned. The remaining three act differently: a non-`None` value sets the default and
+adds the argument; `None` suppresses it entirely. This mixed behaviour — one always-present
+element and three suppressible ones packed into the same tuple — is a design inconsistency.
+Adding a new element to the tuple requires updating `_add_common_arguments()`, the method
+signature, and every subclass return statement — changes are codebase-wide.
 
 ---
 
