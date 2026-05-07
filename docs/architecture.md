@@ -31,22 +31,22 @@ machinery. Existing base classes and templates are not modified to accommodate n
 **Composability** — complex behaviour is assembled from small, single-purpose objects.
 `Command._execute()` composes a pipeline from independently replaceable strategy instances.
 The same strategy types are reused across commands; commands differ by the combination they
-assemble, not by internal branching. See §6 (Command framework) and §9 (Strategy families).
+assemble, not by internal branching. See **Command framework** and **Strategy families**.
 
 **Inversion of Control / Dependency Injection** — components receive their dependencies via
 constructors. There is no DI framework and no service locator. `Command._execute()` is the
 composition root: it instantiates all strategies and processors and wires them together.
-There are no singletons or shared mutable instances. See §5 (Processing pipeline).
+There are no singletons or shared mutable instances. See **Processing pipeline**.
 
 **Self-contained environment** — after `uv sync --frozen`, the project builds, tests, and
 runs with no further setup. The only external prerequisites are the three CLI tools on PATH.
 New features must preserve this. Introducing a dependency on a new system tool or library
-requires explicit justification. See §3 (Toolchain).
+requires explicit justification. See **Toolchain and development environment**.
 
 **Dry-run universality** — `--dry-run` is a first-class feature, not an afterthought. Every
 operation that modifies the filesystem must honour the `dry_run` flag. This is a
 non-negotiable constraint on all new `FileProcessor` and `PostProcessingStrategy`
-implementations. See §8 (Dry-run mode).
+implementations. See **Dry-run mode**.
 
 **Fail fast** — invalid state is detected and reported at the earliest possible point.
 External tool availability is verified at processor instantiation, not at first use. Input
@@ -68,7 +68,7 @@ to the top-level handler; unexpected failures are not silently swallowed.
   `pyproject.toml`. No assumption about system Python.
 
   The only external prerequisites are the three CLI tools on PATH (`rawtherapee-cli`,
-  `convert`, `ffmpeg`). See the **Self-contained environment** principle (§2).
+  `convert`, `ffmpeg`). See the **Self-contained environment** principle.
 
 ---
 
@@ -124,7 +124,7 @@ Strategy composition in `Command._execute()`:
 8. Run `FolderProcessor(folder, matcher, skipper, processor).process(dry_run, show_size)`.
 9. Display `FolderStats`.
 
-`Command._execute()` is the composition root (see **IoC/DI**, §2): it instantiates all strategies and processors and wires them into `FolderProcessor`.
+`Command._execute()` is the composition root (see **IoC/DI**): it instantiates all strategies and processors and wires them into `FolderProcessor`.
 
 ---
 
@@ -132,7 +132,7 @@ Strategy composition in `Command._execute()`:
 
 `Command` in `commands.py` is the abstract base class. It implements the Template Method
 pattern: `_execute()` is the fixed template that orchestrates every processing run.
-Subclasses implement hook methods; they do not override `_execute()` — this is **Open/Closed** (§2) applied to the command pipeline. When overriding is unavoidable, `super()._execute(args)` must be called to augment rather than replace the pipeline. See `conventions.md` for the full override rules.
+Subclasses implement hook methods; they do not override `_execute()` — this is **Open/Closed** applied to the command pipeline. When overriding is unavoidable, `super()._execute(args)` must be called to augment rather than replace the pipeline. See `conventions.md` for the full override rules.
 
 **Hooks subclasses must implement:**
 
@@ -163,7 +163,7 @@ command-specific arguments appear first in help output. `__call__(args)` delegat
 
 **Mixin pattern**: `JpegifyCommand` and `ResizeCommand` inherit
 `(commands.Command, ImageMagickMixin)`. `ImageMagickMixin` encapsulates all ImageMagick
-integration: it adds `--imagemagick-quality` and `--imagemagick-args` CLI arguments, and
+integration: it adds `--imagemagick-quality` and `--imagemagick-additional` CLI arguments, and
 provides the `ImageMagickFileProcessor` that constructs and runs the `convert` invocation.
 Because `Command` is listed first in the MRO, Python resolves `Command`'s abstract methods
 before the mixin's implementations, so subclasses must explicitly delegate `_add_arguments`
@@ -176,16 +176,15 @@ delegation pattern.
 
 The CLI uses argparse subparsers: one per command, each with a fully isolated argument
 namespace. Adding a new command requires no changes to the dispatch machinery in `cli` —
-instantiate the class and pass it to `_create_parser()`. This is **Open/Closed** (§2)
-applied to the CLI.
+instantiate the class and pass it to `_create_parser()`. This is **Open/Closed** applied to the CLI.
 
 **Three-tier argument structure:**
 
 - *Always-present* — every command must support unconditionally: `FOLDER` (positional), `--config`,
-  `--dry-run`, `--verbose`. Added by `_add_common_arguments()`; cannot be suppressed.
-- *Optional common slots* — four shared arguments each command opts into or suppresses by
+  `--dry-run`, `--verbose`, `--extension`. Added by `_add_common_arguments()`; cannot be
+  suppressed. Commands supply the default for `--extension` via `_get_common_arguments_defaults()`.
+- *Optional common slots* — three shared arguments each command opts into or suppresses by
   returning a default value or `None` from `_get_common_arguments_defaults()`:
-  - `--extension` — file extension filter
   - `--greater-than` — minimum file size threshold
   - `--no-skip-processed` — disable already-processed file detection by suffix
   - `--originals` — post-processing disposition (`leave` / `move` / `delete`)
@@ -197,11 +196,11 @@ expose and adding as many command-specific arguments as needed. Commands with no
 originals handling (e.g. `suffix`) suppress that slot by returning `None`; the argument does
 not appear in their help text or namespace.
 
-**Constraints**: the optional common slot tuple is a fixed four-element contract between the
-base class and all subclasses. Adding a new optional common argument requires updating
-`_add_common_arguments()`, the `_get_common_arguments_defaults()` signature, and the return
-statement in every existing subclass. This coupling is intentional — common arguments are
-shared concern and changes to them are codebase-wide.
+**Constraints**: the tuple returned by `_get_common_arguments_defaults()` is a fixed
+four-element contract between the base class and all subclasses. Adding a new common argument
+requires updating `_add_common_arguments()`, the `_get_common_arguments_defaults()` signature,
+and the return statement in every existing subclass. This coupling is intentional — common
+arguments are shared concern and changes to them are codebase-wide.
 
 ---
 
@@ -221,21 +220,21 @@ When `dry_run=True`:
 - Input validation, output path computation, and stats reporting still run in full — the
   user sees exactly what would happen.
 
-See the **Dry-run universality** principle (§2).
+See the **Dry-run universality** principle.
 
 ---
 
 ## 9. Strategy families
 
 `processing.py` defines six pluggable behaviour families. New variants are added by
-subclassing the appropriate ABC — no conditionals in base classes (**Open/Closed**, §2).
+subclassing the appropriate ABC — no conditionals in base classes (**Open/Closed**).
 
 | Family ABC | Concrete variants | Controls |
 |---|---|---|
 | `OutputFilePathStrategy` | `SuffixOutputFilePathStrategy`, `ChangeExtOutputFilePathStrategy`, `FolderOutputFilePathStrategy`, `MultiOutputFilePathStrategy` | How output files are named and where they are placed |
-| `PostProcessingStrategy` | `NoopPostProcessingStrategy`, `MoveOriginalPostProcessingStrategy`, `DeleteOriginalPostProcessingStrategy`, `ReplaceOriginalWithProcessedPostProcessingStrategy` | What happens to the original file after processing |
+| `PostProcessingStrategy` | `NoopPostProcessingStrategy`, `MoveOriginalPostProcessingStrategy`, `DeleteOriginalPostProcessingStrategy`, `ReplaceOriginalPostProcessignStrategy` | What happens to the original file after processing |
 | `FileMatchStrategy` | `AnyFileMatchStrategy`, `ByExtensionFileMatchStrategy` | Which files in a folder are considered for processing |
-| `FileSkipStrategy` | `BySuffixFileSkipStrategy`, `BySizeFileSkipStrategy`, `GlobFileSkipStrategy`, `MultiFileSkipStrategy` | Which matched files are skipped |
+| `FileSkipStrategy` | `NoFileSkipStrategy`, `BySuffixFileSkipStrategy`, `BySizeFileSkipStrategy`, `GlobFileSkipStrategy`, `MultiFileSkipStrategy` | Which matched files are skipped |
 | `FileProcessor` | `ShellCommandFileProcessor` subtypes, `RenameFileProcessor` | How a single file is processed |
 | (orchestrator) | `FolderProcessor` | Iterates the folder, applies match / skip / process, aggregates `FolderStats` |
 
@@ -248,7 +247,7 @@ tools. It uses the `sh` library.
 
 - **Tool verification**: the constructor calls `sh.Command(command)` and runs
   `_get_verify_args()` at instantiation — fails fast if the tool is missing from PATH
-  (**Fail fast**, §2).
+  (**Fail fast**).
 - **Argument construction**: `_finalize_args(input_path, output_path)` is abstract; each
   subclass constructs the tool-specific argument list from the input and output file paths.
 - **Dry-run**: `process()` logs the intended invocation and skips `_execute()` when
@@ -260,7 +259,7 @@ Tool-specific processors:
 |---|---|---|
 | `FfmpegFileProcessor` | `ffmpeg` | `-y -i <in> -vcodec <codec> -crf <rate> [extra] [-report] <out>` |
 | `ImageMagickFileProcessor` | `convert` | `<in> [-quality N] [extra] <out>` |
-| `RawTherapeeFileProcessor` | `rawtherapee-cli` | `-o <out> -q -d -p <profile.pp3> -Y -j<quality> -js<subsampling> -c <in>` |
+| `RawTherapeeFileProcessor` | `rawtherapee-cli` | `-o <out> -q -d -Y -p <profile.pp3> -j<quality> -js<subsampling> -c <in>` |
 
 **RawTherapee profile resolution** (first match wins):
 1. `--profile-folder` CLI argument
