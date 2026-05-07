@@ -279,8 +279,12 @@ Profile name: `--profile` CLI argument → config `profile` key → default `mol
   `--config`.
 - **Structure**: TOML with a `[global]` section and per-command sections (e.g.
   `[rawtherapee]`).
-- **Lookup order**: `ConfigReader.__call__(key)` checks the command-specific section first,
-  then `[global]`.
+- **Lookup order**: `ConfigReader.__call__(key)` applies a two-level fallback chain. First
+  it checks the command-specific section, named after the command's `name` property (e.g.
+  `[rawtherapee]` for `RawTherapeeCommand`, `[video]` for `VideoFfmpegCommand`). If the key
+  is absent there, it falls back to `[global]`. If absent in both, it returns `None`. Callers
+  treat `None` as "not configured" and fall back to the CLI argument value or a hardcoded
+  constant.
 - **Fully opt-in**: no config file, no section, no entry — each is independently optional.
   Processing continues normally at every level of absence. There are no required entries.
   Configuration is additive: commands opt in to reading config values; nothing is compulsory.
