@@ -15,7 +15,7 @@ folder according to the command's rules.
 ## 2. Toolchain and development environment
 
 - **Package manager**: `uv` exclusively. No `pip`, no `poetry`, no direct venv activation or
-  deactivation. All interactions go through `uv` subcommands. `uv pip` must also be avoided. 
+  deactivation. All interactions go through `uv` subcommands. `uv pip` must also be avoided.
 - **Running**: `uv run <command>` — e.g. `uv run pytest`, `uv run ruff format .`,
   `uv run molim`. `uv run` resolves the project virtualenv automatically.
 - **Dependencies**: `uv sync --frozen` installs the locked set from `uv.lock` (committed).
@@ -24,11 +24,11 @@ folder according to the command's rules.
 - **Python version**: managed by uv from `.python-version` / `requires-python` in
   `pyproject.toml`. No assumption about system Python.
 
-  The development environment is **Self-contained**: after `uv sync --frozen`, the project 
-  can be built, tested, and run with no further setup. The only external prerequisites are 
-  the three CLI tools on PATH (`rawtherapee-cli`, `convert`, `ffmpeg`) — their installation 
-  is a documented requirement, not a hidden assumption. No other system-level dependencies 
-  exist. Self-containment is a design goal: new features must be designed to preserve it. 
+  The development environment is **Self-contained**: after `uv sync --frozen`, the project
+  can be built, tested, and run with no further setup. The only external prerequisites are
+  the three CLI tools on PATH (`rawtherapee-cli`, `convert`, `ffmpeg`) — their installation
+  is a documented requirement, not a hidden assumption. No other system-level dependencies
+  exist. Self-containment is a design goal: new features must be designed to preserve it.
   Introducing a dependency on a new system tool or library requires explicit justification.
 
 ---
@@ -54,7 +54,7 @@ Source lives under `src/molim/`. Image-specific functionality is grouped in `src
 | `images/imagemagick.py` | `ImageMagickMixin` and `ImageMagickFileProcessor` |
 | `images/jpegify.py` | `JpegifyCommand` — converts PNG / WebP / AVIF / HEIC to JPEG via ImageMagick |
 | `images/resize.py` | `ResizeCommand` — resizes JPEG via ImageMagick `-resize` |
-| `images/rawtherapee.py` | `RawTherapeeCommand`, `RawTherapeeHQCommand`, `RawTherapeeFileProcessor` ([TODO]: need short explanation as in other rows) |
+| `images/rawtherapee.py` | `RawTherapeeCommand` and `RawTherapeeHQCommand` — batch RAW processing via RawTherapee profiles; `RawTherapeeHQCommand` uses higher quality defaults |
 
 ---
 
@@ -85,7 +85,7 @@ Strategy composition in `Command._execute()`:
 8. Run `FolderProcessor(folder, matcher, skipper, processor).process(dry_run, show_size)`.
 9. Display `FolderStats`.
 
-[TODO]: add details on the code-level composition approach: manual dependency injection (constructor-based, no DI framework, just classess accepting their deps as __init__ params), no singleton or shared instances, Command as a composition root for processors and strategy instances (inside `_execute`). This approach to DI and composition is a design goal and should be followed.
+**Composition approach**: dependencies are wired manually — no DI framework. Each class accepts its dependencies as constructor parameters (`__init__`). There are no singletons or shared mutable instances. `Command._execute()` is the composition root: it instantiates all strategies and processors, wires them together, and passes them into `FolderProcessor`. This explicit, constructor-based composition is a design goal and must be followed when adding new processors or strategies.
 
 ---
 
@@ -93,7 +93,7 @@ Strategy composition in `Command._execute()`:
 
 `Command` in `commands.py` is the abstract base class. It implements the Template Method
 pattern: `_execute()` is the fixed template that orchestrates every processing run.
-Subclasses implement hook methods; they do not override `_execute()`. [TODO]: refer to conventions.md for the _execute() override rules and consistently reflect it here.
+Subclasses implement hook methods; they do not override `_execute()`. Overriding the template method is a conscious, exceptional deviation — the hook methods are the correct and expected extension point. When overriding is unavoidable, `super()._execute(args)` must be called to augment rather than replace the pipeline. See `conventions.md` for the full override rules.
 
 **Hooks subclasses must implement:**
 
@@ -123,9 +123,13 @@ command-specific arguments appear first in help output. `__call__(args)` delegat
 | `suffix` | `SuffixCommand` | `rename.py` | — (Python stdlib only) |
 
 **Mixin pattern**: `JpegifyCommand` and `ResizeCommand` inherit
-`(commands.Command, ImageMagickMixin)`. Because `Command` is listed first in the MRO,
-subclasses must explicitly delegate `_add_arguments` and `_get_file_processor` to
-`ImageMagickMixin`. [TODO]: add details what the mixin is doing. Refer to conventions.md
+`(commands.Command, ImageMagickMixin)`. `ImageMagickMixin` encapsulates all ImageMagick
+integration: it adds `--imagemagick-quality` and `--imagemagick-args` CLI arguments, and
+provides the `ImageMagickFileProcessor` that constructs and runs the `convert` invocation.
+Because `Command` is listed first in the MRO, Python resolves `Command`'s abstract methods
+before the mixin's implementations, so subclasses must explicitly delegate `_add_arguments`
+and `_get_file_processor` to `ImageMagickMixin`. See `conventions.md` for the full mixin
+delegation pattern.
 
 ---
 
@@ -235,12 +239,12 @@ Profile name: `--profile` CLI argument → config `profile` key → default `mol
   `[rawtherapee]`).
 - **Lookup order**: `ConfigReader.__call__(key)` checks the command-specific section first,
   then `[global]`.
-- **Absence is valid**: if the config file does not exist, processing continues without it.
-  No config file is required.
-  
-  [TODO]: Add even more specific guidance on the optional, additional nature of the configuration subsystem. No file - okay. No section in the file - okay. No entry in the section  - okay. No required entries in the config file.
-  Configuration is fully opt-in by the commands, there is nothing compulsory about it.
-  At design time, the question "should this be configurable in `config.toml`" is always good to ask, because there are no technical constraints that push towards adding configurable options.
+- **Fully opt-in**: no config file, no section, no entry — each is independently optional.
+  Processing continues normally at every level of absence. There are no required entries.
+  Configuration is additive: commands opt in to reading config values; nothing is compulsory.
+  At design time, "should this be configurable in `config.toml`?" is always worth asking —
+  there are no technical constraints that push toward adding configurable options, so the
+  decision is purely about user value.
 
 ---
 
@@ -262,8 +266,9 @@ Profile name: `--profile` CLI argument → config `profile` key → default `mol
   substitute external CLI tools.
 - **Test categories per class**: input validation, dry-run behavior, core logic.
 - **Runner**: pytest with branch coverage (`pytest-cov`); reports uploaded to Codecov in CI.
-
-[TODO]: add guidelines on the test coverage. Tests are not optional. Every new class or method requires tests. Every bug fix requires tests that validate the corrected behavior and ensure that regressions will be detected at unit test stage.
+- **Coverage requirement**: tests are not optional. Every new class or method requires tests.
+  Every bug fix requires a regression test that validates the corrected behaviour and catches
+  future regressions at the test stage.
 
 ---
 
