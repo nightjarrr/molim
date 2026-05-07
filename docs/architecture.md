@@ -67,12 +67,8 @@ to the top-level handler; unexpected failures are not silently swallowed.
 - **Python version**: managed by uv from `.python-version` / `requires-python` in
   `pyproject.toml`. No assumption about system Python.
 
-  The development environment is **Self-contained**: after `uv sync --frozen`, the project
-  can be built, tested, and run with no further setup. The only external prerequisites are
-  the three CLI tools on PATH (`rawtherapee-cli`, `convert`, `ffmpeg`) — their installation
-  is a documented requirement, not a hidden assumption. No other system-level dependencies
-  exist. Self-containment is a design goal: new features must be designed to preserve it.
-  Introducing a dependency on a new system tool or library requires explicit justification.
+  The only external prerequisites are the three CLI tools on PATH (`rawtherapee-cli`,
+  `convert`, `ffmpeg`). See the **Self-contained environment** principle (§2).
 
 ---
 
@@ -128,7 +124,7 @@ Strategy composition in `Command._execute()`:
 8. Run `FolderProcessor(folder, matcher, skipper, processor).process(dry_run, show_size)`.
 9. Display `FolderStats`.
 
-**Composition approach**: dependencies are wired manually — no DI framework. Each class accepts its dependencies as constructor parameters (`__init__`). There are no singletons or shared mutable instances. `Command._execute()` is the composition root: it instantiates all strategies and processors, wires them together, and passes them into `FolderProcessor`. This explicit, constructor-based composition is a design goal and must be followed when adding new processors or strategies.
+`Command._execute()` is the composition root (see **IoC/DI**, §2): it instantiates all strategies and processors and wires them into `FolderProcessor`.
 
 ---
 
@@ -136,7 +132,7 @@ Strategy composition in `Command._execute()`:
 
 `Command` in `commands.py` is the abstract base class. It implements the Template Method
 pattern: `_execute()` is the fixed template that orchestrates every processing run.
-Subclasses implement hook methods; they do not override `_execute()`. Overriding the template method is a conscious, exceptional deviation — the hook methods are the correct and expected extension point. When overriding is unavoidable, `super()._execute(args)` must be called to augment rather than replace the pipeline. See `conventions.md` for the full override rules.
+Subclasses implement hook methods; they do not override `_execute()` — this is **Open/Closed** (§2) applied to the command pipeline. When overriding is unavoidable, `super()._execute(args)` must be called to augment rather than replace the pipeline. See `conventions.md` for the full override rules.
 
 **Hooks subclasses must implement:**
 
@@ -179,8 +175,9 @@ delegation pattern.
 ## 7. CLI composability
 
 The CLI uses argparse subparsers: one per command, each with a fully isolated argument
-namespace. Adding a new command requires no changes to the dispatch machinery in `cli` module; it just needs to instantiate
-the class and pass it to `_create_parser()`.
+namespace. Adding a new command requires no changes to the dispatch machinery in `cli` —
+instantiate the class and pass it to `_create_parser()`. This is **Open/Closed** (§2)
+applied to the CLI.
 
 **Three-tier argument structure:**
 
@@ -224,15 +221,14 @@ When `dry_run=True`:
 - Input validation, output path computation, and stats reporting still run in full — the
   user sees exactly what would happen.
 
-Every new `FileProcessor` and `PostProcessingStrategy` implementation must honour the
-`dry_run` flag. It is not optional.
+See the **Dry-run universality** principle (§2).
 
 ---
 
 ## 9. Strategy families
 
 `processing.py` defines six pluggable behaviour families. New variants are added by
-subclassing the appropriate ABC — no conditionals in base classes.
+subclassing the appropriate ABC — no conditionals in base classes (**Open/Closed**, §2).
 
 | Family ABC | Concrete variants | Controls |
 |---|---|---|
@@ -251,7 +247,8 @@ subclassing the appropriate ABC — no conditionals in base classes.
 tools. It uses the `sh` library.
 
 - **Tool verification**: the constructor calls `sh.Command(command)` and runs
-  `_get_verify_args()` at instantiation — fails fast if the tool is missing from PATH.
+  `_get_verify_args()` at instantiation — fails fast if the tool is missing from PATH
+  (**Fail fast**, §2).
 - **Argument construction**: `_finalize_args(input_path, output_path)` is abstract; each
   subclass constructs the tool-specific argument list from the input and output file paths.
 - **Dry-run**: `process()` logs the intended invocation and skips `_execute()` when
