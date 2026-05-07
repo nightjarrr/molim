@@ -10,18 +10,52 @@ The execution model is a single invocation: `molim <command> FOLDER [options]`. 
 invocation selects one command, targets one folder, and processes all matching files in that
 folder according to the command's rules.
 
-[TODO]: We need some sort of architecture charter, guiding principles on which `molim` is built and which must be followed for any future work. Currently they are scattered across the document and called "design goals", or even not called out at all.
- - Composability
- - IoC / DI
- - Open/closed - behavior should be modified by using defined extensibility points, not by blanket rewrite of existing code
- - Single responsibility - each class has one defined task to handle
-That gives most of SOLID. In addition to that, must call out
- - self-contained environment
- - ... - what else?
+---
+
+## 2. Design principles
+
+These principles govern every design and implementation decision in molim. New features and
+changes must be evaluated against them. Where a principle is applied concretely in the
+codebase, the relevant section of this document provides detail.
+
+**Single Responsibility** — each class has one clearly defined responsibility. Modules own
+distinct concerns: output naming belongs in `OutputFilePathStrategy`, post-processing belongs
+in `PostProcessingStrategy`, user output belongs in `show`. Cross-cutting behaviour is
+extracted into mixins or shared modules rather than duplicated or inlined.
+
+**Open/Closed** — behaviour is extended through defined extensibility points, not by
+modifying existing code. New processing variants are added by subclassing the appropriate
+strategy ABC. New commands are registered in `cli.py` without touching the dispatch
+machinery. Existing base classes and templates are not modified to accommodate new cases.
+
+**Composability** — complex behaviour is assembled from small, single-purpose objects.
+`Command._execute()` composes a pipeline from independently replaceable strategy instances.
+The same strategy types are reused across commands; commands differ by the combination they
+assemble, not by internal branching. See §6 (Command framework) and §9 (Strategy families).
+
+**Inversion of Control / Dependency Injection** — components receive their dependencies via
+constructors. There is no DI framework and no service locator. `Command._execute()` is the
+composition root: it instantiates all strategies and processors and wires them together.
+There are no singletons or shared mutable instances. See §5 (Processing pipeline).
+
+**Self-contained environment** — after `uv sync --frozen`, the project builds, tests, and
+runs with no further setup. The only external prerequisites are the three CLI tools on PATH.
+New features must preserve this. Introducing a dependency on a new system tool or library
+requires explicit justification. See §3 (Toolchain).
+
+**Dry-run universality** — `--dry-run` is a first-class feature, not an afterthought. Every
+operation that modifies the filesystem must honour the `dry_run` flag. This is a
+non-negotiable constraint on all new `FileProcessor` and `PostProcessingStrategy`
+implementations. See §8 (Dry-run mode).
+
+**Fail fast** — invalid state is detected and reported at the earliest possible point.
+External tool availability is verified at processor instantiation, not at first use. Input
+validation is applied at every internal API boundary via the `check` module. Errors propagate
+to the top-level handler; unexpected failures are not silently swallowed.
 
 ---
 
-## 2. Toolchain and development environment
+## 3. Toolchain and development environment
 
 - **Package manager**: `uv` exclusively. No `pip`, no `poetry`, no direct venv activation or
   deactivation. All interactions go through `uv` subcommands. `uv pip` must also be avoided.
@@ -42,7 +76,7 @@ That gives most of SOLID. In addition to that, must call out
 
 ---
 
-## 3. Package layout
+## 4. Package layout
 
 Source lives under `src/molim/`. Image-specific functionality is grouped in `src/molim/images/`.
 
@@ -67,7 +101,7 @@ Source lives under `src/molim/`. Image-specific functionality is grouped in `src
 
 ---
 
-## 4. Processing pipeline
+## 5. Processing pipeline
 
 Execution nesting from CLI invocation to external tool run:
 
@@ -98,7 +132,7 @@ Strategy composition in `Command._execute()`:
 
 ---
 
-## 5. Command framework
+## 6. Command framework
 
 `Command` in `commands.py` is the abstract base class. It implements the Template Method
 pattern: `_execute()` is the fixed template that orchestrates every processing run.
@@ -142,7 +176,7 @@ delegation pattern.
 
 ---
 
-## 6. CLI composability
+## 7. CLI composability
 
 The CLI uses argparse subparsers: one per command, each with a fully isolated argument
 namespace. Adding a new command requires no changes to the dispatch machinery in `cli` module; it just needs to instantiate
@@ -174,7 +208,7 @@ shared concern and changes to them are codebase-wide.
 
 ---
 
-## 7. Dry-run mode
+## 8. Dry-run mode
 
 Dry-run is a first-class feature present on every command. `--dry-run` is defined in
 `Command._add_common_arguments()` and propagated through the entire processing pipeline.
@@ -195,7 +229,7 @@ Every new `FileProcessor` and `PostProcessingStrategy` implementation must honou
 
 ---
 
-## 8. Strategy families
+## 9. Strategy families
 
 `processing.py` defines six pluggable behaviour families. New variants are added by
 subclassing the appropriate ABC — no conditionals in base classes.
@@ -211,7 +245,7 @@ subclassing the appropriate ABC — no conditionals in base classes.
 
 ---
 
-## 9. External tool integration
+## 10. External tool integration
 
 `ShellCommandFileProcessor` in `shell.py` is the bridge between Python and external CLI
 tools. It uses the `sh` library.
@@ -240,7 +274,7 @@ Profile name: `--profile` CLI argument → config `profile` key → default `mol
 
 ---
 
-## 10. Configuration
+## 11. Configuration
 
 - **File location**: `~/.config/molim/config.toml` (default); overridden per invocation via
   `--config`.
@@ -257,7 +291,7 @@ Profile name: `--profile` CLI argument → config `profile` key → default `mol
 
 ---
 
-## 11. Tests
+## 12. Tests
 
 - **Approach**: real integration tests — `rawtherapee-cli`, `convert`, and `ffmpeg` are
   invoked for real. No mocking of external tools.
@@ -281,7 +315,7 @@ Profile name: `--profile` CLI argument → config `profile` key → default `mol
 
 ---
 
-## 12. Build, release, and distribution
+## 13. Build, release, and distribution
 
 - **Build system**: `hatchling` + `hatch-vcs` (`pyproject.toml`). `uv build` produces a
   wheel and source distribution in `dist/`.
@@ -298,7 +332,7 @@ Profile name: `--profile` CLI argument → config `profile` key → default `mol
 
 ---
 
-## 13. Continuous integration
+## 14. Continuous integration
 
 - **CI workflow** (`.github/workflows/ci.yml`): runs on every push to any branch and every
   pull request. Delegates to `base.yml`.
