@@ -10,6 +10,15 @@ The execution model is a single invocation: `molim <command> FOLDER [options]`. 
 invocation selects one command, targets one folder, and processes all matching files in that
 folder according to the command's rules.
 
+[TODO]: We need some sort of architecture charter, guiding principles on which `molim` is built and which must be followed for any future work. Currently they are scattered across the document and called "design goals", or even not called out at all.
+ - Composability
+ - IoC / DI
+ - Open/closed - behavior should be modified by using defined extensibility points, not by blanket rewrite of existing code
+ - Single responsibility - each class has one defined task to handle
+That gives most of SOLID. In addition to that, must call out
+ - self-contained environment
+ - ... - what else?
+
 ---
 
 ## 2. Toolchain and development environment
