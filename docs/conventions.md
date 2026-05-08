@@ -80,22 +80,6 @@ Use `pathlib.Path` for all filesystem paths inside application logic. Convert in
 
 ## Module layout
 
-```
-src/molim/
-├── __init__.py       # Entry point: main()
-├── cli.py            # CLI runner and command list
-├── commands.py       # Command base class and argument types
-├── check.py          # Input validation functions
-├── config.py         # Config file reader
-├── processing.py     # Strategy classes for file processing
-├── rename.py         # Rename (suffix) command
-├── shell.py          # Shell execution wrapper
-├── show.py           # User-facing output
-├── stats.py          # Statistics context managers
-├── video.py          # Video processing command
-└── images/           # Image-specific commands and processors
-```
-
 One module per functional area. Image-processing commands go under `images/`. New commands usually get their own module file; closely related command variants may share a module when they share most of their implementation. When adding new functionality, decide first whether it belongs in an existing cross-cutting module (`check`, `processing`, `shell`, `show`) or in a domain-specific command module — do not let `cli.py` or `commands.py` grow into catch-all implementation files.
 
 ---
@@ -115,6 +99,31 @@ Import from the module that owns the concept. Avoid broad dependency reach-throu
 
 ---
 
+## Tooling
+
+Use `uv` for all Python work — environment, dependencies, build, and running project commands. Daily operations:
+
+```bash
+uv run pytest                     # run tests
+uv run ruff format .              # format
+uv run ruff check .               # lint
+uv run pre-commit run --all-files
+uv run molim                      # invoke the CLI
+uv build                          # build wheel + sdist
+```
+
+Provision dependencies with `uv sync --frozen` — installs the pinned set from `uv.lock`. Run after cloning or when `uv.lock` changes. New dependencies are added with `uv add` (runtime) or `uv add --dev` (dev) — see Dependencies for when this is allowed.
+
+Do not use `pip`, `poetry`, or `uv pip`. Do not manually activate or deactivate the project virtualenv.
+
+---
+
+## Dependencies
+
+Do not add runtime, development, or system dependencies unless the implementation plan explicitly calls for them. If the implementation appears to require a new dependency, escalate to the Project Owner via PM rather than adding it opportunistically.
+
+---
+
 ## Adding a command
 
 1. Create or choose a module in `src/molim/` (or `src/molim/images/` for image commands). Create a new module for a new functional area; reuse an existing module for closely related command variants that share most implementation.
@@ -123,7 +132,7 @@ Import from the module that owns the concept. Avoid broad dependency reach-throu
    - `name` (`@property`) → `str` — CLI subcommand name
    - `help` (`@property`) → `str` — help text
    - `_add_arguments(parser)` → adds command-specific argparse arguments; returns parser
-   - `_get_common_arguments_defaults()` → returns `(extension, greater_than, no_skip_processed, originals)` tuple; pass `None` for any optional common argument to suppress it
+   - `_get_common_arguments_defaults()` → returns `(extension, greater_than, no_skip_processed, originals)` tuple; `extension` must always be a non-`None` string (`--extension` is always present); pass `None` for any of the other three to suppress that argument
    - `_get_output_file_path_strategy(args)` → returns an `OutputFilePathStrategy`
    - `_get_file_processor(args, output_namer, post_processor)` → returns a `FileProcessor`
    - `_get_file_skip_strategy(args)` → returns a `FileSkipStrategy`
@@ -148,7 +157,7 @@ Import from the module that owns the concept. Avoid broad dependency reach-throu
        def _add_arguments(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
            return parser
 
-       def _get_common_arguments_defaults(self) -> tuple[str, str, bool, str]:
+       def _get_common_arguments_defaults(self) -> tuple[str, str | None, bool | None, str | None]:
            return (self.EXTENSION, self.GREATER_THAN, self.NO_SKIP_PROCESSED, self.ORIGINALS)
 
        def _get_output_file_path_strategy(self, args: argparse.Namespace) -> processing.OutputFilePathStrategy:
@@ -172,7 +181,7 @@ Import from the module that owns the concept. Avoid broad dependency reach-throu
    - **Package-level** (e.g., `images/__init__.py`): a shared domain fact used by multiple commands in the same package (`JPEG_QUALITY`, `JPEG_PROCESSED_EXTENSION`).
 
    Name class-level constants according to their role:
-   - **Common arg slot defaults** — constants that supply default values for the four shared CLI arguments (`extension`, `greater_than`, `no_skip_processed`, `originals`) use **unprefixed** names: `EXTENSION`, `GREATER_THAN`, `NO_SKIP_PROCESSED`, `ORIGINALS`. The same name appears in every command that sets that slot, making cross-command comparison immediate.
+   - **Common arg slot defaults** — constants that supply default values for the common CLI arguments (`extension`, `greater_than`, `no_skip_processed`, `originals`) use **unprefixed** names: `EXTENSION`, `GREATER_THAN`, `NO_SKIP_PROCESSED`, `ORIGINALS`. `EXTENSION` is always a non-`None` string; the other three may be `None` to suppress the argument. The same name appears in every command that sets that slot, making cross-command comparison immediate.
    - **Command-specific constants** — constants tied to a command's own functionality (not a common slot) use a **command-prefixed** name: `VIDEO_FFMPEG_CODEC`, `RAWTHERAPEE_PROCESSED_SUFFIX`.
 5. Use kebab-case for all CLI flags: `--dry-run`, `--greater-than`, `--imagemagick-quality`.
 6. Register the command in `cli.py` by instantiating it in `run()` and passing it to `_create_parser(...)`.
@@ -193,7 +202,7 @@ The codebase uses nominal typing rather than duck typing. New implementations mu
 
 **Template Method** (`commands.py`) — `Command._execute()` orchestrates the processing pipeline. Subclasses implement the hook methods. Do not override `_execute` unless there is no other way to achieve the required behaviour — see the rule in the Adding a command section.
 
-**Strategy** (`processing.py`) — pluggable behaviours for output path naming, post-processing, file matching, and file skipping. Add new variants by subclassing the appropriate abstract base: `OutputFilePathStrategy`, `PostProcessingStrategy`, `FileMatchStrategy`, `FileSkipStrategy`, `FileProcessor`. Before adding conditionals to an existing method, consider whether the new behaviour should instead be a new strategy, a command subclass, or a mixin. Use composition for pipelines: combine behaviours through `Multi*` strategies rather than hard-coding special cases. `MultiOutputFilePathStrategy` applies strategies sequentially. Do not assume combined strategies are commutative; test the final output path explicitly when composing multiple strategies. Keep concerns separate: output naming belongs in `OutputFilePathStrategy`; moving, deleting, or replacing originals belongs in `PostProcessingStrategy`.
+**Strategy** (`processing.py`) — pluggable behaviours for output path naming, post-processing, file matching, and file skipping. Before adding conditionals to an existing method, consider whether the new behaviour should instead be a new strategy, a command subclass, or a mixin. Use composition for pipelines: combine behaviours through `Multi*` strategies rather than hard-coding special cases. `MultiOutputFilePathStrategy` applies strategies sequentially. Do not assume combined strategies are commutative; test the final output path explicitly when composing multiple strategies. Keep concerns separate: output naming belongs in `OutputFilePathStrategy`; moving, deleting, or replacing originals belongs in `PostProcessingStrategy`.
 
 **Mixin** — injects shared functionality into classes alongside their primary inheritance line. Use a mixin when multiple command classes need the same cross-cutting capability that does not belong in the `Command` base class. Example: `ImageMagickMixin` provides the complete ImageMagick integration — argument parsing, validation, and the `ImageMagickFileProcessor` that runs `convert`. Classes using the mixin are still proper `Command` subclasses; the mixin adds a second axis of behaviour without altering the primary hierarchy.
 
@@ -232,7 +241,7 @@ In application code, use the `show` module for all user-facing output. Never use
 
 `show.set_verbose(args.verbose)` is called once in `cli.py`. Call `show.verbose()` freely; the module manages the gate.
 
-The module also provides lower-level formatting helpers (`human_size`, `elapsed`, `percent`, `ext`, `ellipsis`) and `verbose_args`. Use them when appropriate rather than reimplementing equivalent formatting inline.
+The table above is a quick reference, not an exhaustive list. The module also provides lower-level formatting helpers (`human_size`, `elapsed`, `percent`, `ext`, `ellipsis`) and `verbose_args`. For anything not listed, consult `show.py` directly. If no existing function fits the need, consider whether a new `show.*` function should be added rather than using `print()` or inline formatting.
 
 ---
 
@@ -347,7 +356,7 @@ Every new behaviour requires tests. Every bug fix requires a regression test.
 
 - Test files: `{module}_test.py` (e.g., `video_test.py`) — not `test_{module}.py`. When a module's tests are large enough to warrant splitting, use `{module}_{aspect}_test.py` (e.g., `processing_files_test.py`, `processing_folders_test.py`).
 - Test functions: `test_{Subject}_{description}` where `Subject` is a class name or module-level function name, and `description` is a free label — typically a section keyword (`input_validation`, `dry_run`, `core_logic`) or a specific method or scenario (`name`, `create_parser`, `empty_folder`).
-- Use `tmp_path` (function-scoped) and `tmp_path_factory` (module-scoped) for temporary filesystem state
+- Use `tmp_path` (function-scoped) and `tmp_path_factory` (module-scoped) for temporary filesystem state. Pytest cleans up both automatically. Do not create test state outside these fixtures; if unavoidable, add an explicit teardown that runs whether the test passes or fails.
 - Static test data (sample media files, config files) goes in `tests/data/{module}/` — create the folder only when the module's tests actually need static files
 - Shared fixtures and path constants used across multiple test modules go in `tests/common.py`
 
