@@ -12,6 +12,8 @@
       "Bash(gh pr diff *)",
       "Bash(gh pr status *)",
       "Bash(gh pr checks *)",
+      "Bash(gh release list *)",
+      "Bash(gh release view *)",
       "Bash(printenv *)",
       "Bash(uv run pytest *)",
       "Bash(uv run ruff *)",
