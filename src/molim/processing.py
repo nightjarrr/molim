@@ -4,7 +4,7 @@ from . import check, show, stats
 
 
 class OutputFilePathStrategy:
-    def get_output_path(input_path: pathlib.Path):
+    def get_output_path(self, input_path: pathlib.Path):
         raise NotImplementedError()
 
 
