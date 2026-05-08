@@ -662,7 +662,8 @@ success "Initialized ~/.claude.json."
 section "Installing project dependencies via uv sync"
 
 uv sync --frozen
-success "Project dependencies installed."
+uv run pre-commit install
+success "Project dependencies installed and initialized."
 
 # ======================================================================
 # COMMON — handoff to CMD
