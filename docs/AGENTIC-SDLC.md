@@ -86,10 +86,10 @@ When PM delegates a step to AA or Coder, it constructs a self-contained task des
 - Paths to all prior artifacts produced for this Issue (spec, tech-design, impl-plan, as applicable).
 - Paths to relevant project-wide context documents, scoped to the subagent's
   audience: `architecture.md` and `conventions.md` for AA; `conventions.md` only
-  for Coder. Coder is not given `architecture.md` — any architectural context
-  Coder needs is carried by `impl-plan.md` (see Phase 4). If the impl-plan is
-  insufficient for Coder to proceed, the recourse is escalation via PM relay,
-  not reading `architecture.md`.
+  for Coder. AA is responsible for carrying any architectural context Coder
+  needs into `impl-plan.md` (see Phase 4); the workflow does not depend on
+  Coder reading `architecture.md`. If the impl-plan is insufficient for Coder
+  to proceed, the recourse is escalation via PM relay.
 - The specific deliverable expected from this step.
 - Any constraints or decisions surfaced earlier in the workflow that bound the subagent's work.
 
@@ -476,7 +476,7 @@ On Project Owner approval, PM sets the phase label directly to `phase: impl-done
 
 **Contents of impl-plan.md** — two sections:
 
-**Architecture context.** A filtered architectural view of the parts of the system this feature touches, synthesized from `architecture.md` (the existing system shape), `tech-design.md` (architectural decisions made for this feature, not yet reflected in `architecture.md`), and the current codebase. For architecture context section, AA filters and distils — new design choices belong in `tech-design.md`, not here. Proportional to feature complexity: a trivial change may need a sentence or two; a cross-cutting feature may need a substantial section. This section is what allows Coder to execute having the right amount of architecture awareness without reading the full `architecture.md`.
+**Architecture context.** A filtered architectural view of the parts of the system this feature touches, synthesized from `architecture.md` (the existing system shape), `tech-design.md` (architectural decisions made for this feature, not yet reflected in `architecture.md`), and the current codebase. For architecture context section, AA filters and distils — new design choices belong in `tech-design.md`, not here. If AA finds that the impl-plan needs design that isn't yet captured in `tech-design.md`, AA escalates via PM rather than embedding new design in this section. Proportional to feature complexity: a trivial change may need a sentence or two; a cross-cutting feature may need a substantial section. This section is what allows Coder to execute having the right amount of architecture awareness without reading the full `architecture.md`.
 
 **Work breakdown.**
 - Ordered list of implementation steps.
