@@ -99,6 +99,12 @@ Import from the module that owns the concept. Avoid broad dependency reach-throu
 
 ---
 
+## Dependencies
+
+Do not add runtime, development, or system dependencies unless the implementation plan explicitly calls for them. If the implementation appears to require a new dependency, escalate to the Project Owner via PM rather than adding it opportunistically.
+
+---
+
 ## Adding a command
 
 1. Create or choose a module in `src/molim/` (or `src/molim/images/` for image commands). Create a new module for a new functional area; reuse an existing module for closely related command variants that share most implementation.
@@ -132,7 +138,7 @@ Import from the module that owns the concept. Avoid broad dependency reach-throu
        def _add_arguments(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
            return parser
 
-       def _get_common_arguments_defaults(self) -> tuple[str, str, bool, str]:
+       def _get_common_arguments_defaults(self) -> tuple[str, str | None, bool | None, str | None]:
            return (self.EXTENSION, self.GREATER_THAN, self.NO_SKIP_PROCESSED, self.ORIGINALS)
 
        def _get_output_file_path_strategy(self, args: argparse.Namespace) -> processing.OutputFilePathStrategy:

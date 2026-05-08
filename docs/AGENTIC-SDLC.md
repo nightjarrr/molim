@@ -84,8 +84,12 @@ When PM delegates a step to AA or Coder, it constructs a self-contained task des
 - The originating Issue ID, title, type, and current phase.
 - The relevant Issue body content and any pertinent comments.
 - Paths to all prior artifacts produced for this Issue (spec, tech-design, impl-plan, as applicable).
-- Paths to relevant project-wide context documents (`architecture.md`,
-  `conventions.md`).
+- Paths to relevant project-wide context documents, scoped to the subagent's
+  audience: `architecture.md` and `conventions.md` for AA; `conventions.md` only
+  for Coder. Coder is not given `architecture.md` — any architectural context
+  Coder needs is carried by `impl-plan.md` (see Phase 4). If the impl-plan is
+  insufficient for Coder to proceed, the recourse is escalation via PM relay,
+  not reading `architecture.md`.
 - The specific deliverable expected from this step.
 - Any constraints or decisions surfaced earlier in the workflow that bound the subagent's work.
 
@@ -470,7 +474,11 @@ On Project Owner approval, PM sets the phase label directly to `phase: impl-done
 
 **Output:** `docs/{issue-id}-{slug}/impl-plan.md`
 
-**Contents of impl-plan.md:**
+**Contents of impl-plan.md** — two sections:
+
+*Architecture context.* A filtered architectural view of the parts of the system this feature touches, synthesized from `architecture.md` (the existing system shape), `tech-design.md` (architectural decisions made for this feature, not yet reflected in `architecture.md`), and the current codebase. AA filters and distils — new design choices belong in `tech-design.md`, not here. Proportional to feature complexity: a trivial change may need a sentence or two; a cross-cutting feature may need a substantial section. This section is what allows Coder to execute without reading `architecture.md` directly.
+
+*Work breakdown.*
 - Ordered list of implementation steps.
 - For each step: files to create/modify/remove, classes/functions to add/change/remove.
 - Test coverage plan: what new tests are required.
@@ -479,7 +487,7 @@ On Project Owner approval, PM sets the phase label directly to `phase: impl-done
 | Step | Executor | Skills |
 |---|---|---|
 | Validate Issue state. | PM | Validate Issue |
-| Read `spec.md` and `tech-design.md`, relevant source files listed in `tech-design.md` | AA (delegated by PM). | — |
+| Read `spec.md`, `tech-design.md`, `architecture.md`, and relevant source files listed in `tech-design.md`. | AA (delegated by PM) | — |
 | Draft `impl-plan.md`, iterate with Project Owner. | AA (delegated by PM) | — |
 | Commit `impl-plan.md` to feature branch, push feature branch. | AA (delegated by PM) | — |
 | Update Issue body with link to `impl-plan.md` in the feature branch. | PM | — |
