@@ -38,10 +38,12 @@ constructors. There is no DI framework and no service locator. `Command._execute
 composition root: it instantiates all strategies and processors and wires them together.
 There are no singletons or shared mutable instances. See **Processing pipeline**.
 
-**Self-contained environment** — after `uv sync --frozen`, the project builds, tests, and
-runs with no further setup. The only external prerequisites are the three CLI tools on PATH.
-New features must preserve this. Introducing a dependency on a new system tool or library
-requires explicit justification. See **Toolchain and development environment**.
+**Self-contained environment** — a cloned repository requires nothing beyond a small,
+documented set of host prerequisites. Everything else — dependencies, build, runtime — is
+provisioned reproducibly from the repository's metadata definitions, so development, CI,
+and any downstream environment behave identically. New features must preserve this.
+Introducing a dependency on a new system tool or library requires explicit justification.
+See **Toolchain and development environment**.
 
 **Dry-run universality** — `--dry-run` is a first-class feature, not an afterthought. Every
 operation that modifies the filesystem must honour the `dry_run` flag. This is a
@@ -59,18 +61,24 @@ code 1.
 
 ## 3. Toolchain and development environment
 
-- **Package manager**: `uv` exclusively. No `pip`, no `poetry`, no direct venv activation or
-  deactivation. All interactions go through `uv` subcommands. `uv pip` must also be avoided.
-- **Running**: `uv run <command>` — e.g. `uv run pytest`, `uv run ruff format .`,
-  `uv run molim`. `uv run` resolves the project virtualenv automatically.
-- **Dependencies**: `uv sync --frozen` installs the locked set from `uv.lock` (committed).
-  `uv add <package>` / `uv add --dev <package>` for adding new dependencies.
-- **Building**: `uv build` produces wheel and sdist in `dist/`.
-- **Python version**: managed by uv from `.python-version` / `requires-python` in
-  `pyproject.toml`. No assumption about system Python.
+The toolchain choice serves the **Self-contained environment** principle: developing molim
+requires `uv` and the three external CLI tools on PATH (`rawtherapee-cli`, `convert`,
+`ffmpeg`) — nothing else on the host.
 
-  The only external prerequisites are the three CLI tools on PATH (`rawtherapee-cli`,
-  `convert`, `ffmpeg`). See the **Self-contained environment** principle.
+`uv` covers the entire Python lifecycle — environment provisioning, dependency management,
+build, and command invocation. A single tool subsumes the roles that would otherwise be
+split among `pip`, `virtualenv`, `poetry`, and others. This is what reduces the Python-side
+host prerequisite to one tool.
+
+**Dependency reproducibility** — the resolved dependency set is pinned in `uv.lock`,
+committed to the repository. Environments provisioned from the lock file are deterministic
+across hosts.
+
+**Python version** — defined by `.python-version` and `requires-python` in `pyproject.toml`.
+`uv` materialises the interpreter on demand; no assumption is made about a system Python.
+
+The build system (`hatchling` + `hatch-vcs`) and release pipeline are described in
+**Build, release, and distribution**.
 
 ---
 

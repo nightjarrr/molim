@@ -99,6 +99,25 @@ Import from the module that owns the concept. Avoid broad dependency reach-throu
 
 ---
 
+## Tooling
+
+Use `uv` for all Python work — environment, dependencies, build, and running project commands. Daily operations:
+
+```bash
+uv run pytest                     # run tests
+uv run ruff format .              # format
+uv run ruff check .               # lint
+uv run pre-commit run --all-files
+uv run molim                      # invoke the CLI
+uv build                          # build wheel + sdist
+```
+
+Provision dependencies with `uv sync --frozen` — installs the pinned set from `uv.lock`. Run after cloning or when `uv.lock` changes. New dependencies are added with `uv add` (runtime) or `uv add --dev` (dev) — see Dependencies for when this is allowed.
+
+Do not use `pip`, `poetry`, or `uv pip`. Do not manually activate or deactivate the project virtualenv.
+
+---
+
 ## Dependencies
 
 Do not add runtime, development, or system dependencies unless the implementation plan explicitly calls for them. If the implementation appears to require a new dependency, escalate to the Project Owner via PM rather than adding it opportunistically.
