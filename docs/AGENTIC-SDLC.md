@@ -476,9 +476,9 @@ On Project Owner approval, PM sets the phase label directly to `phase: impl-done
 
 **Contents of impl-plan.md** — two sections:
 
-*Architecture context.* A filtered architectural view of the parts of the system this feature touches, synthesized from `architecture.md` (the existing system shape), `tech-design.md` (architectural decisions made for this feature, not yet reflected in `architecture.md`), and the current codebase. AA filters and distils — new design choices belong in `tech-design.md`, not here. Proportional to feature complexity: a trivial change may need a sentence or two; a cross-cutting feature may need a substantial section. This section is what allows Coder to execute without reading `architecture.md` directly.
+**Architecture context.** A filtered architectural view of the parts of the system this feature touches, synthesized from `architecture.md` (the existing system shape), `tech-design.md` (architectural decisions made for this feature, not yet reflected in `architecture.md`), and the current codebase. For architecture context section, AA filters and distils — new design choices belong in `tech-design.md`, not here. Proportional to feature complexity: a trivial change may need a sentence or two; a cross-cutting feature may need a substantial section. This section is what allows Coder to execute having the right amount of architecture awareness without reading the full `architecture.md`.
 
-*Work breakdown.*
+**Work breakdown.**
 - Ordered list of implementation steps.
 - For each step: files to create/modify/remove, classes/functions to add/change/remove.
 - Test coverage plan: what new tests are required.
