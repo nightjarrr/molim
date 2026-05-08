@@ -47,12 +47,12 @@ class Stats:
 
     @ensure_not_finished
     def start(self) -> None:
-        self.__startTs = time.time()
+        self.__start_ts = time.time()
 
     @ensure_not_finished
     def finish(self) -> None:
-        self.__endTs = time.time()
-        self.__elapsed = self.__endTs - self.__startTs
+        self.__end_ts = time.time()
+        self.__elapsed = self.__end_ts - self.__start_ts
         self.__finished = True
 
     # Support 'with' usage
@@ -73,12 +73,12 @@ class Stats:
     @property
     @ensure_finished
     def start_timestamp(self) -> float:
-        return self.__startTs
+        return self.__start_ts
 
     @property
     @ensure_finished
     def end_timestamp(self) -> float:
-        return self.__endTs
+        return self.__end_ts
 
     @property
     @ensure_finished
