@@ -80,22 +80,6 @@ Use `pathlib.Path` for all filesystem paths inside application logic. Convert in
 
 ## Module layout
 
-```
-src/molim/
-├── __init__.py       # Entry point: main()
-├── cli.py            # CLI runner and command list
-├── commands.py       # Command base class and argument types
-├── check.py          # Input validation functions
-├── config.py         # Config file reader
-├── processing.py     # Strategy classes for file processing
-├── rename.py         # Rename (suffix) command
-├── shell.py          # Shell execution wrapper
-├── show.py           # User-facing output
-├── stats.py          # Statistics context managers
-├── video.py          # Video processing command
-└── images/           # Image-specific commands and processors
-```
-
 One module per functional area. Image-processing commands go under `images/`. New commands usually get their own module file; closely related command variants may share a module when they share most of their implementation. When adding new functionality, decide first whether it belongs in an existing cross-cutting module (`check`, `processing`, `shell`, `show`) or in a domain-specific command module — do not let `cli.py` or `commands.py` grow into catch-all implementation files.
 
 ---
@@ -193,7 +177,7 @@ The codebase uses nominal typing rather than duck typing. New implementations mu
 
 **Template Method** (`commands.py`) — `Command._execute()` orchestrates the processing pipeline. Subclasses implement the hook methods. Do not override `_execute` unless there is no other way to achieve the required behaviour — see the rule in the Adding a command section.
 
-**Strategy** (`processing.py`) — pluggable behaviours for output path naming, post-processing, file matching, and file skipping. Add new variants by subclassing the appropriate abstract base: `OutputFilePathStrategy`, `PostProcessingStrategy`, `FileMatchStrategy`, `FileSkipStrategy`, `FileProcessor`. Before adding conditionals to an existing method, consider whether the new behaviour should instead be a new strategy, a command subclass, or a mixin. Use composition for pipelines: combine behaviours through `Multi*` strategies rather than hard-coding special cases. `MultiOutputFilePathStrategy` applies strategies sequentially. Do not assume combined strategies are commutative; test the final output path explicitly when composing multiple strategies. Keep concerns separate: output naming belongs in `OutputFilePathStrategy`; moving, deleting, or replacing originals belongs in `PostProcessingStrategy`.
+**Strategy** (`processing.py`) — pluggable behaviours for output path naming, post-processing, file matching, and file skipping. Before adding conditionals to an existing method, consider whether the new behaviour should instead be a new strategy, a command subclass, or a mixin. Use composition for pipelines: combine behaviours through `Multi*` strategies rather than hard-coding special cases. `MultiOutputFilePathStrategy` applies strategies sequentially. Do not assume combined strategies are commutative; test the final output path explicitly when composing multiple strategies. Keep concerns separate: output naming belongs in `OutputFilePathStrategy`; moving, deleting, or replacing originals belongs in `PostProcessingStrategy`.
 
 **Mixin** — injects shared functionality into classes alongside their primary inheritance line. Use a mixin when multiple command classes need the same cross-cutting capability that does not belong in the `Command` base class. Example: `ImageMagickMixin` provides the complete ImageMagick integration — argument parsing, validation, and the `ImageMagickFileProcessor` that runs `convert`. Classes using the mixin are still proper `Command` subclasses; the mixin adds a second axis of behaviour without altering the primary hierarchy.
 
@@ -232,7 +216,7 @@ In application code, use the `show` module for all user-facing output. Never use
 
 `show.set_verbose(args.verbose)` is called once in `cli.py`. Call `show.verbose()` freely; the module manages the gate.
 
-The module also provides lower-level formatting helpers (`human_size`, `elapsed`, `percent`, `ext`, `ellipsis`) and `verbose_args`. Use them when appropriate rather than reimplementing equivalent formatting inline.
+The table above is a quick reference, not an exhaustive list. The module also provides lower-level formatting helpers (`human_size`, `elapsed`, `percent`, `ext`, `ellipsis`) and `verbose_args`. For anything not listed, consult `show.py` directly. If no existing function fits the need, consider whether a new `show.*` function should be added rather than using `print()` or inline formatting.
 
 ---
 

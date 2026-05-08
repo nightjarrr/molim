@@ -50,8 +50,10 @@ implementations. See **Dry-run mode**.
 
 **Fail fast** — invalid state is detected and reported at the earliest possible point.
 External tool availability is verified at processor instantiation, not at first use. Input
-validation is applied at every internal API boundary via the `check` module. Errors propagate
-to the top-level handler; unexpected failures are not silently swallowed.
+validation is applied at every internal API boundary via the `check` module. There are no
+catch-all handlers in commands or processors — errors propagate to the top-level handler in
+`main()`, which maps `KeyboardInterrupt` to exit code 130 and all other exceptions to exit
+code 1.
 
 ---
 
@@ -95,6 +97,8 @@ Source lives under `src/molim/`. Image-specific functionality is grouped in `src
 | `images/resize.py` | `ResizeCommand` — resizes JPEG via ImageMagick `-resize` |
 | `images/rawtherapee.py` | `RawTherapeeCommand` and `RawTherapeeHQCommand` — batch RAW processing via RawTherapee profiles; `RawTherapeeHQCommand` uses higher quality defaults |
 
+`show` is the sole channel for user-facing output. `print()` and the `logging` module are not used in application code.
+
 ---
 
 ## 5. Processing pipeline
@@ -132,7 +136,7 @@ Strategy composition in `Command._execute()`:
 
 `Command` in `commands.py` is the abstract base class. It implements the Template Method
 pattern: `_execute()` is the fixed template that orchestrates every processing run.
-Subclasses implement hook methods; they do not override `_execute()` — this is **Open/Closed** applied to the command pipeline. When overriding is unavoidable, `super()._execute(args)` must be called to augment rather than replace the pipeline. See `conventions.md` for the full override rules.
+Subclasses extend through the hook methods listed below, not by overriding `_execute()` — this is **Open/Closed** applied to the command pipeline.
 
 **Hooks subclasses must implement:**
 
@@ -161,14 +165,9 @@ command-specific arguments appear first in help output. `__call__(args)` delegat
 | `rawtherapee-hq` | `RawTherapeeHQCommand` | `images/rawtherapee.py` | `rawtherapee-cli` |
 | `suffix` | `SuffixCommand` | `rename.py` | — (Python stdlib only) |
 
-**Mixin pattern**: `JpegifyCommand` and `ResizeCommand` inherit
-`(commands.Command, ImageMagickMixin)`. `ImageMagickMixin` encapsulates all ImageMagick
-integration: it adds `--imagemagick-quality` and `--imagemagick-additional` CLI arguments, and
-provides the `ImageMagickFileProcessor` that constructs and runs the `convert` invocation.
-Because `Command` is listed first in the MRO, Python resolves `Command`'s abstract methods
-before the mixin's implementations, so subclasses must explicitly delegate `_add_arguments`
-and `_get_file_processor` to `ImageMagickMixin`. See `conventions.md` for the full mixin
-delegation pattern.
+**Mixin pattern**: ImageMagick integration is supplied as a mixin so `JpegifyCommand` and
+`ResizeCommand` can compose ImageMagick behaviour without altering the primary `Command`
+hierarchy.
 
 ---
 
@@ -256,14 +255,6 @@ tools. It uses the `sh` library.
 - **Dry-run**: `process()` logs the intended invocation and skips `_execute()` when
   `dry_run=True`.
 
-Tool-specific processors:
-
-| Processor | Tool | Argument shape |
-|---|---|---|
-| `FfmpegFileProcessor` | `ffmpeg` | `-y -i <in> -vcodec <codec> -crf <rate> [extra] [-report] <out>` |
-| `ImageMagickFileProcessor` | `convert` | `<in> [-quality N] [extra] <out>` |
-| `RawTherapeeFileProcessor` | `rawtherapee-cli` | `-o <out> -q -d -Y -p <profile.pp3> -j<quality> -js<subsampling> -c <in>` |
-
 **RawTherapee profile resolution** (first match wins):
 1. `--profile-folder` CLI argument
 2. `profile-folder` key in config file
@@ -296,27 +287,15 @@ Profile name: `--profile` CLI argument → config `profile` key → default `mol
 
 ## 12. Tests
 
-- **Approach**: the suite contains both focused unit tests and integration tests that invoke
-  real external tools (`rawtherapee-cli`, `convert`, `ffmpeg`). External tools are not mocked.
-  The three test categories map naturally to this split: input validation and dry-run tests
-  do not invoke external tools; core logic tests do.
+- **Approach**: the suite contains both unit tests and integration tests that invoke real
+  external tools (`rawtherapee-cli`, `convert`, `ffmpeg`). There is no mock layer for
+  external tools; integration tests require the tools to be installed.
 - **Location**: `tests/` at repo root, alongside `src/`.
-- **File naming**: `{module}_test.py` (e.g. `video_test.py`). When a module's tests are
-  large enough to split: `{module}_{aspect}_test.py` (e.g. `processing_files_test.py`,
-  `processing_folders_test.py`).
 - **Shared fixtures and constants**: `tests/common.py`.
-- **Static test data**: `tests/data/{module}/` — sample media files and config files needed
-  by tests that require real inputs.
-- **Temporary filesystem state**: `tmp_path` (function-scoped) and `tmp_path_factory`
-  (module-scoped) pytest fixtures. Temp state must be always cleaned up as a teardown step - no matter if the test passes or fails.
-- **`monkeypatch`**: permitted only for infrastructure concerns where no real tool exists
-  (e.g. stubbing `importlib.metadata.version()` for version detection). Never used to
-  substitute external CLI tools.
-- **Test categories per class**: input validation, dry-run behavior, core logic.
-- **Runner**: pytest with branch coverage (`pytest-cov`); reports uploaded to Codecov in CI.
-- **Coverage requirement**: tests are not optional. Every new class or method requires tests.
-  Every bug fix requires a regression test that validates the corrected behavior and catches
-  future regressions at the test stage.
+- **Static test data**: `tests/data/{module}/` — sample media files and config files for
+  tests that require real inputs.
+- **Runner**: pytest with branch coverage (`pytest-cov`); coverage data uploaded to Codecov
+  in CI.
 
 ---
 
