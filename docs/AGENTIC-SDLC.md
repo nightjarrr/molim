@@ -228,11 +228,25 @@ The skill writes only to `CHANGELOG.md`. The invoking agent (AA) handles the com
 
 - **Purpose:** Run all project quality checks (tests, format, lint) and produce a unified pass/fail report.
 - **Inputs:** None (operates on current working directory of Git branch checkout).
-- **Outputs:** Structured pass/fail report with per-check results and failure details.
+- **Outputs:** `PASS` or `FAIL` per check printed to stdout with progress; path to a JSON result file containing per-check status and full output for all checks.
 - **Permissions required:** `shell:exec`, `fs:read`, `fs:write`.
 - **Invoked by:** Coder, in Phase 5.
+- **Implementation:** Bash script at `scripts/quality-gates.sh`. Not a model-based skill — deterministic, zero LLM cost.
 
 `fs:write` access is required for formatting and linting tools to modify codebase and for tests to store any output artifacts (e.g. coverage report).
+
+**Project artifact required:** `.quality-gates.conf` at repo root. Each non-blank, non-`#` line is one check command, run sequentially. All checks run regardless of failures (run-all). Order matters: place auto-fixers (formatters, `--fix` variants) before pure verifiers so verifiers run on already-fixed code.
+
+**JSON result file format:**
+```json
+{
+  "overall": "PASS",
+  "checks": [
+    { "command": "uv run ruff format .", "status": "PASS", "output": "" },
+    { "command": "uv run pytest", "status": "FAIL", "output": "...full output..." }
+  ]
+}
+```
 
 #### Cut Release
 

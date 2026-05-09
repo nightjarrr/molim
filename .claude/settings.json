@@ -19,6 +19,7 @@
       "Bash(uv run ruff *)",
       "Bash(uv run pre-commit *)",
       "Bash(uv run molim *)",
+      "Bash(scripts/quality-gates.sh)",
       "Skill(new-issue)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:code.claude.com)",
