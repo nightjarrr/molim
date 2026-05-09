@@ -12,7 +12,7 @@ When adding a new skill or reusable capability to an agentic system, one of thre
 
 **Scripted tool** — executable code invoked by the agent, commonly via a Bash command or shell wrapper, but possibly delegating to Python, CLI utilities, or other executables. No model is involved; the skill's behavior depends on explicit inputs, code, and environment state — not on implicit conversation context. Zero LLM cost. The canonical choice when intelligence is not required inside the skill.
 
-**Fork + small model** — a subagent session dispatched with a small model (e.g. Haiku). The subagent operates in an isolated context; only its final output reaches the invoking agent's context. Intermediate reasoning, tool calls, and working state are hidden. The right choice when interpretation or light reasoning is needed but the skill does not require access to the invoking context and cannot interact with the user.
+**Fork + small model** — a subagent session dispatched with a small model (e.g. Haiku). The subagent operates in an isolated context; only its final output reaches the invoking agent's context. Intermediate work, tool calls, and working state are hidden. The right choice when interpretation or light reasoning is needed but the skill does not require access to the invoking context and cannot interact with the user.
 
 **Full-context skill** — logic that runs inline within the invoking agent's session. The skill has full access to the conversation context, can ask clarifying questions, and can make decisions that depend on prior session state. Everything it does is visible in the main context. The right choice when user interaction or context-dependent reasoning is genuinely required — and the cost in context growth is accepted.
 
@@ -37,11 +37,11 @@ If **yes**: is the reasoning self-contained — no access to the invoking contex
 | **LLM cost** | None | Low — small model, isolated session | High — main context tokens consumed on every invocation |
 | **Latency** | Near-zero | One additional model round-trip | Inline — no extra round-trip, but skill steps extend session duration |
 | **Operation determinism** | High — behavior depends on explicit inputs and environment state, not on implicit LLM context | Low — model behavior varies across runs | Low — varies; prior context state also influences which steps are taken |
-| **Output determinism** | High — structured output determined by code and inputs, not model sampling | Low — model-generated content varies in phrasing and detail | Low — varies; shaped by conversation context at invocation time |
+| **Output determinism** | High — structured output determined by code, inputs, and environment state, not model context | Low — model-generated content varies in phrasing and detail | Low — varies; shaped by conversation context at invocation time |
 | **Needs conversation context?** | No | No — context must be explicitly injected into the subagent prompt | Yes — direct access to the full invoking context |
 | **Needs user interaction?** | No | No — produces a result; no back-and-forth possible | Yes — can ask clarifying questions, present options, and iterate |
 | **Needs to reason over results?** | No — output is structured and parseable; no model reasoning required | Yes — subagent reasons over raw results and returns a synthesized output | Yes — inline model intelligence handles reasoning over results |
-| **Context injection on success** | Minimal — stdout and exit code only | Minimal — subagent final output only; intermediate steps are hidden | Full — all tool calls, reasoning, and intermediate results become part of the context |
+| **Context injection on success** | Minimal — stdout and exit code only | Minimal — subagent final output only; intermediate steps are hidden | Full — tool calls, observations, partial outputs, and visible decision artifacts become part of the context |
 | **Context injection on failure** | Minimal — stderr and non-zero exit code | Minimal — subagent output up to failure point; error message | Full — same as success; partial execution state is already in context and cannot be hidden |
 | **Output size control** | Predictable — bounded by script design and tool output | Controllable — subagent output can be constrained by prompt instructions | Unbounded — grows with skill complexity and conversation depth |
 | **Implementation complexity** | Low — standard scripting or tooling; no model or prompt engineering | Moderate — subagent prompt design and output handling required | Low — inline logic; no scaffolding needed |
