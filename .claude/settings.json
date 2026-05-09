@@ -3,6 +3,7 @@
     "skill-creator@claude-plugins-official": true
   },
   "permissions": {
+    "additionalDirectories": ["/tmp"],
     "allow": [
       "Bash(git *)",
       "Bash(gh issue *)",
@@ -20,7 +21,7 @@
       "Bash(uv run pre-commit *)",
       "Bash(uv run molim *)",
       "Bash(scripts/quality-gates.sh)",
-      "Read(/tmp/quality-gates-*)",
+      "Bash(jq *)",
       "Skill(new-issue)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:code.claude.com)",
