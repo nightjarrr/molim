@@ -1,0 +1,74 @@
+# Skill design: choosing the implementation form
+
+When adding a new skill or reusable capability to an agentic system, one of three implementation forms must be chosen. The choice determines cost, determinism, testability, and how much the skill affects the invoking agent's context. This document provides a framework for making that choice consistently.
+
+---
+
+## The three forms
+
+**Bash script** — a shell script invoked as a tool call. No model is involved; the skill runs deterministically and produces structured output (stdout, exit code). Zero LLM cost. The canonical choice when intelligence is not required inside the skill.
+
+**Fork + small model** — a subagent session dispatched with a small model (e.g. Haiku). The subagent operates in an isolated context; only its final output reaches the invoking agent's context. Intermediate reasoning, tool calls, and working state are hidden. The right choice when interpretation or light reasoning is needed but the skill does not require access to the invoking context and cannot interact with the user.
+
+**Full-context skill** — logic that runs inline within the invoking agent's session. The skill has full access to the conversation context, can ask clarifying questions, and can make decisions that depend on prior session state. Everything it does is visible in the main context. The right choice when user interaction or context-dependent reasoning is genuinely required — and the cost in context growth is accepted.
+
+---
+
+## Central diagnostic question
+
+> Is there a genuine use case where intelligence is required **inside** the skill itself?
+
+If **no**: use a Bash script.
+
+If **yes**: does the skill need access to the invoking conversation context, or does it need to interact with the user?
+- If **no**: consider Fork + small model.
+- If **yes**: use a Full-context skill.
+
+---
+
+## Comparison table
+
+| Dimension | Bash script | Fork + small model | Full-context skill |
+|---|---|---|---|
+| **LLM cost** | None | Low — small model, isolated session | High — main context tokens consumed on every invocation |
+| **Latency** | Near-zero | One additional model round-trip | Inline — no extra round-trip, but skill steps extend session duration |
+| **Operation determinism** | High — same input always produces the same behavior | Low — model behavior varies across runs | Low — varies; prior context state also influences behavior |
+| **Output determinism** | High — structured stdout and exit code | Low — model-generated; varies in phrasing and detail | Low — varies; shaped by conversation context at invocation time |
+| **Needs conversation context?** | No | No — context must be explicitly injected into the subagent prompt | Yes — direct access to the full invoking context |
+| **Needs user interaction?** | No | No — produces a result; no back-and-forth possible | Yes — can ask clarifying questions, present options, and iterate |
+| **Needs to interpret output?** | No — output is structured and parseable | Yes — subagent interprets and summarizes; invoker receives the interpretation | Yes — inline model intelligence handles interpretation |
+| **Context injection on success** | Minimal — stdout and exit code only | Minimal — subagent final output only; intermediate steps are hidden | Full — all tool calls, reasoning, and intermediate results visible in context |
+| **Context injection on failure** | Minimal — stderr and non-zero exit code | Minimal — subagent output up to failure point; error message | Full — partial execution state visible in context; may leave context cluttered |
+| **Output size control** | Predictable — bounded by script design and tool output | Controllable — subagent output can be constrained by prompt instructions | Unbounded — grows with skill complexity and conversation depth |
+| **Implementation complexity** | Low — standard scripting; no model or prompt engineering | Moderate — subagent prompt design and output handling required | Low — inline logic; no scaffolding needed |
+| **Maintainability** | High — no model dependency; behavior stable across model updates | Moderate — coupled to subagent prompt and model version | Moderate — behavior can drift with context changes and model updates |
+| **Testability** | High — pure input/output; easily tested in isolation | Moderate — model non-determinism complicates assertion-based tests | Low — tightly coupled to invoking context; hard to isolate and test independently |
+| **Failure mode of the mechanism** | Script error or non-zero exit code — deterministic, easy to handle | Subagent error or model failure — output may be incomplete or absent | Model error, prompt drift, or context overflow — failure state visible in main context |
+
+---
+
+## Decision guidance
+
+### When to choose Bash
+
+Choose Bash whenever the skill can be expressed as a deterministic operation: running checks, reading files, computing values, invoking CLI tools, or producing structured output from fixed inputs. If no interpretation is needed — if the skill would work the same way every time given the same inputs — Bash is almost always the right choice.
+
+Bash skills have the smallest footprint: they inject minimal output into context, have no LLM cost, are fast, and are straightforward to test. Prefer Bash by default and only move to a model-based form when the diagnostic question surfaces a genuine need.
+
+**Watch for:** output verbosity. If the invoked tools produce large stdout, the context injection cost rises. Structure the output and truncate or summarize at the script level if needed.
+
+### When to choose Fork + small model
+
+Choose Fork + small model when interpretation or light reasoning is required inside the skill, but the skill does not need to see the conversation history and does not need to interact with the user. The subagent isolation keeps intermediate work out of the main context and limits token cost to the small model.
+
+This form is well-suited for tasks like: parsing and reformatting unstructured output, generating a short summary or report from raw data, or applying a classification decision to a fixed input.
+
+**Watch for:** the temptation to inject large amounts of context into the subagent prompt to compensate for isolation. If the skill genuinely needs deep access to the invoking context to do its work, that is a signal it should be a Full-context skill instead. Also watch for model non-determinism in downstream consumers — if the skill's output is parsed or acted on programmatically, a Bash script with deterministic output is likely more appropriate.
+
+### When to choose Full-context skill
+
+Choose Full-context only when the skill genuinely requires one or both of: access to the ongoing conversation context, or the ability to interact with the user. These are real requirements for skills that guide a workflow, ask clarifying questions, or make decisions that depend on what has already happened in the session.
+
+The cost is real: every Full-context skill invocation grows the context permanently, including on failure. Intermediate tool calls, reasoning traces, and partial results all become part of the conversation that subsequent steps must read. The skill is also the hardest to test in isolation.
+
+**Watch for:** scope creep. Full-context skills can absorb work that belongs in Bash or Fork. If a portion of the skill is deterministic or interpretive but not truly context-dependent, extract it rather than pulling it into the inline skill. Keep the full-context portion as narrow as possible.
