@@ -6,6 +6,7 @@
 # Stdout:
 #   [N/total] <command>   — before each check
 #   PASS | FAIL           — after each check
+#   ===					  — delimiter between last check result and overall result 
 #   PASS | FAIL           — overall result (final line before Results)
 #   Results: <path>       — path to JSON result file
 #
@@ -15,6 +16,7 @@ set -uo pipefail
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
 CONF="$REPO_ROOT/.quality-gates.conf"
+cd "$REPO_ROOT"
 RESULT_FILE=$(mktemp /tmp/quality-gates-XXXXXX.json)
 
 if [[ ! -f "$CONF" ]]; then
@@ -69,6 +71,7 @@ jq -n \
     --argjson checks "$checks_json" \
     '{"overall": $overall, "checks": $checks}' > "$RESULT_FILE"
 
+echo "==="
 echo "$overall"
 echo "Results: $RESULT_FILE"
 
