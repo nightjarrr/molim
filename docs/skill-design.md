@@ -2,6 +2,10 @@
 
 When adding a new skill or reusable capability to an agentic system, one of three implementation forms must be chosen. The choice determines cost, determinism, testability, and how much the skill affects the invoking agent's context. This document provides a framework for making that choice consistently.
 
+**Terminology note:** "skill" is used here as a synonym for "capability" or "reusable operation" — a general term for any scoped unit of agent functionality. It does not strictly refer to the "Agent Skill" concept as defined at agentskills.io or any other specific platform standard.
+
+**Platform note:** the Fork + small model form described below relies on subagent dispatch — a capability specific to the Claude harness (Claude Code / Claude API with the Agent tool). Other agentic platforms may not support this form or may implement it differently. The Bash and Full-context forms are broadly applicable across platforms.
+
 ---
 
 ## The three forms
@@ -20,9 +24,9 @@ When adding a new skill or reusable capability to an agentic system, one of thre
 
 If **no**: use a Bash script.
 
-If **yes**: does the skill need access to the invoking conversation context, or does it need to interact with the user?
-- If **no**: consider Fork + small model.
-- If **yes**: use a Full-context skill.
+If **yes**: is the reasoning self-contained — no access to the invoking context needed, no user interaction needed?
+- If **yes**: consider Fork + small model — the subagent can reason in isolation and return only its result.
+- If **no**: use a Full-context skill.
 
 ---
 
@@ -32,13 +36,13 @@ If **yes**: does the skill need access to the invoking conversation context, or 
 |---|---|---|---|
 | **LLM cost** | None | Low — small model, isolated session | High — main context tokens consumed on every invocation |
 | **Latency** | Near-zero | One additional model round-trip | Inline — no extra round-trip, but skill steps extend session duration |
-| **Operation determinism** | High — same input always produces the same behavior | Low — model behavior varies across runs | Low — varies; prior context state also influences behavior |
-| **Output determinism** | High — structured stdout and exit code | Low — model-generated; varies in phrasing and detail | Low — varies; shaped by conversation context at invocation time |
+| **Operation determinism** | High — same input always produces the same execution path | Low — model behavior varies across runs | Low — varies; prior context state also influences which steps are taken |
+| **Output determinism** | High — structured stdout and exit code; identical given the same input | Low — model-generated content varies in phrasing and detail | Low — varies; shaped by conversation context at invocation time |
 | **Needs conversation context?** | No | No — context must be explicitly injected into the subagent prompt | Yes — direct access to the full invoking context |
 | **Needs user interaction?** | No | No — produces a result; no back-and-forth possible | Yes — can ask clarifying questions, present options, and iterate |
-| **Needs to interpret output?** | No — output is structured and parseable | Yes — subagent interprets and summarizes; invoker receives the interpretation | Yes — inline model intelligence handles interpretation |
-| **Context injection on success** | Minimal — stdout and exit code only | Minimal — subagent final output only; intermediate steps are hidden | Full — all tool calls, reasoning, and intermediate results visible in context |
-| **Context injection on failure** | Minimal — stderr and non-zero exit code | Minimal — subagent output up to failure point; error message | Full — partial execution state visible in context; may leave context cluttered |
+| **Needs to reason over results?** | No — output is structured and parseable; no model reasoning required | Yes — subagent reasons over raw results and returns a synthesized output | Yes — inline model intelligence handles reasoning over results |
+| **Context injection on success** | Minimal — stdout and exit code only | Minimal — subagent final output only; intermediate steps are hidden | Full — all tool calls, reasoning, and intermediate results become part of the context |
+| **Context injection on failure** | Minimal — stderr and non-zero exit code | Minimal — subagent output up to failure point; error message | Full — same as success; partial execution state is already in context and cannot be hidden |
 | **Output size control** | Predictable — bounded by script design and tool output | Controllable — subagent output can be constrained by prompt instructions | Unbounded — grows with skill complexity and conversation depth |
 | **Implementation complexity** | Low — standard scripting; no model or prompt engineering | Moderate — subagent prompt design and output handling required | Low — inline logic; no scaffolding needed |
 | **Maintainability** | High — no model dependency; behavior stable across model updates | Moderate — coupled to subagent prompt and model version | Moderate — behavior can drift with context changes and model updates |
