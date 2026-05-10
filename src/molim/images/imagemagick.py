@@ -51,7 +51,7 @@ class ImageMagickFileProcessor(shell.ShellCommandFileProcessor):
         *imagemagick_args: str,  # All args except for input and output file.
         output_strategy: processing.OutputFilePathStrategy,
         post_processor: processing.PostProcessingStrategy,
-    ):
+    ) -> None:
         super().__init__(
             "ImageMagick",
             "convert",

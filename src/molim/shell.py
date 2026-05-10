@@ -8,7 +8,7 @@ from . import check, processing, show
 class ShellCommandNotFoundError(Exception):
     MESSAGE = "Could not run '{cmdline}' command. Check whether {name} is installed on your system and is available on PATH."
 
-    def __init__(self, cmdline: str, name: str):
+    def __init__(self, cmdline: str, name: str) -> None:
         self.message = ShellCommandNotFoundError.MESSAGE.format(cmdline=cmdline, name=name)
         super().__init__(self.message)
 
@@ -16,7 +16,7 @@ class ShellCommandNotFoundError(Exception):
 class ShellCommandRuntimeError(Exception):
     MESSAGE = "An error occurred during {name} execution. Exit code: {exit_code}. Command line: '{args}'"
 
-    def __init__(self, name: str, e: sh.ErrorReturnCode):
+    def __init__(self, name: str, e: sh.ErrorReturnCode) -> None:
         self.message = ShellCommandRuntimeError.MESSAGE.format(name=name, exit_code=e.exit_code, args=e.full_cmd)
         super().__init__(self.message)
 
@@ -29,7 +29,7 @@ class ShellCommandFileProcessor(processing.FileProcessor):
         *command_args: str,  # All args except for input and output file.
         output_strategy: processing.OutputFilePathStrategy,
         post_processor: processing.PostProcessingStrategy,
-    ):
+    ) -> None:
         super().__init__(output_strategy, post_processor)
         check.ensure_not_none(command_args)
         for a in command_args:

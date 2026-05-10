@@ -108,7 +108,7 @@ class ResizeCommand(commands.Command, ImageMagickMixin):
         return processing.NoFileSkipStrategy()
 
     @property
-    def name(self):
+    def name(self) -> str:
         return "resize"
 
     @property

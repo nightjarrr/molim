@@ -40,7 +40,7 @@ class SuffixCommand(commands.Command):
         return processing.BySuffixFileSkipStrategy(args.SUFFIX)
 
     @property
-    def _show_size(self):
+    def _show_size(self) -> bool:
         return False
 
     @property
@@ -57,7 +57,7 @@ class RenameFileProcessor(processing.FileProcessor):
         self,
         output_strategy: processing.OutputFilePathStrategy,
         post_processor: processing.PostProcessingStrategy,
-    ):
+    ) -> None:
         super().__init__(output_strategy, post_processor)
 
     def _prepare_execution(self, file_path: pathlib.Path, output_file_path: pathlib.Path) -> None:

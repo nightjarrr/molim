@@ -8,7 +8,7 @@ from .images import jpegify, rawtherapee, resize
 UNKNOWN_VERSION = "0.0.0-unknown"
 
 
-def __version():
+def __version() -> str:
     try:
         return version("molim")
     except PackageNotFoundError:

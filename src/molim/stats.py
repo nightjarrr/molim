@@ -1,5 +1,6 @@
 import pathlib
 import time
+from collections.abc import Callable
 
 from . import check, show
 
@@ -7,7 +8,7 @@ from . import check, show
 class StatsNotFinishedError(Exception):
     DEFAULT_MESSAGE = "Statistics results should not be accessed before gathering is finished yet."
 
-    def __init__(self, message=DEFAULT_MESSAGE):
+    def __init__(self, message: str = DEFAULT_MESSAGE) -> None:
         self.message = message
         super().__init__(self.message)
 
@@ -15,13 +16,13 @@ class StatsNotFinishedError(Exception):
 class StatsAlreadyFinishedError(Exception):
     DEFAULT_MESSAGE = "Statistics gathering is already finished, cannot finish again."
 
-    def __init__(self, message=DEFAULT_MESSAGE):
+    def __init__(self, message: str = DEFAULT_MESSAGE) -> None:
         self.message = message
         super().__init__(self.message)
 
 
-def ensure_finished(method):
-    def wrapper(self, *args, **kwargs):
+def ensure_finished(method: Callable) -> Callable:
+    def wrapper(self: object, *args: object, **kwargs: object) -> object:
         if not self.finished:
             raise StatsNotFinishedError()
         return method(self, *args, **kwargs)
@@ -29,8 +30,8 @@ def ensure_finished(method):
     return wrapper
 
 
-def ensure_not_finished(method):
-    def wrapper(self, *args, **kwargs):
+def ensure_not_finished(method: Callable) -> Callable:
+    def wrapper(self: object, *args: object, **kwargs: object) -> object:
         if self.finished:
             raise StatsAlreadyFinishedError()
         return method(self, *args, **kwargs)
@@ -39,7 +40,7 @@ def ensure_not_finished(method):
 
 
 class Stats:
-    def __init__(self):
+    def __init__(self) -> None:
         self.__start_ts = None
         self.__end_ts = None
         self.__elapsed = None
@@ -57,11 +58,16 @@ class Stats:
 
     # Support 'with' usage
 
-    def __enter__(self):
+    def __enter__(self) -> "Stats":
         self.start()
         return self
 
-    def __exit__(self, exception_type, exception_value, exception_traceback):
+    def __exit__(
+        self,
+        exception_type: type[BaseException] | None,
+        exception_value: BaseException | None,
+        exception_traceback: object,
+    ) -> None:
         self.finish()
 
     # Properties
@@ -89,13 +95,13 @@ class Stats:
 class FileStatsAlreadyHaveProcessedFileError(Exception):
     DEFAULT_MESSAGE = "The processed file was already provided."
 
-    def __init__(self, message=DEFAULT_MESSAGE):
+    def __init__(self, message: str = DEFAULT_MESSAGE) -> None:
         self.message = message
         super().__init__(self.message)
 
 
 class FileStats(Stats):
-    def __init__(self, original_file: pathlib.Path):
+    def __init__(self, original_file: pathlib.Path) -> None:
         super().__init__()
         check.ensure_file(original_file)
         self.__original_file = original_file
@@ -105,7 +111,7 @@ class FileStats(Stats):
         self.__delta_size = None
 
     @ensure_not_finished
-    def set_processed_file(self, processed_file: pathlib.Path, processed_file_size: int = None):
+    def set_processed_file(self, processed_file: pathlib.Path, processed_file_size: int | None = None):
         if self.__processed_file:
             raise FileStatsAlreadyHaveProcessedFileError()
         if processed_file_size is not None:
@@ -115,7 +121,7 @@ class FileStats(Stats):
             self.__processed_file_size = processed_file.stat().st_size
         self.__processed_file = processed_file
 
-    def finish(self):
+    def finish(self) -> None:
         super().finish()
         if self.__processed_file_size is not None:
             self.__delta_size = self.__original_file_size - self.__processed_file_size
@@ -149,7 +155,7 @@ class FileStats(Stats):
 
     # __repr__
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.finished:
             return (
                 f"<FileStats(original_file={self.original_file}, "
@@ -164,7 +170,7 @@ class FileStats(Stats):
 
 
 class FolderStats(Stats):
-    def __init__(self, folder_path: pathlib.Path):
+    def __init__(self, folder_path: pathlib.Path) -> None:
         super().__init__()
         check.ensure_folder(folder_path)
         self.__folder_path = folder_path
@@ -220,7 +226,7 @@ class FolderStats(Stats):
 
     # __repr__
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.finished:
             return (
                 f"<FolderStats(folder_path={self.folder_path}, "
