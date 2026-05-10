@@ -72,6 +72,7 @@ When uncertain, prefer dialog over silent assumptions — see Section 10 (Commun
 - **Global objects are harmful.** Singletons, public static instances, and god objects produce tightly-coupled, non-testable code. Prefer dependency injection, locally-scoped instances, and a single composition root.
 - **YAGNI.** Do not design for hypothetical future requirements. The impl-plan defines the scope; stay inside it.
 - **Feature implementation and wide refactoring don't mix.** If implementing a feature causes wide refactoring, stop and rethink. Track refactoring as tech debt separately. Prefer targeted, tactical changes; surface suggestions under **Additional findings**.
+- **Security at every boundary.** Validate inputs, avoid injection risks (SQL, shell, path traversal), never hardcode or log secrets, and respect auth boundaries. Apply to the degree the task warrants — don't add speculative security for scenarios outside the impl-plan's scope.
 - **Error handling at real boundaries only.** Validate at system edges (user input, external APIs). Do not add try/catch for conditions the framework or your own code guarantees cannot occur.
 - **Testable code without monkey-patching.** Well-designed code is unit-testable by design. Monkey-patching in tests signals a design problem — treat as exceptional, justify thoroughly.
 - **Tests are first-class code.** Clear names, no duplication, no fragile assertions.
