@@ -1,3 +1,9 @@
 {
-    "autoMemoryDirectory": "/workspace/.claude/memory"
+    "autoMemoryDirectory": "/workspace/.claude/memory",
+    "permissions": {
+        "allow": [
+            "Bash(node scripts/add-changelog-entry.mjs *)",
+            "Bash(scripts/add-changelog-entry.mjs *)"
+        ]
+    }
 }

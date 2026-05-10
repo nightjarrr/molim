@@ -231,7 +231,6 @@ The skill writes only to `CHANGELOG.md`. The invoking agent (AA) handles the com
 - **Outputs:** `PASS` or `FAIL` per check printed to stdout with progress; path to a JSON result file containing per-check status and full output for all checks.
 - **Permissions required:** `shell:exec`, `fs:read`, `fs:write`.
 - **Invoked by:** Coder, in Phase 5.
-- **Implementation:** Bash script at `scripts/quality-gates.sh`. Not a model-based skill — deterministic, zero LLM cost.
 
 `fs:write` access is required for formatting and linting tools to modify codebase and for tests to store any output artifacts (e.g. coverage report).
 
