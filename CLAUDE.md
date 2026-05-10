@@ -92,7 +92,7 @@ Dispatch the `@coder` subagent with: issue id, issue title, issue type, path to 
 
 ### 6. Post outcome
 
-Immediately after Coder terminates — before asking the user anything — post Coder's verbatim structured final response as a comment to the issue:
+Immediately after Coder terminates — before asking the user anything — post Coder's verbatim (no rewording, no reformatting, no condensing) structured final response as a comment to the issue:
 
 ```bash
 gh issue comment {issue-id} --body "..."
@@ -102,11 +102,11 @@ gh issue comment {issue-id} --body "..."
 
 ### 7. Review
 
-Surface the verbatim structured final response to the user and ask for approval or rejection.
+Surface full structured final response to the user verbatim — no rewording, no reformatting, no condensing. Ask the user for approval or rejection of Coder's work outome.
 
 ### 8. Iterate
 
-If the user does not approve, write a **delta plan** — a new file (e.g. `impl-plan-v2.md`) scoped only to what needs to change from what Coder already implemented. The issue comment thread (plan/outcome pairs) is the baseline; do not restate work that was done correctly. Post the delta plan as a comment (step 4), then dispatch Coder with the new plan file (step 5). Each iteration produces its own plan/outcome comment pair on the issue.
+If the user does not approve, start over from step 3. Enter plan mode and write a **delta plan** — a new file (e.g. `impl-plan-v2.md`) scoped only to what needs to change from what Coder already implemented. The issue comment thread (plan/outcome pairs) is the baseline; do not restate work that was done correctly. Post the delta plan as a comment (step 4), then dispatch Coder with the delta plan file (step 5), and so on. Each iteration produces its own plan/outcome comment pair on the issue.
 
 Once the user approves, proceed to step 9.
 
