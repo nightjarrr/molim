@@ -8,7 +8,7 @@ from . import check, show
 class StatsNotFinishedError(Exception):
     DEFAULT_MESSAGE = "Statistics results should not be accessed before gathering is finished yet."
 
-    def __init__(self, message=DEFAULT_MESSAGE):
+    def __init__(self, message: str = DEFAULT_MESSAGE) -> None:
         self.message = message
         super().__init__(self.message)
 
@@ -16,13 +16,13 @@ class StatsNotFinishedError(Exception):
 class StatsAlreadyFinishedError(Exception):
     DEFAULT_MESSAGE = "Statistics gathering is already finished, cannot finish again."
 
-    def __init__(self, message=DEFAULT_MESSAGE):
+    def __init__(self, message: str = DEFAULT_MESSAGE) -> None:
         self.message = message
         super().__init__(self.message)
 
 
 def ensure_finished(method: Callable) -> Callable:
-    def wrapper(self, *args, **kwargs):
+    def wrapper(self: object, *args: object, **kwargs: object) -> object:
         if not self.finished:
             raise StatsNotFinishedError()
         return method(self, *args, **kwargs)
@@ -31,7 +31,7 @@ def ensure_finished(method: Callable) -> Callable:
 
 
 def ensure_not_finished(method: Callable) -> Callable:
-    def wrapper(self, *args, **kwargs):
+    def wrapper(self: object, *args: object, **kwargs: object) -> object:
         if self.finished:
             raise StatsAlreadyFinishedError()
         return method(self, *args, **kwargs)
@@ -40,7 +40,7 @@ def ensure_not_finished(method: Callable) -> Callable:
 
 
 class Stats:
-    def __init__(self):
+    def __init__(self) -> None:
         self.__start_ts = None
         self.__end_ts = None
         self.__elapsed = None
@@ -95,13 +95,13 @@ class Stats:
 class FileStatsAlreadyHaveProcessedFileError(Exception):
     DEFAULT_MESSAGE = "The processed file was already provided."
 
-    def __init__(self, message=DEFAULT_MESSAGE):
+    def __init__(self, message: str = DEFAULT_MESSAGE) -> None:
         self.message = message
         super().__init__(self.message)
 
 
 class FileStats(Stats):
-    def __init__(self, original_file: pathlib.Path):
+    def __init__(self, original_file: pathlib.Path) -> None:
         super().__init__()
         check.ensure_file(original_file)
         self.__original_file = original_file
@@ -170,7 +170,7 @@ class FileStats(Stats):
 
 
 class FolderStats(Stats):
-    def __init__(self, folder_path: pathlib.Path):
+    def __init__(self, folder_path: pathlib.Path) -> None:
         super().__init__()
         check.ensure_folder(folder_path)
         self.__folder_path = folder_path

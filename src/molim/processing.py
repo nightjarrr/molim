@@ -9,7 +9,7 @@ class OutputFilePathStrategy:
 
 
 class SuffixOutputFilePathStrategy(OutputFilePathStrategy):
-    def __init__(self, suffix: str):
+    def __init__(self, suffix: str) -> None:
         check.ensure_str_startswith(suffix, ".")
         self.__suffix = suffix
         show.normal(f"Processed files will get suffix '{suffix}'.")
@@ -21,7 +21,7 @@ class SuffixOutputFilePathStrategy(OutputFilePathStrategy):
 
 
 class ChangeExtOutputFilePathStrategy(OutputFilePathStrategy):
-    def __init__(self, ext: str):
+    def __init__(self, ext: str) -> None:
         check.ensure_str_startswith(ext, ".")
         self.__ext = ext
         show.normal(f"Processed files will have extension '{ext}'.")
@@ -36,7 +36,7 @@ class FolderOutputFilePathStrategy(OutputFilePathStrategy):
     Output strategy to put processed files into a different folder, not into the original folder.
     """
 
-    def __init__(self, target_folder: pathlib.Path, dry_run: bool):
+    def __init__(self, target_folder: pathlib.Path, dry_run: bool) -> None:
         check.ensure_path(target_folder)
         if target_folder.exists():
             check.ensure_folder(target_folder)
@@ -53,7 +53,7 @@ class FolderOutputFilePathStrategy(OutputFilePathStrategy):
 
 
 class MultiOutputFilePathStrategy(OutputFilePathStrategy):
-    def __init__(self, output_strategies: list[OutputFilePathStrategy]):
+    def __init__(self, output_strategies: list[OutputFilePathStrategy]) -> None:
         check.ensure_list_non_empty(output_strategies)
         self.__output_strategies = output_strategies
 
@@ -76,7 +76,7 @@ class NoopPostProcessingStrategy(PostProcessingStrategy):
 
 
 class MoveOriginalPostProcessingStrategy(PostProcessingStrategy):
-    def __init__(self, move_to: pathlib.Path, dry_run: bool):
+    def __init__(self, move_to: pathlib.Path, dry_run: bool) -> None:
         check.ensure_path(move_to)
         if move_to.exists():
             check.ensure_folder(move_to)
@@ -98,7 +98,7 @@ class MoveOriginalPostProcessingStrategy(PostProcessingStrategy):
 
 
 class DeleteOriginalPostProcessingStrategy(PostProcessingStrategy):
-    def __init__(self):
+    def __init__(self) -> None:
         show.normal("Original files will be deleted.")
 
     def process(self, input_filepath: pathlib.Path, output_filepath: pathlib.Path, dry_run: bool) -> None:
@@ -117,7 +117,7 @@ class ReplaceOriginalPostProcessignStrategy(PostProcessingStrategy):
     delete it or move to another location, or anything else.
     """
 
-    def __init__(self, originals_post_processor: PostProcessingStrategy):
+    def __init__(self, originals_post_processor: PostProcessingStrategy) -> None:
         check.ensure_type(originals_post_processor, PostProcessingStrategy)
         self.__originals_post_processor = originals_post_processor
         show.normal("Processed files will be renamed to the original file name.")
@@ -138,7 +138,7 @@ class FileProcessor:
         self,
         output_strategy: OutputFilePathStrategy,
         post_processor: PostProcessingStrategy,
-    ):
+    ) -> None:
         check.ensure_type(output_strategy, OutputFilePathStrategy)
         check.ensure_type(post_processor, PostProcessingStrategy)
         self.__output_strategy = output_strategy
@@ -183,7 +183,7 @@ class AnyFileMatchStrategy(FileMatchStrategy):
 
 
 class ByExtensionFileMatchStrategy(FileMatchStrategy):
-    def __init__(self, ext: str):
+    def __init__(self, ext: str) -> None:
         check.ensure_type(ext, str)
         ext_list = ext.split(",")
         for e in ext_list:
@@ -210,7 +210,7 @@ class NoFileSkipStrategy(FileSkipStrategy):
 
 
 class BySuffixFileSkipStrategy(FileSkipStrategy):
-    def __init__(self, suffix: str):
+    def __init__(self, suffix: str) -> None:
         check.ensure_str_startswith(suffix, ".")
         self.__suffix = suffix
 
@@ -223,7 +223,7 @@ class BySuffixFileSkipStrategy(FileSkipStrategy):
 
 
 class BySizeFileSkipStrategy(FileSkipStrategy):
-    def __init__(self, less_than: int):
+    def __init__(self, less_than: int) -> None:
         check.ensure_int_positive(less_than)
         self.__less_than = less_than
 
@@ -239,7 +239,7 @@ class BySizeFileSkipStrategy(FileSkipStrategy):
 
 
 class GlobFileSkipStrategy(FileSkipStrategy):
-    def __init__(self, glob_pattern: str):
+    def __init__(self, glob_pattern: str) -> None:
         check.ensure_type(glob_pattern, str)
         self.__glob_pattern = glob_pattern
 
@@ -252,7 +252,7 @@ class GlobFileSkipStrategy(FileSkipStrategy):
 
 
 class MultiFileSkipStrategy(FileSkipStrategy):
-    def __init__(self, skip_strategies: list[FileSkipStrategy]):
+    def __init__(self, skip_strategies: list[FileSkipStrategy]) -> None:
         check.ensure_type(skip_strategies, list)
         self.__skip_strategies = skip_strategies
 
@@ -271,7 +271,7 @@ class FolderProcessor:
         file_matcher: FileMatchStrategy,
         file_skiper: FileSkipStrategy,
         file_processor: FileProcessor,
-    ):
+    ) -> None:
         check.ensure_folder(folder_path)
         check.ensure_type(file_matcher, FileMatchStrategy)
         check.ensure_type(file_skiper, FileSkipStrategy)

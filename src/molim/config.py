@@ -28,7 +28,7 @@ def load(config_path_str: str | None = None, section: str | None = None) -> "Con
 class ConfigReader:
     GLOBAL_SECTION = "global"
 
-    def __init__(self, document: tomlkit.toml_document.TOMLDocument, section: str):
+    def __init__(self, document: tomlkit.toml_document.TOMLDocument, section: str) -> None:
         check.ensure_type_or_none(document, tomlkit.toml_document.TOMLDocument)
         check.ensure_type_or_none(section, str)
         self.__doc = document

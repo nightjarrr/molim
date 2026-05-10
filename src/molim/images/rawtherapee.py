@@ -162,7 +162,7 @@ class RawTherapeeFileProcessor(shell.ShellCommandFileProcessor):
         jpeg_subsampling: int,
         output_strategy: processing.OutputFilePathStrategy,
         post_processor: processing.PostProcessingStrategy,
-    ):
+    ) -> None:
         check.ensure_file(profile_path)
         check.ensure_int_between(jpeg_quality, 1, 100)
         check.ensure_int_between(jpeg_subsampling, 1, 3)
