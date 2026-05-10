@@ -84,25 +84,31 @@ Post the approved plan as a comment to the issue:
 gh issue comment {issue-id} --body-file {path-to-plan-file}
 ```
 
+**Do not proceed to step 5 until the comment has been posted.**
+
 ### 5. Implement
 
 Dispatch the `@coder` subagent with: issue id, issue title, issue type, path to the plan file (instruct Coder to treat it as `impl-plan.md`), and any additional context or instructions from the conversation.
 
-### 6. Review
+### 6. Post outcome
 
-After Coder terminates, surface the verbatim structured final response to the user and ask for review and approval.
-
-### 7. Post outcome
-
-On user approval, post Coder's structured final response as a comment to the issue:
+Immediately after Coder terminates — before asking the user anything — post Coder's verbatim structured final response as a comment to the issue:
 
 ```bash
 gh issue comment {issue-id} --body "..."
 ```
 
+**Do not proceed to step 7 until the comment has been posted.**
+
+### 7. Review
+
+Surface the verbatim structured final response to the user and ask for approval or rejection.
+
 ### 8. Iterate
 
-If the user does not approve, amend the plan and repeat from step 3. Once the user approves, proceed to step 9.
+If the user does not approve, write a **delta plan** — a new file (e.g. `impl-plan-v2.md`) scoped only to what needs to change from what Coder already implemented. The issue comment thread (plan/outcome pairs) is the baseline; do not restate work that was done correctly. Post the delta plan as a comment (step 4), then dispatch Coder with the new plan file (step 5). Each iteration produces its own plan/outcome comment pair on the issue.
+
+Once the user approves, proceed to step 9.
 
 ### 9. Open PR
 
