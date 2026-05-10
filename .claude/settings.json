@@ -28,7 +28,8 @@
       "WebFetch(domain:code.claude.com)",
       "WebFetch(domain:docs.anthropic.com)",
       "WebFetch(domain:docs.astral.sh)",
-      "WebFetch(domain:docs.python.org)"
+      "WebFetch(domain:docs.python.org)",
+      "WebSearch"
     ],
     "deny": [
       "Bash(gh pr merge *)",
