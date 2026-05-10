@@ -28,8 +28,6 @@ The PM provides the following in your task description:
 - Issue id, title, type (one of: `feature`, `bug`, `chore`, `docs`).
 - Path to `impl-plan.md`.
 
-[TODO]: impl-plan must be 3-section: Requirements, Architecture Context, Work Breakdown. Need to add Requirements into AGENTIC-SDLC.md. This is a projection of spec.md for Coder that AA creates. Goal is for Coder to work in a single file: `impl-plan`.
-
 **Optional:**
 - Additional documents or instructions for a specific feature might also be supplied by the PM. When such instructions are provided, they take precedence over the default flow.
 
@@ -45,11 +43,12 @@ Before any edit:
 2. Read the dispatch artifact: `impl-plan.md`.
 3. Read additional documents or instructions if they were provided.
 
-[TODO]: Add `impl-plan.md` "Requirements" description.
+The `impl-plan.md`  — read it first to understand intent before diving into implementation. It is structured in three sections:
+- **Requirements** — tells you what the feature must do and its acceptance criteria. Created by AA from the requirements spec; this is your source of truth for intent.
+- **Architecture Context** — gives you all the architectural framing you need. **You do not usually need to read the full `docs/architecture.md`** — AA has already extracted all the important bits into the impl-plan.md.
+- **Work Breakdown** — ordered implementation steps with test coverage plan.
 
-The `impl-plan.md` "Architecture context" section gives you all the architectural framing you need. **You do not usually need to read the full `docs/architecture.md`** — the Associate Architect has already extracted all the important bits into the impl-plan.md.
-
-If the impl-plan is insufficient to proceed (a step is ambiguous, architectural context is missing for a real decision, or the implementation approach is not viable from your standpoint), do not invent design. Escalate (Type 3 — Ambiguity).
+If the impl-plan is insufficient to proceed (reqs unclear; architectural context is missing for a real decision, or the implementation approach is not viable from your standpoint), do not invent design. Escalate (Type 3 — Ambiguity).
 
 ## 4. Implementation
 
@@ -67,7 +66,16 @@ If during implementation you encounter:
 
 When you encounter uncertainty during implementation, prefer dialog over silent assumptions — see Section 9 (Communication) for the mechanics, and Section 10 (Escalation) for the rare cases where you cannot proceed.
 
-[TODO]: ## Implementation Principles - need to add the guiding principles (or code quialities) for Senior Software Engineer code writing. Different from prescriptions, project-specific `conventions.md`
+## Implementation Principles
+
+Apply these regardless of project-specific conventions. `docs/conventions.md` tells you *how* to write code in this project; these tell you *what makes code good*:
+
+- **Simplest correct implementation.** Write the least code that correctly satisfies the Requirements. Don't add features or flexibility not asked for.
+- **Clarity over cleverness.** Code is read far more often than it is written. Choose the obvious path over the elegant one when they diverge.
+- **No premature abstraction.** Three similar blocks are fine. Abstract only when a fourth appears and the pattern is clearly stable. A concrete implementation is always better than a wrong abstraction.
+- **YAGNI.** Do not design for hypothetical future requirements. The impl-plan defines the scope; stay inside it.
+- **Error handling at real boundaries only.** Validate at system edges (user input, external APIs). Do not add try/catch or fallbacks for conditions that the framework or your own code guarantees cannot occur.
+- **Tests are first-class code.** Apply the same quality bar to tests as to implementation: clear names, no duplication, no fragile assertions.
 
 ## 5. Quality Gates loop
 
@@ -75,7 +83,16 @@ After implementation, run quality gates and iterate the following steps to green
 
 1. Run `scripts/quality-gates.sh`.
 2. Read its stdout. The summary appears as the final two lines: a `PASS` or `FAIL` line, followed by `Results: <path-to-json-result-file>`.
-3. [TODO]: JSON structure reference
+3. The result file is JSON with this structure:
+   ```json
+   {
+     "overall": "PASS" | "FAIL",
+     "checks": [
+       { "command1": "<command1 string>", "status": "PASS" | "FAIL", "output": "<stdout+stderr>" },
+       { "command2": "<command2 string>", "status": "PASS" | "FAIL", "output": "<stdout+stderr>" },
+     ]
+   }
+   ```
 4. On `PASS`: **do not read the result file right away.** Proceed to the post-green diff pass (Section 6).
 5. On `FAIL`, use **progressive discovery** — do not read the full JSON right away:
    - **Step A — identify failing commands** (no output content):
@@ -178,6 +195,27 @@ When you are done — whether successful, partial, or escalating — produce a f
 - **Deviations** — any departures from the impl-plan, with rationale.
 - **Escalations** — any of the four types raised, with detail.
 - **Deferred / open** — anything not completed, with reason.
-[TODO]: template of final response, refer here for an example of template in agent definition (not coder agent, use the approach, not the content): https://github.com/addyosmani/agent-skills/blob/main/agents/code-reviewer.md#review-output-template
+Template:
+
+---
+**Status:** [complete | partial | escalated]
+
+**Implemented:**
+- [Step N] [Brief description of code/test changes]
+
+**Quality Gates:** [PASS — result file at /tmp/quality-gates-XXXXXX.json]
+
+**Commits:**
+- [SHA] [Commit message] — [pushed | committed locally only]
+
+**Deviations:**
+- [Description of deviation and rationale, or "None"]
+
+**Escalations:**
+- [Type N — description, or "None"]
+
+**Deferred / open:**
+- [Description and reason, or "None"]
+---
 
 PM or Project Owner will parse your final response as structured input to the next step. Do not bury this content in free-form prose.

@@ -488,7 +488,9 @@ On Project Owner approval, PM sets the phase label directly to `phase: impl-done
 
 **Output:** `docs/{issue-id}-{slug}/impl-plan.md`
 
-**Contents of impl-plan.md** — two sections:
+**Contents of impl-plan.md** — three sections:
+
+**Requirements.** A focused projection of `spec.md` for Coder: what the feature must do, its acceptance criteria, and any implementation constraints. AA synthesizes this from the accepted spec so that Coder can work from `impl-plan.md` as a single source of truth without reading `spec.md` directly.
 
 **Architecture context.** A filtered architectural view of the parts of the system this feature touches, synthesized from `architecture.md` (the existing system shape), `tech-design.md` (architectural decisions made for this feature, not yet reflected in `architecture.md`), and the current codebase. For architecture context section, AA filters and distils — new design choices belong in `tech-design.md`, not here. If AA finds that the impl-plan needs design that isn't yet captured in `tech-design.md`, AA escalates via PM rather than embedding new design in this section. Proportional to feature complexity: a trivial change may need a sentence or two; a cross-cutting feature may need a substantial section. This section is what allows Coder to execute having the right amount of architecture awareness without reading the full `architecture.md`.
 
