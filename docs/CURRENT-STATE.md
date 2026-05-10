@@ -219,9 +219,12 @@ Policy clarification:
 * Clones repo into `/workspace`.
 * Resolves linked GitHub issue branch via GraphQL `linkedBranches(first: 2)`.
 * Initializes `~/.claude.json` from template using `CLAUDE_CODE_VERSION`.
+* Writes `~/.claude/settings.json` from `/etc/claude-dev/settings.json.template`; sets `autoMemoryDirectory` to `/workspace/.claude/memory`.
 * Runs project bootstrap currently via `uv sync --frozen`.
 * Runs CMD (`claude` by default), then drops to interactive bash.
 * On exit, prints git status and commits ahead of upstream/main.
+
+`.claude/memory/` is the in-repo auto memory directory. Memory files are committed to the current feature branch and merged to `main` via the normal PR lifecycle — the same lifecycle as subagent memory (`agent-memory/`).
 
 ---
 

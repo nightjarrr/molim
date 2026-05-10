@@ -132,6 +132,7 @@ RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 # Source of truth for CLAUDE_CODE_VERSION is the ENV declaration above.
 # ----------------------------------------------------------------------
 COPY .devcontainer/claude-dev/.claude.json.template /etc/claude-dev/.claude.json.template
+COPY .devcontainer/claude-dev/settings.json.template /etc/claude-dev/settings.json.template
 
 # ----------------------------------------------------------------------
 # Bootstrap entrypoint script
