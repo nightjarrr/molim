@@ -90,7 +90,7 @@ Dispatch the `@coder` subagent with: issue id, issue title, issue type, path to 
 
 ### 6. Review
 
-After Coder terminates, show its structured final response to the user and ask for review and approval.
+After Coder terminates, surface the verbatim structured final response to the user and ask for review and approval.
 
 ### 7. Post outcome
 
