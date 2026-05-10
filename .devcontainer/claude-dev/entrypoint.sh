@@ -681,6 +681,7 @@ section "Initializing Claude user settings in ~/.claude/settings.json"
 
 cp /etc/claude-dev/settings.json.template "${HOME}/.claude/settings.json"
 chmod 600 "${HOME}/.claude/settings.json"
+mkdir -p /workspace/.claude/memory
 success "Initialized ~/.claude/settings.json."
 
 # ======================================================================
