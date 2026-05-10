@@ -99,7 +99,7 @@ require_tool socat
 require_tool gh
 require_tool git
 require_tool jq
-require_tool uv
+require_tool node
 require_tool claude
 require_tool rg
 require_tool fdfind
