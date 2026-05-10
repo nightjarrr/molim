@@ -78,6 +78,14 @@ require_env() {
     success "$text"
 }
 
+require_tool() {
+    local tool="$1"
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        die "tool '${tool}' not found in PATH. Container image does not match entrypoint.sh prerequisites; cannot proceed."
+    fi
+    success "$tool"
+}
+
 require_env GITHUB_OWNER true
 require_env GITHUB_REPO true
 require_env GITHUB_TOKEN_
@@ -86,6 +94,18 @@ require_env TZ true
 require_env CLAUDE_DEV_PROXY_SOCKET
 require_env CLAUDE_DEV_PROXY_PORT
 require_env CLAUDE_CODE_VERSION true
+
+require_tool socat
+require_tool gh
+require_tool git
+require_tool jq
+require_tool uv
+require_tool claude
+require_tool rg
+require_tool fdfind
+require_tool bwrap
+require_tool micro
+require_tool delta
 
 # ----------------------------------------------------------------------
 # Issue ID handling
