@@ -87,7 +87,10 @@ When uncertain, prefer dialog over silent assumptions — see Section 10 (Commun
 
 ## 6. Quality Gates (QG) loop
 
-1. Run `scripts/quality-gates.sh`.
+1. Run:
+   ```bash
+   scripts/quality-gates.sh
+   ```
 2. Read stdout: summary is the final two lines — `PASS` or `FAIL`, then `Results: <path-to-result-file>`.
 3. Result file structure:
    ```json
@@ -189,7 +192,12 @@ Template:
 **Implemented:**
 - [Step N] [Brief description]
 
-**Quality Gates:** [PASS — [list of commands] — result file at /tmp/quality-gates-XXXXXX.json]
+**Quality Gates:** PASS
+- [command 1]
+- [command 2]
+- ...
+
+Result file: /tmp/quality-gates-XXXXXX.json
 
 **Commits:**
 - [SHA] [Commit message] — [pushed | committed locally only]
