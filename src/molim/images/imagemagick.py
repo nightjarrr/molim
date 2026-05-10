@@ -22,8 +22,7 @@ class ImageMagickMixin:
 
     def _get_imagemagick_args(self, args: argparse.Namespace) -> list[str]:
         check.ensure_int_between(args.imagemagick_quality, 1, 100)
-        if args.imagemagick_additional is not None:
-            check.ensure_type(args.imagemagick_additional, str)
+        check.ensure_type_or_none(args.imagemagick_additional, str)
         cmdline = ["-quality", str(args.imagemagick_quality)]
         if args.imagemagick_additional is not None:
             cmdline += args.imagemagick_additional.split(" ")

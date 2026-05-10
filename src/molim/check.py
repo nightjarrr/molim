@@ -13,6 +13,11 @@ def ensure_type(obj, type):
         raise TypeError(f"A {type} object is required.")
 
 
+def ensure_type_or_none(obj, type):
+    if obj is not None:
+        ensure_type(obj, type)
+
+
 def ensure_str_startswith(obj, start):
     ensure_type(obj, str)
     if not obj.startswith(start):
