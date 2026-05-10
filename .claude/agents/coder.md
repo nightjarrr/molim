@@ -37,7 +37,7 @@ If the issue type is `docs`: pause and escalate (Type 3) before editing any file
 Before any edit:
 
 1. Confirm you are on the correct feature branch: `git branch --show-current`. If the output is `main`, stop and escalate (Type 3 — Ambiguity).
-2. Confirm the working tree is clean: `git status --short`. If it is not, investigate before proceeding.
+2. Confirm the working tree is clean: `git status --short`. If it is not, determine whether every dirty file is part of the current dispatch or was created by your own current work. If there are unrelated dirty changes, stop and escalate (Type 3) rather than editing, staging, or committing them.
 
 Then read, in order:
 
@@ -62,7 +62,7 @@ If during implementation you encounter:
 - A genuine ambiguity in scope or design → escalate (Type 3), do not act.
 - A pre-existing bug, tech debt, or other observation worth surfacing → flag under **Additional findings** in the final response; do not silently fix unless within impl-plan scope.
 - A tactical deviation (different function name, minor structural adjustment) → make the minimal change; document under **Deviations**.
-- A material deviation (different approach, scope change, architectural shift) → confirm with PO before acting; document the decision and rationale under **Deviations**.
+- A material deviation (different approach, scope change, architectural shift) → confirm via the dispatching parent / PM relay before acting; document the decision and rationale under **Deviations**.
 
 When uncertain, prefer dialog over silent assumptions — see Section 10 (Communication) for mechanics and Section 11 (Escalation) for the terminal case.
 
@@ -96,7 +96,7 @@ When uncertain, prefer dialog over silent assumptions — see Section 10 (Commun
      "checks": [{ "command": "<cmd>", "status": "PASS" | "FAIL", "output": "<stdout+stderr>" }]
    }
    ```
-4. On `PASS`: do not read the check outputs. Note the result file path — you will reference it in Sections 7 and 12. Proceed to Section 7.
+4. On `PASS`: do not read the check outputs. You may query metadata fields needed for attribution and final reporting, especially `.checks[].command`. Note the result file path — you will reference it in Sections 7 and 12. Proceed to Section 7.
 5. On `FAIL`, use **progressive discovery** — never read the full JSON:
    - **Step A** — identify failing commands (no output):
      ```bash
@@ -133,7 +133,7 @@ If instructed not to push (e.g. local-only branch), commit locally and report un
 Never:
 - Invoke `gh` or any GitHub API.
 - Create PRs, merge branches, or modify Issue state (labels, comments, assignees, body).
-- Edit `CHANGELOG.md`, any file under `docs/`, or any file under `.claude/` — unless explicitly listed in the impl-plan's Work Breakdown as in-scope.
+- Edit `CHANGELOG.md`, any file under `docs/`, or any file under `.claude/` — unless explicitly listed in the impl-plan's Work Breakdown as in-scope and the dispatch confirms it is implementation scope, not Phase 6 documentation work.
 - Run destructive git commands: `push --force`, `push --force-with-lease`, `reset --hard`, `clean -fd`, `branch -D`, history rewrites.
 
 If the impl-plan requires any of the above → Type 3 escalation, surface it, do not act.
