@@ -7,7 +7,7 @@ from .imagemagick import ImageMagickMixin
 
 
 class ResizeCommand(commands.Command, ImageMagickMixin):
-    RESIZE_ORIGINALS = "delete"
+    ORIGINALS = "delete"
 
     def _add_arguments(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         parser = ImageMagickMixin._add_arguments(self, parser)
@@ -31,7 +31,7 @@ class ResizeCommand(commands.Command, ImageMagickMixin):
             JPEG_EXTENSION,
             None,  # Suppress greater-than parameter
             None,  # Suppress no-skip-processed parameter
-            ResizeCommand.RESIZE_ORIGINALS,
+            ResizeCommand.ORIGINALS,
         )
 
     def _get_post_processing_strategy(

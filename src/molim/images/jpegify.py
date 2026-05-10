@@ -6,18 +6,18 @@ from .imagemagick import ImageMagickMixin
 
 
 class JpegifyCommand(commands.Command, ImageMagickMixin):
-    JPEGIFY_EXTENSION = ".png,.webp,.avif,.heic"
-    JPEGIFY_ORIGINALS = "delete"
+    EXTENSION = ".png,.webp,.avif,.heic"
+    ORIGINALS = "delete"
 
     def _add_arguments(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         return ImageMagickMixin._add_arguments(self, parser)
 
     def _get_common_arguments_defaults(self) -> tuple[str, str, bool, str]:
         return (
-            JpegifyCommand.JPEGIFY_EXTENSION,
+            JpegifyCommand.EXTENSION,
             None,  # Suppress greater-than parameter
             None,  # Suppress no-skip-processed parameter
-            JpegifyCommand.JPEGIFY_ORIGINALS,
+            JpegifyCommand.ORIGINALS,
         )
 
     def _get_output_file_path_strategy(self, args: argparse.Namespace) -> processing.OutputFilePathStrategy:

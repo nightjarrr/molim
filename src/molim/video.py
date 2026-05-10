@@ -3,37 +3,39 @@ import pathlib
 
 from . import check, commands, processing, shell
 
-VIDEO_EXTENSION = ".mp4"
-VIDEO_GREATER_THAN = "30M"
-VIDEO_NO_SKIP_PROCESSED = False
-VIDEO_ORIGINALS = "move"
-VIDEO_PROCESSED_SUFFIX = ".min"
-VIDEO_PROCESSED_EXTENSION = ".mp4"
-VIDEO_FFMPEG_CODEC = "libx265"
-VIDEO_FFMPEG_RATE = 26
-
 
 class VideoFfmpegCommand(commands.Command):
+    EXTENSION = ".mp4"
+    GREATER_THAN = "30M"
+    NO_SKIP_PROCESSED = False
+    ORIGINALS = "move"
+    VIDEO_PROCESSED_SUFFIX = ".min"
+    VIDEO_PROCESSED_EXTENSION = ".mp4"
+    VIDEO_FFMPEG_CODEC = "libx265"
+    VIDEO_FFMPEG_RATE = 26
+    VIDEO_FFMPEG_ADDITIONAL = None
+    VIDEO_FFMPEG_REPORT = False
+
     def _add_arguments(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         parser.add_argument(
             "--ffmpeg-codec",
-            default=VIDEO_FFMPEG_CODEC,
+            default=VideoFfmpegCommand.VIDEO_FFMPEG_CODEC,
             help="FFMpeg codec to use for processing.",
         )
         parser.add_argument(
             "--ffmpeg-rate",
-            default=VIDEO_FFMPEG_RATE,
+            default=VideoFfmpegCommand.VIDEO_FFMPEG_RATE,
             type=int,
             help="FFMpeg processing compression rate.",
         )
         parser.add_argument(
             "--ffmpeg-additional",
-            default=None,
+            default=VideoFfmpegCommand.VIDEO_FFMPEG_ADDITIONAL,
             help="Additional parameters for FFMpeg processing.",
         )
         parser.add_argument(
             "--ffmpeg-report",
-            default=False,
+            default=VideoFfmpegCommand.VIDEO_FFMPEG_REPORT,
             action="store_true",
             help="Write FFMpeg report with extended conversion information.",
         )
@@ -41,19 +43,19 @@ class VideoFfmpegCommand(commands.Command):
 
     def _get_common_arguments_defaults(self) -> tuple[str, str, str]:
         return (
-            VIDEO_EXTENSION,
-            VIDEO_GREATER_THAN,
-            VIDEO_NO_SKIP_PROCESSED,
-            VIDEO_ORIGINALS,
+            VideoFfmpegCommand.EXTENSION,
+            VideoFfmpegCommand.GREATER_THAN,
+            VideoFfmpegCommand.NO_SKIP_PROCESSED,
+            VideoFfmpegCommand.ORIGINALS,
         )
 
     def _get_output_file_path_strategy(self, args: argparse.Namespace) -> processing.OutputFilePathStrategy:
         output_namer = processing.MultiOutputFilePathStrategy(
             [
-                processing.SuffixOutputFilePathStrategy(VIDEO_PROCESSED_SUFFIX),
+                processing.SuffixOutputFilePathStrategy(VideoFfmpegCommand.VIDEO_PROCESSED_SUFFIX),
                 processing.ChangeExtOutputFilePathStrategy(
                     # Force output extension.
-                    VIDEO_PROCESSED_EXTENSION
+                    VideoFfmpegCommand.VIDEO_PROCESSED_EXTENSION
                 ),
             ]
         )
@@ -78,7 +80,7 @@ class VideoFfmpegCommand(commands.Command):
     def _get_file_skip_strategy(self, args: argparse.Namespace) -> processing.FileSkipStrategy:
         skips = []
         if not args.no_skip_processed:
-            skips.append(processing.BySuffixFileSkipStrategy(VIDEO_PROCESSED_SUFFIX))
+            skips.append(processing.BySuffixFileSkipStrategy(VideoFfmpegCommand.VIDEO_PROCESSED_SUFFIX))
         if args.greater_than:
             skips.append(processing.BySizeFileSkipStrategy(args.greater_than))
         skipper = processing.MultiFileSkipStrategy(skips)

@@ -118,10 +118,10 @@ def test_JpegifyCommand_get_common_arguments_defaults():
     j = jpegify.JpegifyCommand()
     a, b, c, d = j._get_common_arguments_defaults()
 
-    assert a == jpegify.JpegifyCommand.JPEGIFY_EXTENSION
+    assert a == jpegify.JpegifyCommand.EXTENSION
     assert b is None
     assert c is None
-    assert d == jpegify.JpegifyCommand.JPEGIFY_ORIGINALS
+    assert d == jpegify.JpegifyCommand.ORIGINALS
 
 
 def test_JpegifyCommand_create_parser():
@@ -132,7 +132,7 @@ def test_JpegifyCommand_create_parser():
 
     assert args.FOLDER == "."
     assert args.dry_run
-    assert args.extension == jpegify.JpegifyCommand.JPEGIFY_EXTENSION
+    assert args.extension == jpegify.JpegifyCommand.EXTENSION
 
     # Ensure some common args are suppressed
     with pytest.raises(AttributeError):
@@ -154,7 +154,7 @@ def test_JpegifyCommand_args_validation():
                 FOLDER=str(JPEGIFY_FOLDER),
                 dry_run=True,
                 config=str(common.EMPTY_CONFIG),
-                extension=jpegify.JpegifyCommand.JPEGIFY_EXTENSION,
+                extension=jpegify.JpegifyCommand.EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
                 imagemagick_quality=-5,
                 imagemagick_additional=None,
@@ -168,7 +168,7 @@ def test_JpegifyCommand_args_validation():
                 FOLDER=str(JPEGIFY_FOLDER),
                 dry_run=True,
                 config=str(common.EMPTY_CONFIG),
-                extension=jpegify.JpegifyCommand.JPEGIFY_EXTENSION,
+                extension=jpegify.JpegifyCommand.EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
                 imagemagick_quality=120,
                 imagemagick_additional=None,
@@ -182,7 +182,7 @@ def test_JpegifyCommand_args_validation():
                 FOLDER=str(JPEGIFY_FOLDER),
                 dry_run=True,
                 config=str(common.EMPTY_CONFIG),
-                extension=jpegify.JpegifyCommand.JPEGIFY_EXTENSION,
+                extension=jpegify.JpegifyCommand.EXTENSION,
                 originals=commands.OriginalsHandlingEnum.LEAVE,
                 imagemagick_quality=90,
                 imagemagick_additional=True,
@@ -198,7 +198,7 @@ def test_JpegifyCommand_dry_run():
             FOLDER=str(JPEGIFY_FOLDER),
             dry_run=True,
             config=str(common.EMPTY_CONFIG),
-            extension=jpegify.JpegifyCommand.JPEGIFY_EXTENSION,
+            extension=jpegify.JpegifyCommand.EXTENSION,
             originals=commands.OriginalsHandlingEnum.LEAVE,
             imagemagick_quality=images.JPEG_QUALITY,
             imagemagick_additional=None,
@@ -219,7 +219,7 @@ def test_JpegifyCommand_core_logic():
             FOLDER=str(JPEGIFY_FOLDER),
             dry_run=False,
             config=str(common.EMPTY_CONFIG),
-            extension=jpegify.JpegifyCommand.JPEGIFY_EXTENSION,
+            extension=jpegify.JpegifyCommand.EXTENSION,
             originals=commands.OriginalsHandlingEnum.LEAVE,
             imagemagick_quality=images.JPEG_QUALITY,
             imagemagick_additional=None,
@@ -249,7 +249,7 @@ def test_ResizeCommand_get_common_arguments_defaults():
     assert a == images.JPEG_EXTENSION
     assert b is None
     assert c is None
-    assert d == resize.ResizeCommand.RESIZE_ORIGINALS
+    assert d == resize.ResizeCommand.ORIGINALS
 
 
 def test_ResizeCommand_get_post_processing_strategy(tmp_path):
