@@ -669,6 +669,20 @@ echo "lastOnboardingVersion: ${CLAUDE_CODE_VERSION}"
 mkdir -p "${HOME}/.claude"
 success "Initialized ~/.claude.json."
 
+# ----------------------------------------------------------------------
+# Write ~/.claude/settings.json
+# Configures user-level Claude Code settings that cannot live in the
+# project's .claude/settings.json (security restriction). Currently
+# sets autoMemoryDirectory to redirect auto memory into the cloned
+# repo so memory survives container restarts via git.
+# Template lives at /etc/claude-dev/settings.json.template.
+# ----------------------------------------------------------------------
+section "Initializing Claude user settings in ~/.claude/settings.json"
+
+cp /etc/claude-dev/settings.json.template "${HOME}/.claude/settings.json"
+chmod 600 "${HOME}/.claude/settings.json"
+success "Initialized ~/.claude/settings.json."
+
 # ======================================================================
 # PROJECT — molim-specific dependency installation
 # ======================================================================
