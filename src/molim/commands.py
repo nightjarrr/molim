@@ -71,7 +71,7 @@ class Command:
             Executes the command with the given arguments.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.__config = None
 
     # Private methods
@@ -156,10 +156,10 @@ class Command:
         return parser
 
     @property
-    def config(self):
+    def config(self) -> config.ConfigReader | None:
         return self.__config
 
-    def _get_config_value(self, key: str):
+    def _get_config_value(self, key: str) -> object | None:
         if self.config:
             value = self.config(key)
             show.verbose(f"Read configuration: {key} = {value}")
@@ -167,7 +167,7 @@ class Command:
         return None
 
     @property
-    def _move_to_subfolder_name(self):
+    def _move_to_subfolder_name(self) -> str:
         return "_orig"
 
     def _get_post_processing_strategy(
@@ -182,12 +182,12 @@ class Command:
             return processing.DeleteOriginalPostProcessingStrategy()
         raise ValueError(args.originals)
 
-    def _get_file_match_strategy(self, args: argparse.Namespace):
+    def _get_file_match_strategy(self, args: argparse.Namespace) -> processing.FileMatchStrategy:
         if args.extension == ANY_MATCH_EXTENSION:
             return processing.AnyFileMatchStrategy()
         return processing.ByExtensionFileMatchStrategy(args.extension)
 
-    def _get_global_skip_strategy(self, skip_strategy):
+    def _get_global_skip_strategy(self, skip_strategy: processing.FileSkipStrategy) -> processing.FileSkipStrategy:
         if not self.config:
             return skip_strategy
         skip_glob_list = self._get_config_value("skip")
@@ -202,7 +202,7 @@ class Command:
         return processing.MultiFileSkipStrategy(result)
 
     @property
-    def _show_size(self):
+    def _show_size(self) -> bool:
         return True
 
     def _execute(self, args: argparse.Namespace) -> stats.FolderStats:

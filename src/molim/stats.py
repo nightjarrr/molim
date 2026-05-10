@@ -1,5 +1,6 @@
 import pathlib
 import time
+from collections.abc import Callable
 
 from . import check, show
 
@@ -20,7 +21,7 @@ class StatsAlreadyFinishedError(Exception):
         super().__init__(self.message)
 
 
-def ensure_finished(method):
+def ensure_finished(method: Callable) -> Callable:
     def wrapper(self, *args, **kwargs):
         if not self.finished:
             raise StatsNotFinishedError()
@@ -29,7 +30,7 @@ def ensure_finished(method):
     return wrapper
 
 
-def ensure_not_finished(method):
+def ensure_not_finished(method: Callable) -> Callable:
     def wrapper(self, *args, **kwargs):
         if self.finished:
             raise StatsAlreadyFinishedError()
@@ -57,11 +58,16 @@ class Stats:
 
     # Support 'with' usage
 
-    def __enter__(self):
+    def __enter__(self) -> "Stats":
         self.start()
         return self
 
-    def __exit__(self, exception_type, exception_value, exception_traceback):
+    def __exit__(
+        self,
+        exception_type: type[BaseException] | None,
+        exception_value: BaseException | None,
+        exception_traceback: object,
+    ) -> None:
         self.finish()
 
     # Properties
@@ -105,7 +111,7 @@ class FileStats(Stats):
         self.__delta_size = None
 
     @ensure_not_finished
-    def set_processed_file(self, processed_file: pathlib.Path, processed_file_size: int = None):
+    def set_processed_file(self, processed_file: pathlib.Path, processed_file_size: int | None = None):
         if self.__processed_file:
             raise FileStatsAlreadyHaveProcessedFileError()
         if processed_file_size is not None:
@@ -115,7 +121,7 @@ class FileStats(Stats):
             self.__processed_file_size = processed_file.stat().st_size
         self.__processed_file = processed_file
 
-    def finish(self):
+    def finish(self) -> None:
         super().finish()
         if self.__processed_file_size is not None:
             self.__delta_size = self.__original_file_size - self.__processed_file_size
@@ -149,7 +155,7 @@ class FileStats(Stats):
 
     # __repr__
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.finished:
             return (
                 f"<FileStats(original_file={self.original_file}, "
@@ -220,7 +226,7 @@ class FolderStats(Stats):
 
     # __repr__
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.finished:
             return (
                 f"<FolderStats(folder_path={self.folder_path}, "

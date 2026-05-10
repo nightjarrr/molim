@@ -144,7 +144,7 @@ class FileProcessor:
         self.__output_strategy = output_strategy
         self.__post_processor = post_processor
 
-    def process(self, file_path: pathlib.Path, dry_run=False) -> stats.FileStats:
+    def process(self, file_path: pathlib.Path, dry_run: bool = False) -> stats.FileStats:
         check.ensure_file(file_path)
         with stats.FileStats(file_path) as statistics:
             output_file_path = self.__output_strategy.get_output_path(file_path)
@@ -281,7 +281,7 @@ class FolderProcessor:
         self.__file_skiper = file_skiper
         self.__file_processor = file_processor
 
-    def process(self, dry_run=False, show_size=True) -> stats.FolderStats:
+    def process(self, dry_run: bool = False, show_size: bool = True) -> stats.FolderStats:
         with stats.FolderStats(self.__folder_path) as statistics:
             files_list = []
             for f in self.__folder_path.iterdir():

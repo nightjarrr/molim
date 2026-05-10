@@ -40,7 +40,7 @@ class SuffixCommand(commands.Command):
         return processing.BySuffixFileSkipStrategy(args.SUFFIX)
 
     @property
-    def _show_size(self):
+    def _show_size(self) -> bool:
         return False
 
     @property

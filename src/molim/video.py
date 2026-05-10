@@ -41,7 +41,7 @@ class VideoFfmpegCommand(commands.Command):
         )
         return parser
 
-    def _get_common_arguments_defaults(self) -> tuple[str, str, str]:
+    def _get_common_arguments_defaults(self) -> tuple[str, str, bool, str]:
         return (
             VideoFfmpegCommand.EXTENSION,
             VideoFfmpegCommand.GREATER_THAN,

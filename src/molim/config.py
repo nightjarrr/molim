@@ -9,7 +9,7 @@ from . import check, show
 DEFAULT_CONFIG_PATH = pathlib.Path("~/.config/molim/config.toml")
 
 
-def load(config_path_str: str = None, section: str = None):
+def load(config_path_str: str | None = None, section: str | None = None) -> "ConfigReader | None":
     if config_path_str is not None:
         config_path = pathlib.Path(config_path_str)
         check.ensure_file(config_path)
@@ -34,7 +34,7 @@ class ConfigReader:
         self.__doc = document
         self.__section = section
 
-    def _get_or_none(self, section, key):
+    def _get_or_none(self, section: str, key: str) -> object | None:
         if not self.__doc or not section or not key:
             return None
         try:
@@ -42,12 +42,12 @@ class ConfigReader:
         except tomlkit.exceptions.NonExistentKey:
             return None
 
-    def _get(self, key: str):
+    def _get(self, key: str) -> object | None:
         check.ensure_type(key, str)
 
         if not self.__doc:
             return None
         return self._get_or_none(self.__section, key) or self._get_or_none(ConfigReader.GLOBAL_SECTION, key)
 
-    def __call__(self, key: str):
+    def __call__(self, key: str) -> object | None:
         return self._get(key)

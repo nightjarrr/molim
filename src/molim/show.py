@@ -1,3 +1,4 @@
+import argparse
 from datetime import timedelta
 
 import rich.console
@@ -57,7 +58,7 @@ def set_verbose(val: bool) -> None:
     __verbose = val
 
 
-def important(message: str, new_line=False) -> None:
+def important(message: str, new_line: bool = False) -> None:
     __CONSOLE__.print(message, style="bold", highlight=False, markup=False)
     if new_line:
         __CONSOLE__.print()
@@ -67,7 +68,7 @@ def rule(message: str = "") -> None:
     __CONSOLE__.rule(message)
 
 
-def normal(message: str, new_line=False) -> None:
+def normal(message: str, new_line: bool = False) -> None:
     __CONSOLE__.print(" " + message, highlight=False, markup=False)
     if new_line:
         __CONSOLE__.print()
@@ -80,7 +81,7 @@ def __delta(delta: int) -> str:
         return f"saved {human_size(delta)}"
 
 
-def file_stats(s, show_size: bool):
+def file_stats(s: object, show_size: bool) -> None:
     t = rich.text.Text(f"{s.original_file.name}")
     if show_size:
         t.append(
@@ -98,7 +99,7 @@ def file_stats(s, show_size: bool):
     __CONSOLE__.print(cols, highlight=False, markup=False)
 
 
-def folder_stats(s, show_size: bool):
+def folder_stats(s: object, show_size: bool) -> None:
     if s.processed_files_stats:
         important(
             f"Processed {len(s.processed_files_stats)} files in {elapsed(s.elapsed)}",
@@ -145,7 +146,7 @@ def verbose(message: str) -> None:
         __CONSOLE__.print("   " + message, style="grey50", highlight=False, markup=False)
 
 
-def verbose_args(args, new_line=False):
+def verbose_args(args: argparse.Namespace, new_line: bool = False) -> None:
     if __verbose:
         for k in args.__dict__:
             verbose(f" - {k} = {args.__dict__[k]}")
