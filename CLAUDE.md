@@ -41,7 +41,7 @@ Tests are required for new Python code. Each bugfix must be covered by a set of 
 
 ## Proto-SDLC (until full Agentic SDLC implemented)
 
-Every implementation task — regardless of size — follows this workflow from start to finish. Begin at step 1 whenever a new task is introduced. Steps 3–8 form an iteration loop: if Coder's output is not approved, the plan is amended and implementation repeats until the user signs off.
+Every implementation task — regardless of size — follows this workflow from start to finish. Begin at step 1 whenever a new task is introduced. Steps 3–8 form an iteration loop: if Coder's output is not approved, the plan is amended and implementation repeats until the user signs off. Only then does the work proceed to step 9 (open PR).
 
 ### 1. Issue identification
 
@@ -102,7 +102,15 @@ gh issue comment {issue-id} --body "..."
 
 ### 8. Iterate
 
-If the user does not approve, amend the plan and repeat from step 3.
+If the user does not approve, amend the plan and repeat from step 3. Once the user approves, proceed to step 9.
+
+### 9. Open PR
+
+Verify all commits are pushed (`git push` if needed — Coder pushes as part of its work, but confirm nothing is outstanding). Then open a pull request:
+
+```bash
+gh pr create --title "..." --body "..."
+```
 
 ## Ongoing initiatives
 
