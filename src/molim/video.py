@@ -107,8 +107,7 @@ class FfmpegFileProcessor(shell.ShellCommandFileProcessor):
     ):
         check.ensure_type(ffmpeg_codec, str)
         check.ensure_int_between(ffmpeg_rate, 0, 51)
-        if ffmpeg_additional is not None:
-            check.ensure_type(ffmpeg_additional, str)
+        check.ensure_type_or_none(ffmpeg_additional, str)
         check.ensure_type(ffmpeg_report, bool)
 
         args = [

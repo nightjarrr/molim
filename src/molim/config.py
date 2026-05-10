@@ -29,10 +29,8 @@ class ConfigReader:
     GLOBAL_SECTION = "global"
 
     def __init__(self, document: tomlkit.toml_document.TOMLDocument, section: str):
-        if document is not None:
-            check.ensure_type(document, tomlkit.toml_document.TOMLDocument)
-        if section is not None:
-            check.ensure_type(section, str)
+        check.ensure_type_or_none(document, tomlkit.toml_document.TOMLDocument)
+        check.ensure_type_or_none(section, str)
         self.__doc = document
         self.__section = section
 
