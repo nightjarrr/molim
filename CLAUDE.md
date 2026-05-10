@@ -39,21 +39,70 @@ Tests are real integration tests that invoke the actual CLI tools. Do not mock R
 
 Tests are required for new Python code. Each bugfix must be covered by a set of tests to catch any future regressions.
 
-## Issues
+## Proto-SDLC (until full Agentic SDLC implemented)
 
-All work is tracked in GitHub issues. As a first step of every development you need to understand which issue number is tracking it. Run `printenv ISSUE_ID` to check the environment variable, then confirm with the user. The user can give you a different number.
+Every implementation task — regardless of size — follows this workflow from start to finish. Begin at step 1 whenever a new task is introduced. Steps 3–8 form an iteration loop: if Coder's output is not approved, the plan is amended and implementation repeats until the user signs off.
 
-If there is no issue yet, use the /new-issue skill to create one.
+### 1. Issue identification
 
-After obtaining the issue number, read it using `gh` CLI and extract all useful information from it.
+Run `printenv ISSUE_ID` to check the issue number, then confirm with the user. The user can provide a different number. If no issue exists yet, use the `/new-issue` skill to create one.
 
-## Branching and dev flow
+Read the issue body and comments — two calls are needed:
 
-All development happens in feature branches. Branch names follow the pattern `{type}/{issue-id}-{slug}` — for example: `feature/42-avif-support`, `chore/37-add-claude-md`, `docs/51-timeout-handling`.
+```bash
+gh issue view {issue-id}
+gh issue view {issue-id} --comments
+```
 
-**Before modifying any repository files**, check the current branch. If it is `main`, create the feature branch first. Use `gh issue develop {issue-id}` to create the branch and link it to the issue. If you are on a feature branch already, no need to create another one. Ensuring that development will go to a feature branch, not `main`, is the required first step of every plan execution, even when the plan does not list it explicitly.
+Comments contain the latest state for ongoing work and must be read alongside the issue body.
+
+### 2. Feature branch
+
+Branch names follow the pattern `{type}/{issue-id}-{slug}` — for example: `feature/42-avif-support`, `chore/37-add-claude-md`, `docs/51-timeout-handling`.
+
+**Before modifying any repository files**, check the current branch. If it is `main`, create the feature branch first: `gh issue develop {issue-id}`. If already on a feature branch, no further action needed.
 
 NEVER commit to `main` directly. NEVER merge PRs — merging is a strictly manual human operation that acts as a gate.
+
+### 3. Plan
+
+Enter plan mode. Write an implementation plan with three sections:
+
+**Requirements.** What the issue requires: what must be done, acceptance criteria, and implementation constraints. Self-contained — Coder should be able to implement from this plan without reading the issue or other docs.
+
+**Architecture context.** A filtered view of the parts of the system this change touches: relevant files, classes, and patterns. Proportional to complexity — a trivial change may need a sentence; a cross-cutting change may need a substantial section.
+
+**Work breakdown.** Ordered list of implementation steps. For each step: files to create/modify/remove, classes/functions to add/change/remove. Include test coverage plan and any risk areas.
+
+Iterate with the user in plan mode until the plan is approved.
+
+### 4. Post plan
+
+Post the approved plan as a comment to the issue:
+
+```bash
+gh issue comment {issue-id} --body-file {path-to-plan-file}
+```
+
+### 5. Implement
+
+Dispatch the `@coder` subagent with: issue id, issue title, issue type, path to the plan file (instruct Coder to treat it as `impl-plan.md`), and any additional context or instructions from the conversation.
+
+### 6. Review
+
+After Coder terminates, show its structured final response to the user and ask for review and approval.
+
+### 7. Post outcome
+
+On user approval, post Coder's structured final response as a comment to the issue:
+
+```bash
+gh issue comment {issue-id} --body "..."
+```
+
+### 8. Iterate
+
+If the user does not approve, amend the plan and repeat from step 3.
 
 ## Ongoing initiatives
 
