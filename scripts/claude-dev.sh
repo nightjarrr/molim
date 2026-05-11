@@ -8,10 +8,8 @@
 # dev environment image with an interactive TTY.
 #
 # Usage:
-#   claude-dev.sh                            # no issue; default command
-#   claude-dev.sh <issue-id>                 # specific Issue; default command
-#   claude-dev.sh -- <cmd> [args...]         # no issue; override command
-#   claude-dev.sh <issue-id> -- <cmd> [args] # specific Issue; override command
+#   claude-dev.sh [--backend anthropic|deepseek] [<issue-id>] [-- <cmd> [args...]]
+#   claude-dev.sh [--anthropic|--deepseek] [<issue-id>] [-- <cmd> [args...]]
 #
 # The default command is whatever the image's CMD specifies (claude).
 # The override is intended for troubleshooting (e.g., running
@@ -38,6 +36,8 @@ ENVOY_TEMPLATE="${ENVOY_DIR}/envoy.yaml.template"
 TMUX_SEED_CONFIG="${SCRIPT_DIR}/claude-dev.tmux.conf"
 TMUX_USER_CONFIG="${HOME}/.tmux.conf"
 
+ORIGINAL_ARGS=("$@")
+
 # ----------------------------------------------------------------------
 # Helpers
 # ----------------------------------------------------------------------
@@ -54,17 +54,26 @@ usage() {
     cat >&2 <<EOF
 Usage: claude-dev.sh [<issue-id>] [-- <cmd> [args...]]
 
-  <issue-id>     Optional. Positive integer GitHub Issue number to work on.
-                 If omitted, the container starts without a specific Issue
-                 context.
+Options:
+  --backend BACKEND       Claude Code model backend: anthropic or deepseek.
+                          Overrides CLAUDE_DEV_LLM_BACKEND from claude-dev.env.
+  --backend=BACKEND       Same as --backend BACKEND.
+  --anthropic             Shortcut for --backend anthropic.
+  --deepseek              Shortcut for --backend deepseek.
+  -h, --help              Show this help.
 
-  -- <cmd>...    Optional. Override the image's default command.
+Arguments:
+  <issue-id>              Optional. Positive integer GitHub Issue number to work on.
+                          If omitted, the container starts without a specific Issue
+                          context.
+  -- <cmd>...             Optional. Override the image's default command.
 
 Examples:
-  claude-dev.sh                              # session with no Issue
-  claude-dev.sh 42                           # session for Issue #42
-  claude-dev.sh -- ls -la /workspace         # one-off ls, no Issue
-  claude-dev.sh 42 -- uv run pytest -q       # one-off pytest for Issue #42
+  claude-dev.sh
+  claude-dev.sh 42
+  claude-dev.sh --backend deepseek 42
+  claude-dev.sh --deepseek -- ls -la /workspace
+  claude-dev.sh 42 -- uv run pytest -q
 EOF
 }
 
@@ -87,32 +96,80 @@ quote_command() {
     printf '%q ' "$@"
 }
 
+validate_backend() {
+  local backend="$1"
+
+  case "$backend" in
+    anthropic|deepseek)
+      ;;
+    *)
+      die "unsupported backend '${backend}'. Supported backends: anthropic, deepseek."
+      ;;
+  esac
+}
+
 # ----------------------------------------------------------------------
 # Argument parsing
 #
-# Accepts:
-#   (no args)
-#   <issue-id>
-#   -- <cmd> [args...]
-#   <issue-id> -- <cmd> [args...]
+# Accepts, before '--':
+#   options
+#   zero or one positional issue ID
+#
+# Everything after '--' is command override and is not parsed as launcher
+# syntax.
 # ----------------------------------------------------------------------
 ISSUE_ID=""
+CLI_BACKEND=""
 CMD_OVERRIDE=()
 POSITIONAL=()
 SEPARATOR_FOUND=0
 
-# Walk the args; everything before -- is positional, everything after is
-# the command override.
-for arg in "$@"; do
-    if [[ "$SEPARATOR_FOUND" -eq 0 ]]; then
-        if [[ "$arg" == "--" ]]; then
-            SEPARATOR_FOUND=1
-        else
-            POSITIONAL+=("$arg")
-        fi
-    else
-        CMD_OVERRIDE+=("$arg")
-    fi
+while [[ $# -gt 0 ]]; do
+  arg="$1"
+  shift
+
+  if [[ "$SEPARATOR_FOUND" -eq 1 ]]; then
+    CMD_OVERRIDE+=("$arg")
+    continue
+  fi
+
+  case "$arg" in
+    --)
+      SEPARATOR_FOUND=1
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --backend)
+      if [[ $# -eq 0 ]]; then
+        usage
+        die "--backend requires a value: anthropic or deepseek"
+      fi
+      CLI_BACKEND="$1"
+      shift
+      ;;
+    --backend=*)
+      CLI_BACKEND="${arg#--backend=}"
+      if [[ -z "$CLI_BACKEND" ]]; then
+        usage
+        die "--backend requires a value: anthropic or deepseek"
+      fi
+      ;;
+    --anthropic)
+      CLI_BACKEND="anthropic"
+      ;;
+    --deepseek)
+      CLI_BACKEND="deepseek"
+      ;;
+    --*)
+      usage
+      die "unknown option '${arg}'"
+      ;;
+    *)
+      POSITIONAL+=("$arg")
+      ;;
+  esac
 done
 
 # If the separator was given, a command must follow it.
@@ -121,7 +178,7 @@ if [[ "$SEPARATOR_FOUND" -eq 1 ]] && [[ ${#CMD_OVERRIDE[@]} -eq 0 ]]; then
     die "'--' was given but no command followed it"
 fi
 
-# Positional args (before --) carry the optional issue ID. Zero or one,
+# Positional args before '--' carry the optional issue ID. Zero or one,
 # nothing else.
 if [[ ${#POSITIONAL[@]} -gt 1 ]]; then
     usage
@@ -134,6 +191,10 @@ if [[ ${#POSITIONAL[@]} -eq 1 ]]; then
         die "issue ID must be a positive integer, got '${POSITIONAL[0]}'"
     fi
     ISSUE_ID="${POSITIONAL[0]}"
+fi
+
+if [[ -n "$CLI_BACKEND" ]]; then
+  validate_backend "$CLI_BACKEND"
 fi
 
 # ----------------------------------------------------------------------
@@ -172,7 +233,19 @@ require_var ENVOY_ADMIN_CONTAINER_PORT
 require_var ENVOY_ADMIN_ADDRESS
 require_var ENVOY_SOCKET_CONTAINER_PATH
 
-export GITHUB_OWNER GITHUB_REPO
+# Backend resolution order:
+#   1. explicit CLI option
+#   2. claude-dev.env / inherited environment
+#   3. built-in default
+CLAUDE_DEV_LLM_BACKEND="${CLI_BACKEND:-${CLAUDE_DEV_LLM_BACKEND:-anthropic}}"
+validate_backend "$CLAUDE_DEV_LLM_BACKEND"
+
+# Disable Claude Code's nonessential traffic for both Anthropic and
+# DeepSeek backends. Keep it here instead of in claude-dev.env so the
+# security posture does not depend on project-local config drift.
+CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+
+export GITHUB_OWNER GITHUB_REPO CLAUDE_DEV_LLM_BACKEND CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC
 
 # ----------------------------------------------------------------------
 # If not already inside tmux, re-enter this launcher inside a tmux session.
@@ -232,7 +305,7 @@ if [[ -z "${TMUX:-}" ]]; then
     export TMUX_SESSION
     echo "tmux session: ${TMUX_SESSION}"
 
-    TMUX_COMMAND="$(quote_command "$SCRIPT_PATH" "$@")"
+    TMUX_COMMAND="$(quote_command "$SCRIPT_PATH" "${ORIGINAL_ARGS[@]}")"
     exec tmux new-session -s "${TMUX_SESSION}" -n "claude-dev primary" "${TMUX_COMMAND}"
 fi
 
@@ -249,9 +322,57 @@ keyring_lookup() {
     printf '%s' "$value"
 }
 
-CLAUDE_CODE_OAUTH_TOKEN="$(keyring_lookup claude-oauth)"
 GITHUB_TOKEN_="$(keyring_lookup github-token)"
-export CLAUDE_CODE_OAUTH_TOKEN GITHUB_TOKEN_
+export GITHUB_TOKEN_
+
+BACKEND_DOCKER_ENV=()
+case "$CLAUDE_DEV_LLM_BACKEND" in
+  anthropic)
+    CLAUDE_CODE_OAUTH_TOKEN="$(keyring_lookup claude-oauth)"
+    export CLAUDE_CODE_OAUTH_TOKEN
+    BACKEND_DOCKER_ENV=(
+      -e CLAUDE_CODE_OAUTH_TOKEN
+    )
+    ;;
+
+  deepseek)
+    ANTHROPIC_AUTH_TOKEN="$(keyring_lookup deepseek-apikey)"
+
+    ANTHROPIC_BASE_URL="${CLAUDE_DEV_DEEPSEEK_BASE_URL:-https://api.deepseek.com/anthropic}"
+    ANTHROPIC_MODEL="${CLAUDE_DEV_DEEPSEEK_MODEL:-deepseek-v4-pro[1m]}"
+    ANTHROPIC_DEFAULT_OPUS_MODEL="${CLAUDE_DEV_DEEPSEEK_OPUS_MODEL:-deepseek-v4-pro[1m]}"
+    ANTHROPIC_DEFAULT_SONNET_MODEL="${CLAUDE_DEV_DEEPSEEK_SONNET_MODEL:-deepseek-v4-pro[1m]}"
+    ANTHROPIC_DEFAULT_HAIKU_MODEL="${CLAUDE_DEV_DEEPSEEK_HAIKU_MODEL:-deepseek-v4-flash}"
+    CLAUDE_CODE_SUBAGENT_MODEL="${CLAUDE_DEV_DEEPSEEK_SUBAGENT_MODEL:-deepseek-v4-flash}"
+    CLAUDE_CODE_EFFORT_LEVEL="${CLAUDE_DEV_DEEPSEEK_EFFORT_LEVEL:-max}"
+
+    export \
+      ANTHROPIC_AUTH_TOKEN \
+      ANTHROPIC_BASE_URL \
+      ANTHROPIC_MODEL \
+      ANTHROPIC_DEFAULT_OPUS_MODEL \
+      ANTHROPIC_DEFAULT_SONNET_MODEL \
+      ANTHROPIC_DEFAULT_HAIKU_MODEL \
+      CLAUDE_CODE_SUBAGENT_MODEL \
+      CLAUDE_CODE_EFFORT_LEVEL
+
+    BACKEND_DOCKER_ENV=(
+      -e ANTHROPIC_BASE_URL
+      -e ANTHROPIC_AUTH_TOKEN
+      -e ANTHROPIC_MODEL
+      -e ANTHROPIC_DEFAULT_OPUS_MODEL
+      -e ANTHROPIC_DEFAULT_SONNET_MODEL
+      -e ANTHROPIC_DEFAULT_HAIKU_MODEL
+      -e CLAUDE_CODE_SUBAGENT_MODEL
+      -e CLAUDE_CODE_EFFORT_LEVEL
+    )
+    ;;
+
+  *)
+    # validate_backend should make this unreachable.
+    die "unsupported backend '${CLAUDE_DEV_LLM_BACKEND}'"
+    ;;
+esac
 
 # ----------------------------------------------------------------------
 # Detect host timezone
@@ -384,35 +505,39 @@ setup_tmux_windows() {
 
 # ----------------------------------------------------------------------
 # Build Claude container docker run argument list
-#
-# Intentionally unchanged for this draft. We are only validating that the
-# Envoy sidecar can start, expose admin, and be cleaned up correctly.
 # ----------------------------------------------------------------------
 DOCKER_ARGS=(
-    run --rm -it
-    --name "${CLAUDE_CONTAINER}"
-    -e GITHUB_OWNER -e GITHUB_REPO
-    -e CLAUDE_CODE_OAUTH_TOKEN -e GITHUB_TOKEN_
-    -e TZ
+  run --rm -it
+  --name "${CLAUDE_CONTAINER}"
 
-    # Capability and privilege restrictions
-    --cap-drop ALL
-    --security-opt no-new-privileges
+  -e GITHUB_OWNER
+  -e GITHUB_REPO
+  -e GITHUB_TOKEN_
+  -e TZ
+  -e CLAUDE_DEV_LLM_BACKEND
+  -e CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC
+  "${BACKEND_DOCKER_ENV[@]}"
 
-    # readonly root and tmpfs mounts
-    --read-only
-    --tmpfs "/tmp:rw,nosuid,nodev,size=64m,mode=700,uid=${CLAUDE_DEV_UID},gid=${CLAUDE_DEV_GID}"
-    --tmpfs "/run:rw,nosuid,nodev,noexec,size=32m,mode=700,uid=${CLAUDE_DEV_UID},gid=${CLAUDE_DEV_GID}"
-    --tmpfs "/var/tmp:rw,nosuid,nodev,size=64m,mode=700,uid=${CLAUDE_DEV_UID},gid=${CLAUDE_DEV_GID}"
-    --tmpfs "/home/${CLAUDE_DEV_USER}:rw,exec,nosuid,nodev,size=${CLAUDE_DEV_HOME_TMPFS_SIZE},mode=700,uid=${CLAUDE_DEV_UID},gid=${CLAUDE_DEV_GID}"
-    --tmpfs "/workspace:rw,exec,nosuid,nodev,size=${CLAUDE_DEV_WORKSPACE_TMPFS_SIZE},mode=700,uid=${CLAUDE_DEV_UID},gid=${CLAUDE_DEV_GID}"
+  # Capability and privilege restrictions.
+  --cap-drop ALL
+  --security-opt no-new-privileges
 
-    # Network isolation and proxy config
-    --network none
-    # This socket mount is expected to happen atop of the tmpfs-mounted /run in the container.
-    --mount "type=bind,source=${ENVOY_SOCKET_HOST_PATH},target=${CLAUDE_DEV_PROXY_SOCKET_CONTAINER_PATH},readonly"
-    -e "CLAUDE_DEV_PROXY_SOCKET=${CLAUDE_DEV_PROXY_SOCKET_CONTAINER_PATH}"
-    -e "CLAUDE_DEV_PROXY_PORT=${CLAUDE_DEV_PROXY_PORT}"
+  # Read-only root and tmpfs mounts.
+  --read-only
+  --tmpfs "/tmp:rw,nosuid,nodev,size=64m,mode=700,uid=${CLAUDE_DEV_UID},gid=${CLAUDE_DEV_GID}"
+  --tmpfs "/run:rw,nosuid,nodev,noexec,size=32m,mode=700,uid=${CLAUDE_DEV_UID},gid=${CLAUDE_DEV_GID}"
+  --tmpfs "/var/tmp:rw,nosuid,nodev,size=64m,mode=700,uid=${CLAUDE_DEV_UID},gid=${CLAUDE_DEV_GID}"
+  --tmpfs "/home/${CLAUDE_DEV_USER}:rw,exec,nosuid,nodev,size=${CLAUDE_DEV_HOME_TMPFS_SIZE},mode=700,uid=${CLAUDE_DEV_UID},gid=${CLAUDE_DEV_GID}"
+  --tmpfs "/workspace:rw,exec,nosuid,nodev,size=${CLAUDE_DEV_WORKSPACE_TMPFS_SIZE},mode=700,uid=${CLAUDE_DEV_UID},gid=${CLAUDE_DEV_GID}"
+
+  # Network isolation and proxy config.
+  --network none
+
+  # This socket mount is expected to happen atop the tmpfs-mounted /run in
+  # the container.
+  --mount "type=bind,source=${ENVOY_SOCKET_HOST_PATH},target=${CLAUDE_DEV_PROXY_SOCKET_CONTAINER_PATH},readonly"
+  -e "CLAUDE_DEV_PROXY_SOCKET=${CLAUDE_DEV_PROXY_SOCKET_CONTAINER_PATH}"
+  -e "CLAUDE_DEV_PROXY_PORT=${CLAUDE_DEV_PROXY_PORT}"
 )
 
 if [[ -n "$ISSUE_ID" ]]; then
