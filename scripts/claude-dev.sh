@@ -52,7 +52,7 @@ warning() {
 
 usage() {
     cat >&2 <<EOF
-Usage: claude-dev.sh [<issue-id>] [-- <cmd> [args...]]
+Usage: claude-dev.sh [--backend anthropic|deepseek] [<issue-id>] [-- <cmd> [args...]]
 
 Options:
   --backend BACKEND       Claude Code model backend: anthropic or deepseek.
@@ -339,7 +339,7 @@ case "$CLAUDE_DEV_LLM_BACKEND" in
     ANTHROPIC_AUTH_TOKEN="$(keyring_lookup deepseek-apikey)"
 
     ANTHROPIC_BASE_URL="${CLAUDE_DEV_DEEPSEEK_BASE_URL:-https://api.deepseek.com/anthropic}"
-    ANTHROPIC_MODEL="${CLAUDE_DEV_DEEPSEEK_MODEL:-deepseek-v4-pro[1m]}"
+    ANTHROPIC_MODEL="${CLAUDE_DEV_DEEPSEEK_MODEL:-deepseek-v4-flash}"
     ANTHROPIC_DEFAULT_OPUS_MODEL="${CLAUDE_DEV_DEEPSEEK_OPUS_MODEL:-deepseek-v4-pro[1m]}"
     ANTHROPIC_DEFAULT_SONNET_MODEL="${CLAUDE_DEV_DEEPSEEK_SONNET_MODEL:-deepseek-v4-pro[1m]}"
     ANTHROPIC_DEFAULT_HAIKU_MODEL="${CLAUDE_DEV_DEEPSEEK_HAIKU_MODEL:-deepseek-v4-flash}"
