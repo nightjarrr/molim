@@ -2,21 +2,28 @@
 # ======================================================================
 # entrypoint.sh — Claude Code dev environment bootstrap
 #
-# Runs as the container's ENTRYPOINT. Receives configuration via env
-# vars from the launcher (claude-dev.sh on the host):
-#   GITHUB_OWNER, GITHUB_REPO    project identity (logical names; the
-#                                entrypoint constructs the gh-recognized
-#                                GH_REPO=OWNER/REPO from these)
-#   GITHUB_TOKEN_                GitHub Token (read/write per scoping).
-#                                Trailing underscore is intentional: it
-#                                avoids gh's reserved GH_TOKEN/GITHUB_TOKEN
-#                                names so gh auth login works without the
-#                                pre-unset dance.
-#   CLAUDE_CODE_OAUTH_TOKEN      consumed later by claude itself
-#   TZ                           host timezone
-#   ISSUE_ID                     optional GitHub Issue number
-#   CLAUDE_DEV_PROXY_SOCKET      path to bind-mounted proxy socket
-#   CLAUDE_DEV_PROXY_PORT        local port to expose the proxy via socat bridge
+# Runs as the container's ENTRYPOINT. Receives configuration via env vars
+# from the launcher (claude-dev.sh on the host):
+#
+#   GITHUB_OWNER, GITHUB_REPO        Project identity; GH_REPO is derived
+#                                    as OWNER/REPO inside the container.
+#   GITHUB_TOKEN_                    GitHub token. Trailing underscore is
+#                                    intentional: it avoids gh's reserved
+#                                    GH_TOKEN/GITHUB_TOKEN names so
+#                                    `gh auth login` works without an
+#                                    unset dance before login.
+#   CLAUDE_DEV_LLM_BACKEND           Model backend: anthropic or deepseek.
+#   CLAUDE_CODE_OAUTH_TOKEN          Anthropic backend credential.
+#   ANTHROPIC_*                      DeepSeek Anthropic-compatible backend
+#                                    configuration.
+#   CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC
+#                                    Must be set by the launcher for all
+#                                    backends.
+#   TZ                               Host timezone.
+#   ISSUE_ID                         Optional GitHub Issue number.
+#   CLAUDE_DEV_PROXY_SOCKET          Bind-mounted proxy socket path.
+#   CLAUDE_DEV_PROXY_PORT            Local TCP port for the socat proxy
+#                                    bridge.
 #
 # Organized into two logical sections:
 #   1. BASE — generic Claude Code dev environment bootstrap
@@ -89,11 +96,31 @@ require_tool() {
 require_env GITHUB_OWNER true
 require_env GITHUB_REPO true
 require_env GITHUB_TOKEN_
-require_env CLAUDE_CODE_OAUTH_TOKEN
+require_env CLAUDE_DEV_LLM_BACKEND true
+require_env CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC true
 require_env TZ true
 require_env CLAUDE_DEV_PROXY_SOCKET
 require_env CLAUDE_DEV_PROXY_PORT
 require_env CLAUDE_CODE_VERSION true
+
+case "$CLAUDE_DEV_LLM_BACKEND" in
+  anthropic)
+    require_env CLAUDE_CODE_OAUTH_TOKEN
+    ;;
+  deepseek)
+    require_env ANTHROPIC_BASE_URL true
+    require_env ANTHROPIC_AUTH_TOKEN
+    require_env ANTHROPIC_MODEL true
+    require_env ANTHROPIC_DEFAULT_OPUS_MODEL true
+    require_env ANTHROPIC_DEFAULT_SONNET_MODEL true
+    require_env ANTHROPIC_DEFAULT_HAIKU_MODEL true
+    require_env CLAUDE_CODE_SUBAGENT_MODEL true
+    require_env CLAUDE_CODE_EFFORT_LEVEL true
+    ;;
+  *)
+    die "unsupported CLAUDE_DEV_LLM_BACKEND='${CLAUDE_DEV_LLM_BACKEND}'. Supported backends: anthropic, deepseek."
+    ;;
+esac
 
 require_tool socat
 require_tool gh
@@ -203,7 +230,7 @@ verify_network_mode() {
 verify_network_mode
 
 # ----------------------------------------------------------------------
-# Check container capability and privilege restrictions
+# Check container capability and privilege restrictions.
 # Expected: all capabilities dropped, no-new-privileges enabled.
 # Show warning if this does not appear to be the case, but do not fail.
 # ----------------------------------------------------------------------
@@ -236,7 +263,7 @@ verify_capability_hardening() {
 verify_capability_hardening
 
 # ----------------------------------------------------------------------
-# Check container root filesystem is read-only
+# Check container root filesystem is read-only.
 # Expected: read-only root with writable tmpfs mounts as needed.
 # Show warning if root is not read-only, but do not fail.
 # ----------------------------------------------------------------------
@@ -751,10 +778,3 @@ fi
 
 bash
 exit "$cmd_status"
-
-
-# run CMD (claude by default, or any override)
-"$@"
-# drop into interactive bash when CMD exits
-# when bash exits → trap fires → git trail → container exits
-bash
