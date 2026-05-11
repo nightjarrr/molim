@@ -5,7 +5,10 @@
 # Allowlist:
 #   git <anything>
 #   gh issue view <anything>
+#   gh issue list <anything>
 #   gh issue develop <anything>
+#   gh pr view <anything>
+#   gh pr diff <anything>
 #   node scripts/add-changelog-entry.mjs <anything>
 
 set -euo pipefail
@@ -22,8 +25,23 @@ if [[ "$command_str" == "gh issue view "* ]]; then
     exit 0
 fi
 
+# gh issue list <anything>
+if [[ "$command_str" == "gh issue list"* ]]; then
+    exit 0
+fi
+
 # gh issue develop <anything>  (Phase 2 branch creation)
 if [[ "$command_str" == "gh issue develop "* ]]; then
+    exit 0
+fi
+
+# gh pr view <anything>
+if [[ "$command_str" == "gh pr view "* ]]; then
+    exit 0
+fi
+
+# gh pr diff <anything>
+if [[ "$command_str" == "gh pr diff "* ]]; then
     exit 0
 fi
 
@@ -33,5 +51,5 @@ if [[ "$command_str" == "node scripts/add-changelog-entry.mjs"* ]]; then
 fi
 
 echo "Blocked: Associate Architect is not permitted to run: $command_str" >&2
-echo "Allowed commands: git, gh issue view, gh issue develop, node scripts/add-changelog-entry.mjs" >&2
+echo "Allowed commands: git, gh issue view, gh issue list, gh issue develop, gh pr view, gh pr diff, node scripts/add-changelog-entry.mjs" >&2
 exit 2
