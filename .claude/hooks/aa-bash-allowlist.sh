@@ -4,7 +4,15 @@
 
 set -euo pipefail
 
-command_str="$(jq -r '.command' <&0)"
+# Sanity check - only Bash tool supported.
+# Block everything else to report miscongifuration early.
+tool_name="$(jq -r '.tool_name' <&0)"
+if [[ "$tool_name" != "Bash" ]]; then
+    echo "Invalid: Hook only supports Bash tool." >&2
+    exit 2
+fi
+
+command_str="$(jq -r '.tool_input.command' <&0)"
 
 allowlist=(
     "git"
