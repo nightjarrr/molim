@@ -330,14 +330,6 @@ CHANGELOG.md                  # Running changelog with UPCOMING section
 Branch naming: `feature/{issue-id}-{slug}`, `fix/{issue-id}-{slug}`,
 `chore/{issue-id}-{slug}`, `docs/{issue-id}-{slug}`.
 
----
-
-### Cascading design refinement
-
-AA phase artifacts are approved milestones, not immutable records. During a later AA-supported phase, if deeper elaboration reveals that an earlier artifact for the same Issue is incomplete, ambiguous, or wrong, AA may propose a targeted amendment to that earlier artifact. The amendment is allowed only when PO agrees, the change is necessary for the current phase deliverable, and the reason is recorded. AA must update all affected artifacts together so the design stack remains coherent.
-
-If the amendment changes Issue scope, invalidates prior phase approval, or exceeds the current dispatch, AA escalates — these require a PM decision and potentially a new dispatch.
-
 ## GitHub Issues
 
 GitHub Issues are the tracking and planning layer. Substantive content lives in the repository — Issues link to it.
@@ -416,6 +408,8 @@ The columns in each phase table are:
 Every phase begins with a Validate Issue step. If Validate Issue reports
 inconsistencies, PM follows the Issue Validation Failure Remediation
 protocol before proceeding with the rest of the phase.
+
+**Cascading design refinement.** AA-phase artifacts (spec, tech-design, impl-plan) are approved milestones, not immutable records. During a later AA-supported phase, if deeper elaboration reveals that an earlier artifact for the same Issue is incomplete, ambiguous, or wrong, AA may propose a targeted amendment to that earlier artifact. The amendment is allowed only when PO agrees, the change is necessary for the current phase deliverable, and the reason is recorded. AA must update all affected artifacts together so the design stack remains coherent. If the amendment changes Issue scope, invalidates prior phase approval, or exceeds the current dispatch, AA escalates.
 
 ### Phase 1 — Triage
 
