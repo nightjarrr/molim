@@ -1,12 +1,14 @@
 ---
 name: aa-spec
-description: Reference knowledge for Associate Architect when drafting or revising a functional specification (spec.md). Covers required content, discovery discipline, acceptance criteria quality, and decision logging.
+description: Draft or revise a functional specification (spec.md). Covers required content, discovery discipline, acceptance criteria quality, and decision logging.
 user-invocable: false
 ---
 
-# AA Phase Skill — Functional Specification (Phase 2)
+# Phase 2: Functional Specification
 
-This is a reference document. Invoke it at the start of a Phase 2 session to load the knowledge and discipline required to produce a high-quality `spec.md`.
+You are in Phase 2. Your output is `spec.md` — a complete, PO-confirmed functional specification that answers "what the system must do" from a user perspective. This document feeds Phase 3 (Technical Design) and constrains everything downstream.
+
+This skill applies to `feature`, `bug`, and `chore` issue types. For `docs` issues, Phase 2 produces the documentation artifact directly rather than a specification — refer to the agent definition for dispatch.
 
 ---
 
