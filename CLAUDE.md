@@ -43,7 +43,7 @@ Tests are required for new Python code. Each bugfix must be covered by a set of 
 
 Every implementation task — regardless of size — follows this workflow from start to finish. Begin at step 1 whenever a new task is introduced. Steps 3–8 form an iteration loop: if Coder's output is not approved, the plan is amended and implementation repeats until the user signs off. Only then does the work proceed to step 9 (open PR).
 
-**`docs` issue fast path.** For `docs`-type issues, steps 3–8 are replaced by a direct AA dispatch. After step 2, set the phase label to `phase: spec` on the issue. AA produces the documentation artifact directly — no plan mode, no Coder. Proceed to step 9 (open PR) after AA completes.
+**`docs` issue fast tracking.** For `docs`-type issues, steps 3–8 are replaced by a direct Associate Architect (AA) dispatch. After step 2, set the phase label to `phase: spec` on the issue, then dispatch `@associate-architect` subagent with: issue id, issue title, issue type, issue phase (`Phase 2`), expected resulting document path within repo, and any additional context or instructions from the conversation. AA produces the documentation artifact directly — no plan mode, no Coder. Proceed to step 9 (open PR) after AA completes.
 
 ### 1. Issue identification
 
