@@ -43,6 +43,8 @@ Tests are required for new Python code. Each bugfix must be covered by a set of 
 
 Every implementation task — regardless of size — follows this workflow from start to finish. Begin at step 1 whenever a new task is introduced. Steps 3–8 form an iteration loop: if Coder's output is not approved, the plan is amended and implementation repeats until the user signs off. Only then does the work proceed to step 9 (open PR).
 
+**`docs` issue fast path.** For `docs`-type issues, steps 3–8 are replaced by a direct AA dispatch. After step 2, set the phase label to `phase: spec` on the issue. AA produces the documentation artifact directly — no plan mode, no Coder. Proceed to step 9 (open PR) after AA completes.
+
 ### 1. Issue identification
 
 Run `printenv ISSUE_ID` to check the issue number, then confirm with the user. The user can provide a different number. If no issue exists yet, use the `/new-issue` skill to create one.
