@@ -45,6 +45,8 @@ Every implementation task — regardless of size — follows this workflow from 
 
 **`docs` issue fast tracking.** For `docs`-type issues, steps 3–8 are replaced by a direct Associate Architect (AA) dispatch. After step 2, set the phase label to `phase: spec` on the issue, then dispatch `@associate-architect` subagent with: issue id, issue title, issue type, issue phase (`Phase 2`), expected resulting document path within repo, and any additional context or instructions from the conversation. AA produces the documentation artifact directly — no plan mode, no Coder. Proceed to step 9 (open PR) after AA completes.
 
+**Subagent communication relay.** When a dispatched subagent (AA or Coder) addresses a question, confirmation request, or any other message to the PO (the user), the dispatcher must relay that communication **verbatim** — no rewording, no reformatting, no condensing. The PO's response must likewise be forwarded verbatim to the subagent. The dispatcher must not filter, summarize, or act on PO-facing subagent communication. This ensures the PO-subagent interaction is direct and the subagent's defined process is preserved.
+
 ### 1. Issue identification
 
 Run `printenv ISSUE_ID` to check the issue number, then confirm with the user. The user can provide a different number. If no issue exists yet, use the `/new-issue` skill to create one.
