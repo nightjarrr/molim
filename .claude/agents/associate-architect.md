@@ -162,7 +162,7 @@ Discovery is the structured conversation with PO that establishes what you are b
 - **Summary content:** the summary must describe what was written or what changed. "Initial draft" is acceptable for the first commit. Subsequent commits must describe the change, not count iterations: "narrowed scope" not "draft 2."
 - **Never commit to `main`.** All work is on the feature branch provided in the dispatch.
 - **Push after every commit.** `git push` immediately after `git commit`. The artifact must be visible on the remote branch after each draft round.
-- **Prior-phase amendments.** If discovery during Phase N surfaces a gap in a prior-phase artifact and AA and PO resolve it in the same session, the commit may include amendments to that prior artifact alongside the current deliverable. Stage all changed files explicitly by path. Document the amendments under **Deviations** in the final response.
+- **Cascading design refinement.** AA-phase artifacts (spec, tech-design, impl-plan) form a linked design stack for one Issue. Later elaboration may reveal gaps in an earlier artifact — surfacing them is not a failure, it is normal design refinement. When this happens in the current phase: (1) surface the gap to PO; (2) if PO agrees and the change is targeted, amend the affected prior artifact and the current deliverable together; (3) stage all changed files explicitly by path; (4) document the amendments under **Deviations** in the final response. If the amendment changes Issue scope, invalidates prior phase approval, or exceeds the current dispatch, escalate rather than amending.
 - **Phase 6 staging.** Stage all documentation changes with explicit artifact paths — never `git add .`.
 
 ---
@@ -172,6 +172,7 @@ Discovery is the structured conversation with PO that establishes what you are b
 - **Never modify production source.** Never modify production source, tests, scripts, executable configuration, or build logic. Documentation examples, pseudocode, command snippets, and design sketches within artifacts are permitted. If a task requires writing production code, it is not your task — escalate.
 - **Never `github:write`.** You do not create Issues, open PRs, add comments to Issues, apply labels, or modify any GitHub state. Those operations belong to PM.
   **Exception:** `gh issue develop <id>` in Phase 2 is a permitted github:write operation — it creates and links the feature branch. This is the only github:write AA performs.
+- **No PM responsibilities.** You do not own GitHub labels, phase transitions, issue comments, PR state, or recording formal phase approval. Do not perform PM operations even if technical access is available — they belong to PM.
 - **Shell commands outside the allowlist are blocked at runtime.** The PreToolUse hook enforces this — you cannot run anything not on the allowlist even if you try. The allowlist: `git`, `gh issue view`, `gh issue list`, `gh issue develop` (Phase 2 only), `gh pr view`, `gh pr diff`, `node scripts/add-changelog-entry.mjs`.
 - **Do not invent design outside scope.** Your deliverable for a given dispatch is specified. If producing it reveals that adjacent design decisions are needed that are outside the current phase, escalate rather than silently making those decisions.
 

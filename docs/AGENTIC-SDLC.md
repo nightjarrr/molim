@@ -177,6 +177,7 @@ underlying mechanism is the same shell.
 Notes:
 - PM has no filesystem write or shell access. All file modifications happen through delegated AA or Coder invocations, or through skills that encapsulate write operations (e.g. Cut Release).
 - PM is the exclusive holder of `github:write`. All Issue updates, label changes, PR operations, and CI status writes go through PM.
+- AA has one `github:write` exception: Phase 2 feature branch creation. In Phase 2 only, AA may create and check out the GitHub-linked development branch for the current Issue. AA may not edit Issues, comments, labels, PRs, reviews, or other GitHub state.
 - AA has full `github:read` access to support its information-gathering responsibilities. To produce well-informed specs, technical designs, and implementation plans, AA needs the autonomy to fetch context from any Issue, PR, comment, or related artifact it judges relevant.
 - Coder has no GitHub API access. Coder's responsibility ends at "local quality gates pass, branch pushed." PM independently verifies CI status on the pushed branch before reporting phase completion to the Project Owner.
 - `shell:exec` is Coder-exclusive. This is the highest-risk permission and warrants the tightest scoping in implementations (sandboxed environment, no network access unless required by the test suite).
@@ -330,6 +331,12 @@ Branch naming: `feature/{issue-id}-{slug}`, `fix/{issue-id}-{slug}`,
 `chore/{issue-id}-{slug}`, `docs/{issue-id}-{slug}`.
 
 ---
+
+### Cascading design refinement
+
+AA phase artifacts are approved milestones, not immutable records. During a later AA-supported phase, if deeper elaboration reveals that an earlier artifact for the same Issue is incomplete, ambiguous, or wrong, AA may propose a targeted amendment to that earlier artifact. The amendment is allowed only when PO agrees, the change is necessary for the current phase deliverable, and the reason is recorded. AA must update all affected artifacts together so the design stack remains coherent.
+
+If the amendment changes Issue scope, invalidates prior phase approval, or exceeds the current dispatch, AA escalates — these require a PM decision and potentially a new dispatch.
 
 ## GitHub Issues
 
@@ -491,7 +498,7 @@ On Project Owner approval, PM sets the phase label directly to `phase: impl-done
 
 **Requirements.** A focused projection of `spec.md` for Coder: what the feature must do, its acceptance criteria, and any implementation constraints. AA synthesizes this from the accepted spec so that Coder can work from `impl-plan.md` as a single source of truth without reading `spec.md` directly.
 
-**Architecture context.** A filtered architectural view of the parts of the system this feature touches, synthesized from `architecture.md` (the existing system shape), `tech-design.md` (architectural decisions made for this feature, not yet reflected in `architecture.md`), and the current codebase. For architecture context section, AA filters and distils — new design choices belong in `tech-design.md`, not here. If AA finds that the impl-plan needs design that isn't yet captured in `tech-design.md`, AA escalates via PM rather than embedding new design in this section. Proportional to feature complexity: a trivial change may need a sentence or two; a cross-cutting feature may need a substantial section. This section is what allows Coder to execute having the right amount of architecture awareness without reading the full `architecture.md`.
+**Architecture context.** A filtered architectural view of the parts of the system this feature touches, synthesized from `architecture.md` (the existing system shape), `tech-design.md` (architectural decisions made for this feature, not yet reflected in `architecture.md`), and the current codebase. For architecture context section, AA filters and distils — new design choices belong in `tech-design.md`, not here. If AA finds that the impl-plan needs design not yet in `tech-design.md`, AA must not silently embed that design only in the impl-plan. AA surfaces the gap through the active dispatch channel. If PO agrees and the change is targeted, AA may amend `tech-design.md` and continue with `impl-plan.md`, recording the amendment and rationale. If the gap changes feature scope, invalidates prior approval, or exceeds the current dispatch, AA escalates to PM. Proportional to feature complexity: a trivial change may need a sentence or two; a cross-cutting feature may need a substantial section. This section is what allows Coder to execute having the right amount of architecture awareness without reading the full `architecture.md`.
 
 **Work breakdown.**
 - Ordered list of implementation steps.
