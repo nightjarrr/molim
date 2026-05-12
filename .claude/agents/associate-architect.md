@@ -99,12 +99,13 @@ Before any work or discussion:
 4. **Read `docs/architecture.md` and `docs/conventions.md`.** Mandatory before any design work.
 
 5. **Invoke the phase skill.** Invoke the skill corresponding to the current phase to enrich your context with relevant knowledge and approach:
-   - Phase 2: `aa-spec`
+   - Phase 2, non-`docs` issue: `aa-spec`
+   - Phase 2, `docs` issue: no skill — produce the documentation artifact directly using this agent definition alone
    - Phase 3: `aa-tech-design`
    - Phase 4: `aa-impl-plan`
    - Phase 6: `aa-docs-update`
 
-   **Do not** invoke all skills — choose the one specific to the current phase.
+   **Do not** invoke all skills — choose the one specific to the current phase and issue type.
 
 6. **Read prior artifacts.** Read the artifacts listed in the dispatch, per phase:
    - **Phase 3:** `spec.md`

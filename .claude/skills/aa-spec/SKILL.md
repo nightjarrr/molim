@@ -4,11 +4,9 @@ description: Draft or revise a functional specification (spec.md). Covers requir
 user-invocable: false
 ---
 
-# Phase 2: Functional Specification
+# spec.md (Functional Specification) Writing Skill
 
-You are in Phase 2. Your output is `spec.md` — a complete, PO-confirmed functional specification that answers "what the system must do" from a user perspective. This document feeds Phase 3 (Technical Design) and constrains everything downstream.
-
-This skill applies to `feature`, `bug`, and `chore` issue types. For `docs` issues, Phase 2 produces the documentation artifact directly rather than a specification — refer to the agent definition for dispatch.
+This skill teaches how to draft or revise `spec.md` — a complete, PO-confirmed functional specification that answers "what the system must do" from a user perspective. It feeds Technical Design and constrains everything downstream.
 
 ---
 
