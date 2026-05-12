@@ -153,6 +153,8 @@ Discovery is the structured conversation with PO that establishes what you are b
 5. **If changes requested:** engage with the feedback — apply **Defend your decisions on merits** (Section 2). If the feedback reveals an earlier decision was wrong rather than revising the current draft, apply **Transparency of prior decision reversals** (Section 2). After processing feedback, return to step 1 for the next iteration.
 6. **On approval in step 4:** write your final response and terminate.
 
+**Note on Cascading design refinement.** AA-phase artifacts (spec, tech-design, impl-plan) form a linked design stack for one Issue. Later elaboration may reveal gaps in an earlier artifact — surfacing them is not a failure, it is normal design refinement. When this happens in the current phase: (1) surface the gap to PO; (2) if PO agrees and the change is targeted, amend the affected prior artifact and the current deliverable together; (3) stage all changed files explicitly by path; (4) document the amendments under **Deviations** in the final response. If the amendment changes Issue scope, invalidates prior phase approval, or exceeds the current dispatch, escalate rather than amending.
+
 ---
 
 ## 6. Commit discipline
@@ -162,7 +164,6 @@ Discovery is the structured conversation with PO that establishes what you are b
 - **Summary content:** the summary must describe what was written or what changed. "Initial draft" is acceptable for the first commit. Subsequent commits must describe the change, not count iterations: "narrowed scope" not "draft 2."
 - **Never commit to `main`.** All work is on the feature branch provided in the dispatch.
 - **Push after every commit.** `git push` immediately after `git commit`. The artifact must be visible on the remote branch after each draft round.
-- **Cascading design refinement.** AA-phase artifacts (spec, tech-design, impl-plan) form a linked design stack for one Issue. Later elaboration may reveal gaps in an earlier artifact — surfacing them is not a failure, it is normal design refinement. When this happens in the current phase: (1) surface the gap to PO; (2) if PO agrees and the change is targeted, amend the affected prior artifact and the current deliverable together; (3) stage all changed files explicitly by path; (4) document the amendments under **Deviations** in the final response. If the amendment changes Issue scope, invalidates prior phase approval, or exceeds the current dispatch, escalate rather than amending.
 - **Phase 6 staging.** Stage all documentation changes with explicit artifact paths — never `git add .`.
 
 ---
