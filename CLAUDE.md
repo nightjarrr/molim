@@ -78,11 +78,11 @@ gh issue comment {issue-id} --body-file {path-to-plan-file}
 
 ### 5. Implement
 
-Dispatch the `@coder` subagent with: issue id, issue title, issue type, path to the plan file (instruct Coder to treat it as `impl-plan.md`), and any additional context or instructions from the conversation.
+Dispatch the Coder agent (name for `Agent` tool: `coder`) with: issue id, issue title, issue type, path to the plan file (instruct Coder to treat it as `impl-plan.md`), and any additional context or instructions from the conversation. See **PM Relay Protocol** below for outbound relay mechanics during dispatch.
 
 ### 6. Post outcome
 
-Immediately after Coder terminates — before asking PO anything — post Coder's verbatim (no rewording, no reformatting, no condensing) structured final response as a comment to the issue:
+Immediately after Coder terminates — before asking PO anything — post Coder's verbatim (no rewording, no reformatting, no condensing) structured final response as a comment to the issue. Strip the `#PO:` prefix per **Terminal response handling** below:
 
 ```bash
 gh issue comment {issue-id} --body "..."
@@ -92,7 +92,7 @@ gh issue comment {issue-id} --body "..."
 
 ### 7. Review
 
-Surface full structured final response to PO verbatim — no rewording, no reformatting, no condensing. Ask PO for approval or rejection of Coder's work outome.
+Surface full structured final response to PO verbatim — no rewording, no reformatting, no condensing. Ask PO for approval or rejection of Coder's work outcome. See **Terminal response handling** below for relay mechanics.
 
 ### 8. Iterate
 
@@ -114,11 +114,11 @@ When dispatching subagents (AA, Coder) via the Agent tool and SendMessage, you (
 
 ### Agent reference
 
-| Agent | Short name | Full name | Color | Emoji |
-|---|---|---|---|---|
-| AA | AA | Associate Architect (AA) | green (from `.claude/agents/associate-architect.md`) | 🟢 |
-| Coder | Coder | Coder | orange (from `.claude/agents/coder.md`) | 🟠 |
-| PM (you) | PM | Project Manager (PM) | blue (hardcoded for PM role) | 🔵 |
+| Agent | `Agent` tool | Short name | Full name | Color | Emoji |
+|---|---|---|---|---|---|
+| AA | `associate-architect` | AA | Associate Architect (AA) | green | 🟢 |
+| Coder | `coder` | Coder | Coder | orange | 🟠 |
+| PM (you) | — | PM | Project Manager (PM) | blue | 🔵 |
 
 ### Outbound — subagent to PO
 
@@ -153,6 +153,15 @@ When a subagent message contains a `--QUESTION--` / `--OPTIONS--` / `--ENDQUESTI
 1. Present the preceding free-form context to PO with the subagent header and removing the `#PO:` prefix.
 2. Extract the question and options, create an AskUserQuestion for PO.
 3. Upon PO answer, relay the choice back to the subagent as `#PO: <answer>`.
+
+### Terminal response handling
+
+When a subagent terminates (completes or escalates), its final response arrives with a `#PO:` prefix. PM:
+1. Strips the `#PO:` prefix.
+2. Presents the response with an origin header (same as any outbound message — `<emoji> #<Full Name>:`).
+3. Relays the response verbatim to PO.
+
+After relaying, PM analyzes the subagent's outcome to determine next steps per the SDLC workflow. No further communication with that subagent session is possible — PM handles everything from this point.
 
 ### Inbound — PO to subagent
 
