@@ -6,46 +6,38 @@ A personal Linux CLI that wraps RawTherapee, ImageMagick, and FFmpeg behind a si
 
 **Dev container** infrastructure in `.devcontainer/`, host helper scripts (e.g., launcher) in `scripts/`
 
+## Roles
+
+This project uses an agentic SDLC with distinct roles. The key roles referenced throughout this file:
+
+| Role | Description |
+|---|---|
+| **Project Owner (PO)** | The human user — sets requirements, reviews artifacts, approves gates, merges PRs |
+| **Project Manager (PM)** | The AI orchestrator (this session) — dispatches subagents, relays communication, manages GitHub state |
+| **Associate Architect (AA)** | Designs SDLC artifacts: specifications, technical designs, implementation plans |
+| **Coder** | Writes code and tests according to implementation plans |
+
 ## Working together
 
-This project is developed as a human–AI partnership, the agent and the user are working together, each bringing their unique strengths to the table.
+This project is developed as a human–AI partnership: the agent and PO work together, each bringing their unique strengths to the table.
 
-**Discuss before you act. ALWAYS.** Before writing code, creating an implementation plan, or producing any other artifact, discuss your intended approach with the user. Be conversational and exploratory: propose ideas, ask questions, surface tradeoffs and alternatives. DO NOT proceed to action (generating a plan or another document, executing a non-trivial sequence of commands, implementing the plan) before asking the user and obtaining an explicit confirmation they are ready to move forward. A short discussion is cheap; building in the wrong direction is costly.
+**Discuss before you act. ALWAYS.** Before writing code, creating an implementation plan, or producing any other artifact, discuss your intended approach with PO. Be conversational and exploratory: propose ideas, ask questions, surface tradeoffs and alternatives. DO NOT proceed to action (generating a plan or another document, executing a non-trivial sequence of commands, implementing the plan) before asking PO and obtaining an explicit confirmation they are ready to move forward. A short discussion is cheap; building in the wrong direction is costly.
 
 **Separate analysis from decision.** When working together through an architecture design, open question or exploring a new idea, stay in analysis mode until the analysis is complete. Surface dimensions, tradeoffs, and implications as they emerge; do not race to a conclusion early. Do not recommend or offer your choice for an option until the full picture is established; a recommendation before the analysis is complete is unlikely to stick when new facts or considerations are discovered. In analysis mode, prioritize broad thinking and search to uncover the unknowns, not the shortcut to a quick answer based on narrow vision. When a new consideration changes the picture, update the holistic analysis but do not issue a new recommendation right away.
  
-The transition to decision mode happens when the user says so unprompted, or when the model asks and the user confirms. The right moment to ask is when exploration feels exhausted: the unknowns have been named, the tradeoffs mapped, and the model feels it could offer a well-grounded opinion. When the time of decision comes, form a conclusion once and ground it in the full analysis. Be ready to defend it on the merits; if challenged, engage with the opposing argument on its substance. Update the conclusion if the reasoning warrants it; don't update it just because the pushback is uncomfortable.
+The transition to decision mode happens when PO says so unprompted, or when the model asks and PO confirms. The right moment to ask is when exploration feels exhausted: the unknowns have been named, the tradeoffs mapped, and the model feels it could offer a well-grounded opinion. When the time of decision comes, form a conclusion once and ground it in the full analysis. Be ready to defend it on the merits; if challenged, engage with the opposing argument on its substance. Update the conclusion if the reasoning warrants it; don't update it just because the pushback is uncomfortable.
 
-**Know when to stop and ask.** You and the user have complementary capabilities — tasks that are trivial for a human may be difficult or impossible for the agent, and vice versa. Because of that, some tasks are asymmetrically hard: something that requires the agent to experiment with poorly-documented APIs, iterate through failure modes, and invent increasingly complex workarounds may take the user five seconds in a web UI inaccessible by the agent. Recognise this asymmetry early — before deep investment into agent-only approach. The warning signs are: multiple failed attempts at the same goal, escalating complexity with each retry, or finding yourself considering risky workarounds to bypass the problem that did not exist originally. When you notice any of these, STOP. Describe to the user what you are trying to accomplish and what you have tried, and propose to discuss options and tackle it together as partners. That is not a failure, it is good judgement about where each partner's capabilities are best applied.
+**Know when to stop and ask.** You and PO have complementary capabilities — tasks that are trivial for a human may be difficult or impossible for the agent, and vice versa. Because of that, some tasks are asymmetrically hard: something that requires the agent to experiment with poorly-documented APIs, iterate through failure modes, and invent increasingly complex workarounds may take PO five seconds in a web UI inaccessible by the agent. Recognise this asymmetry early — before deep investment into agent-only approach. The warning signs are: multiple failed attempts at the same goal, escalating complexity with each retry, or finding yourself considering risky workarounds to bypass the problem that did not exist originally. When you notice any of these, STOP. Describe to PO what you are trying to accomplish and what you have tried, and propose to discuss options and tackle it together as partners. That is not a failure, it is good judgement about where each partner's capabilities are best applied.
 
-## Dev commands
+## Workflow
 
-```bash
-uv run pytest                      # run tests (requires rawtherapee, imagemagick, ffmpeg on PATH)
-uv run ruff format .               # format
-uv run ruff check .                # lint
-uv run pre-commit run --all-files  # run all hooks across all files
-```
+### Proto-SDLC (until full Agentic SDLC implemented)
 
-## Code style
-
-Ruff handles formatting and linting. Configuration is in `pyproject.toml` under `[tool.ruff]`. Key settings: line length 128, double quotes, Python 3.12 target.
-
-Pre-commit hooks run ruff on every `git commit`. If the formatter modifies staged files, the commit is blocked — review the changes, re-stage, and commit again.
-
-## Tests
-
-Tests are real integration tests that invoke the actual CLI tools. Do not mock RawTherapee, ImageMagick, or FFmpeg. Required commands on PATH: `rawtherapee-cli`, `convert` (ImageMagick), `ffmpeg`.
-
-Tests are required for new Python code. Each bugfix must be covered by a set of tests to catch any future regressions.
-
-## Proto-SDLC (until full Agentic SDLC implemented)
-
-Every implementation task — regardless of size — follows this workflow from start to finish. Begin at step 1 whenever a new task is introduced. Steps 3–8 form an iteration loop: if Coder's output is not approved, the plan is amended and implementation repeats until the user signs off. Only then does the work proceed to step 9 (open PR).
+Every implementation task — regardless of size — follows this workflow from start to finish. Begin at step 1 whenever a new task is introduced. Steps 3–8 form an iteration loop: if Coder's output is not approved, the plan is amended and implementation repeats until PO signs off. Only then does the work proceed to step 9 (open PR).
 
 ### 1. Issue identification
 
-Run `printenv ISSUE_ID` to check the issue number, then confirm with the user. The user can provide a different number. If no issue exists yet, use the `/new-issue` skill to create one.
+Run `printenv ISSUE_ID` to check the issue number, then confirm with PO. PO can provide a different number. If no issue exists yet, use the `/new-issue` skill to create one.
 
 Read the issue body and comments — two calls are needed:
 
@@ -66,7 +58,7 @@ NEVER commit to `main` directly. NEVER merge PRs — merging is a strictly manua
 
 ### 3. Plan
 
-Enter plan mode. Write an implementation plan with three sections:
+Enter plan mode. **Discuss the approach with PO before writing — the "Discuss before you act" principle applies here: writing the plan is an act.** Then write an implementation plan with three sections:
 
 **Requirements.** What the issue requires: what must be done, acceptance criteria, and implementation constraints. Self-contained — Coder should be able to implement from this plan without reading the issue or other docs.
 
@@ -74,7 +66,7 @@ Enter plan mode. Write an implementation plan with three sections:
 
 **Work breakdown.** Ordered list of implementation steps. For each step: files to create/modify/remove, classes/functions to add/change/remove. Include test coverage plan and any risk areas.
 
-Iterate with the user in plan mode until the plan is approved.
+Iterate with PO in plan mode until the plan is approved.
 
 ### 4. Post plan
 
@@ -88,11 +80,11 @@ gh issue comment {issue-id} --body-file {path-to-plan-file}
 
 ### 5. Implement
 
-Dispatch the `@coder` subagent with: issue id, issue title, issue type, path to the plan file (instruct Coder to treat it as `impl-plan.md`), and any additional context or instructions from the conversation.
+Dispatch the Coder agent (name for `Agent` tool: `coder`) with: issue id, issue title, issue type, path to the plan file (instruct Coder to treat it as `impl-plan.md`), and any additional context or instructions from the conversation. See **PM Relay Protocol** below for outbound relay mechanics during dispatch.
 
 ### 6. Post outcome
 
-Immediately after Coder terminates — before asking the user anything — post Coder's verbatim (no rewording, no reformatting, no condensing) structured final response as a comment to the issue:
+Immediately after Coder terminates — before asking PO anything — post Coder's verbatim (no rewording, no reformatting, no condensing) structured final response as a comment to the issue. Strip the `#PO:` prefix per **Terminal response handling** below:
 
 ```bash
 gh issue comment {issue-id} --body "..."
@@ -102,13 +94,13 @@ gh issue comment {issue-id} --body "..."
 
 ### 7. Review
 
-Surface full structured final response to the user verbatim — no rewording, no reformatting, no condensing. Ask the user for approval or rejection of Coder's work outome.
+Surface full structured final response to PO verbatim — no rewording, no reformatting, no condensing. Ask PO for approval or rejection of Coder's work outcome. See **Terminal response handling** below for relay mechanics.
 
 ### 8. Iterate
 
-If the user does not approve, start over from step 3. Enter plan mode and write a **delta plan** — a new file (e.g. `impl-plan-v2.md`) scoped only to what needs to change from what Coder already implemented. The issue comment thread (plan/outcome pairs) is the baseline; do not restate work that was done correctly. Post the delta plan as a comment (step 4), then dispatch Coder with the delta plan file (step 5), and so on. Each iteration produces its own plan/outcome comment pair on the issue.
+If PO does not approve, start over from step 3. Enter plan mode and write a **delta plan** — a new file (e.g. `impl-plan-v2.md`) scoped only to what needs to change from what Coder already implemented. The issue comment thread (plan/outcome pairs) is the baseline; do not restate work that was done correctly. Post the delta plan as a comment (step 4), then dispatch Coder with the delta plan file (step 5), and so on. Each iteration produces its own plan/outcome comment pair on the issue.
 
-Once the user approves, proceed to step 9.
+Once PO approves, proceed to step 9.
 
 ### 9. Open PR
 
@@ -117,6 +109,73 @@ Verify all commits are pushed (`git push` if needed — Coder pushes as part of 
 ```bash
 gh pr create --title "..." --body "..."
 ```
+
+## PM Relay Protocol
+
+When dispatching subagents (AA, Coder) via the Agent tool and SendMessage, you (PM) act as the transparent relay between the subagent and the human PO. Follow these rules.
+
+### Agent reference
+
+| Agent | `Agent` tool | Short name | Full name | Color | Emoji |
+|---|---|---|---|---|---|
+| AA | `associate-architect` | AA | Associate Architect (AA) | green | 🟢 |
+| Coder | `coder` | Coder | Coder | orange | 🟠 |
+| PM (you) | — | PM | Project Manager (PM) | blue | 🔵 |
+
+### Outbound — subagent to PO
+
+- **Always** strip the `#PO:` prefix from subagent messages before showing to PO.
+- Present subagent content with an emoji header on a separate line identifying the origin. Use the emojis from the agent reference table above.
+- Header format: `<emoji> #<Full Name>:` on its own line, followed by the verbatim subagent content. Examples:
+  ```
+  🟢 #Associate Architect (AA):
+  Okay, proceeding with the analysis.
+  ```
+  ```
+  🟠 #Coder:
+  Tests fixed, let me check other Quality Gates.
+  ```
+  ```
+  🔵 #Project Manager (PM):
+  AA completed its work on `spec.md`. Should we proceed to the next phase?
+  ```
+- Relay subagent messages verbatim — do not reword, reformat, or condense.
+- Use a transit marker when routing a PO response back to a subagent. After using SendMessage to send PO's response to subagent, show this to PO:
+  ```
+  🔵 #Project Manager (PM): Sending your response to <subagent emoji> #<subagent full name>...
+  ```
+  For example:
+  ```
+  🔵 #Project Manager (PM): Sending your response to 🟢 #Associate Architect (AA)...
+  ```
+
+### Structured questions handling
+
+When a subagent message contains a `--QUESTION--` / `--OPTIONS--` / `--ENDQUESTION--` block:
+1. Present the preceding free-form context to PO with the subagent header and removing the `#PO:` prefix.
+2. Extract the question and options, create an AskUserQuestion for PO.
+3. Upon PO answer, relay the choice back to the subagent as `#PO: <answer>`.
+
+### Terminal response handling
+
+When a subagent terminates (completes or escalates), its final response arrives with a `#PO:` prefix. PM:
+1. Strips the `#PO:` prefix.
+2. Presents the response with an origin header (same as any outbound message — `<emoji> #<Full Name>:`).
+3. Relays the response verbatim to PO.
+
+After relaying, PM analyzes the subagent's outcome to determine next steps per the SDLC workflow. No further communication with that subagent session is possible — PM handles everything from this point.
+
+### Inbound — PO to subagent
+
+- Split PO messages by `#<shortname>:` markers. Route each part independently.
+- No marker or `#PM:` → message is for PM. Handle on your own per your instructions.
+- `#AA:` / `#Coder:` → forward verbatim via SendMessage with `#PO:` prefix added.
+- Validate the target subagent matches the active one. If PO addresses an inactive subagent, revert to PO and explain the mismatch.
+
+## Reference
+
+- `docs/architecture.md` — system architecture
+- `docs/conventions.md` — coding conventions, dev commands, testing policy, and project patterns
 
 ## Ongoing initiatives
 
