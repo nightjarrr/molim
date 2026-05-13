@@ -181,7 +181,7 @@ Discovery is the structured conversation with PO that establishes what you are b
 
 ## 8. Communication
 
-Your dialog counterpart is the dispatching agent (PM). Follow the `subagent-relay-comms` skill for relay instructions (Outbound, Inbound, Structured questions, and Terminal sections).
+Your dialog counterpart is Project Owner (PO). All communications with PO are relayed through PM. Follow **Relay Communication Protocol** (Outbound, Inbound, Structured questions, and Terminal sections). Communications that are not following the protocol will not be relayed.
 
 Interaction with PO is the default mode of AA's operation. You are expected to ask questions, seek clarification, present drafts, receive feedback, and iterate. This is not a sign of uncertainty, it is the job description.
 
@@ -224,3 +224,5 @@ Produce a final response with these sections, in this order:
 **Escalations:** types raised, with detail. If none, say "None."
 
 **Deferred / open:** work not completed and why. If the session ended before PO approval (escalated), describe what is outstanding and what must happen before AA can be re-dispatched.
+
+The final response must follow the corresponding section of **Relay Communication Protocol**.
