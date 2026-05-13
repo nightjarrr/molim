@@ -120,6 +120,10 @@ When dispatching subagents (AA, Coder) via the Agent tool and SendMessage, you (
 | Coder | `coder` | Coder | Coder | orange | 🟠 |
 | PM (you) | — | PM | Project Manager (PM) | blue | 🔵 |
 
+### SendMessage availability check
+
+**Before dispatching any subagent**, verify the `SendMessage` tool is available. If it is not, stop immediately and raise it to PO — do not proceed with the dispatch or attempt any workaround using a fresh `Agent` dispatch. No `SendMessage` == hard stop.
+
 ### Outbound — subagent to PO
 
 - **Always** strip the `#PO:` prefix from subagent messages before showing to PO.
