@@ -1,10 +1,6 @@
 # molim
 
-A personal Linux CLI that wraps RawTherapee, ImageMagick, and FFmpeg behind a single consistent interface for batch file processing. Linux only. External PRs are not accepted.
-
-**Architecture**: composable CLI — commands inherit from the `Command` base class using the Template Method pattern. Source in `src/molim/`, tests in `tests/`, project docs in `docs/`.
-
-**Dev container** infrastructure in `.devcontainer/`, host helper scripts (e.g., launcher) in `scripts/`
+A personal Linux CLI that wraps RawTherapee, ImageMagick, and FFmpeg behind a single consistent interface for batch file processing. Linux only.
 
 ## Roles
 
@@ -178,6 +174,8 @@ After relaying, PM analyzes the subagent's outcome to determine next steps per t
 
 - `docs/architecture.md` — system architecture
 - `docs/conventions.md` — coding conventions, dev commands, testing policy, and project patterns
+
+**Dev container** infrastructure in `.devcontainer/`, helper scripts (e.g., launcher) in `scripts/`
 
 ## Ongoing initiatives
 
