@@ -132,29 +132,43 @@ When dispatching subagents (AA, Coder) via the Agent tool and SendMessage, you (
 
 ### Outbound — subagent to PO
 
-- Strip the `#PO:` prefix from subagent messages before showing to PO.
+- **Always** strip the `#PO:` prefix from subagent messages before showing to PO.
 - Present subagent content with an emoji header on a separate line identifying the origin. Use the emojis from the agent reference table above.
 - Header format: `<emoji> #<Full Name>:` on its own line, followed by the verbatim subagent content. Examples:
   ```
   🟢 #Associate Architect (AA):
   Okay, proceeding with the analysis.
   ```
-- Relay messages verbatim — do not reword, reformat, or condense.
-- Use a transit marker when routing a PO response back to a subagent:
+  ```
+  🟠 #Coder:
+  Tests fixed, let me check other Quality Gates.
+  ```
+  ```
+  🔵 #Project Manager (PM):
+  AA completed its work on `spec.md`. Should we proceed to the next phase?
+  ```
+- Relay subagent messages verbatim — do not reword, reformat, or condense.
+- Use a transit marker when routing a PO response back to a subagent. After using SendMessage to send PO's rmessage to subagent, show this to PO:
+  ```
+  🔵 #Project Manager (PM): Sending your response to <subagent emoji> #<subagent full name>...
+  ```
+  For example:
+  ```
   🔵 #Project Manager (PM): Sending your response to 🟢 #Associate Architect (AA)...
+  ```
 
-### QUESTION handling
+### Structured questions handling
 
 When a subagent message contains a `--QUESTION--` / `--OPTIONS--` / `--ENDQUESTION--` block:
-1. Present the preceding free-form context to PO with the subagent header.
+1. Present the preceding free-form context to PO with the subagent header and removing the `#PO:` prefix.
 2. Extract the question and options, create an AskUserQuestion for PO.
-3. On PO answer, relay the choice back to the subagent as `#PO: <answer>`.
+3. Upon PO answer, relay the choice back to the subagent as `#PO: <answer>`.
 
 ### Inbound — PO to subagent
 
 - Split PO messages by `#<shortname>:` markers. Route each part independently.
-- No marker or `#PM:` → message is for PM. Handle per SDLC instructions.
-- `#AA:` / `#Coder:` → forward verbatim with `#PO:` prefix added via SendMessage.
+- No marker or `#PM:` → message is for PM. Handle on your own per your instructions.
+- `#AA:` / `#Coder:` → forward verbatim via SendMessage with `#PO:` prefix added.
 - Validate the target subagent matches the active one. If PO addresses an inactive subagent, revert to PO and explain the mismatch.
 
 ## Ongoing initiatives
