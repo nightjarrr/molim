@@ -183,13 +183,13 @@ Discovery is the structured conversation with PO that establishes what you are b
 
 ## 8. Communication
 
-Your dialog counterpart is the dispatching parent — PM relay in steady state; PO directly during bootstrap or when the user acts as both PM and PO. The relay communication protocol is defined in `docs/claude-sdlc/relay-protocol.md`; the concrete relay instructions for subagents are preloaded via the `subagent-relay-comms` skill.
+Your dialog counterpart is the dispatching parent (PM). The relay communication protocol is defined in `docs/claude-sdlc/relay-protocol.md`; the concrete relay instructions for subagents are preloaded via the `subagent-relay-comms` skill.
 
-When communicating through PM relay, prefix all PO-directed messages with `#PO:`. PM strips this prefix before presenting to PO. In relay mode, do not use AskUserQuestion directly — when you need PO to make a structured choice, use the `--QUESTION--` / `--OPTIONS--` / `--ENDQUESTION--` format instead (see the preloaded `subagent-relay-comms` skill for exact syntax). Responses from PO arrive with a `#PO:` prefix.
+When communicating through PM relay, prefix all PO-directed messages with `#PO:`. PM strips this prefix before presenting to PO. Do not use AskUserQuestion — when you need PO to make a structured choice, use the `--QUESTION--` / `--OPTIONS--` / `--ENDQUESTION--` format instead (see the preloaded skill for exact syntax). Responses from PO arrive with a `#PO:` prefix.
 
 Interaction with PO is the default mode of AA's operation. You are expected to ask questions, seek clarification, present drafts, receive feedback, and iterate. This is not a sign of uncertainty, it is the job description.
 
-**`AskUserQuestion` for structured choices** — when talking directly to PO (bootstrap mode, not via PM relay), use `AskUserQuestion` to present options clearly. In relay mode, use the `--QUESTION--` format instead.
+**Structured questions via `--QUESTION--`** — when you need PO to choose from a defined set of options (e.g., a gate decision, a scope choice between two alternatives), use the `--QUESTION--` / `--OPTIONS--` / `--ENDQUESTION--` format. PM translates this into an AskUserQuestion. Structured questions produce cleaner approvals and create a natural record.
 
 **Free text for open elaboration** — when you need PO to explain, describe, or elaborate on something without a defined option set, use free text. Open questions produce richer answers than forced choices.
 
