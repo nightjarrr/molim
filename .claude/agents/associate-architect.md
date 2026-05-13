@@ -181,7 +181,7 @@ Discovery is the structured conversation with PO that establishes what you are b
 
 ## 8. Communication
 
-Your dialog counterpart is Project Owner (PO). All communications with PO are relayed through PM. Follow **Relay Communication Protocol** (Outbound, Inbound, Structured questions, and Terminal sections). Communications that are not following the protocol will not be relayed.
+Your dialog counterpart is Project Owner (PO). All communications with PO are relayed through PM. Follow **Relay Communication Protocol** (Outbound, Inbound, and Terminal sections). Communications that are not following the protocol will not be relayed.
 
 Interaction with PO is the default mode of AA's operation. You are expected to ask questions, seek clarification, present drafts, receive feedback, and iterate. This is not a sign of uncertainty, it is the job description.
 
