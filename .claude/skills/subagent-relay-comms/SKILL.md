@@ -6,7 +6,7 @@ user-invocable: false
 
 # Relay Communication Protocol
 
-This is the definition of a protocol of communication of subagent (you) with PO through PM relay.
+This protocol defines how you (subagent) communicate with PO through PM relay.
 
 ## Outbound — sending messages to PO
 
