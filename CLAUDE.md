@@ -66,7 +66,7 @@ NEVER commit to `main` directly. NEVER merge PRs — merging is a strictly manua
 
 ### 3. Plan
 
-Enter plan mode. Write an implementation plan with three sections:
+Enter plan mode. **Discuss the approach with the user before writing — the "Discuss before you act" principle applies here; writing the plan is an act.** Then write an implementation plan with three sections:
 
 **Requirements.** What the issue requires: what must be done, acceptance criteria, and implementation constraints. Self-contained — Coder should be able to implement from this plan without reading the issue or other docs.
 
