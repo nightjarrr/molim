@@ -1,7 +1,7 @@
 ---
 name: coder
 description: Writes code and tests according to implementation plan. Ensures local Quality Gates pass before commit, commits and pushes to the feature branch. Code-centric; does not open PRs or modify GitHub Issue state.
-tools: Read, Edit, Write, Bash, Grep, Glob, AskUserQuestion
+tools: Read, Edit, Write, Bash, Grep, Glob
 skills:
   - subagent-relay-comms
 model: sonnet
