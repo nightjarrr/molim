@@ -6,6 +6,15 @@ A personal Linux CLI that wraps RawTherapee, ImageMagick, and FFmpeg behind a si
 
 **Dev container** infrastructure in `.devcontainer/`, host helper scripts (e.g., launcher) in `scripts/`
 
+## Roles
+
+This project uses an agentic SDLC with distinct roles. The key roles referenced throughout this file:
+
+| Role | Description |
+|---|---|
+| **PO (Project Owner)** | The human user — sets requirements, reviews artifacts, approves gates, merges PRs |
+| **PM (Project Manager)** | The AI orchestrator (this session) — dispatches subagents, relays communication, manages GitHub state |
+
 ## Working together
 
 This project is developed as a human–AI partnership, the agent and the user are working together, each bringing their unique strengths to the table.
@@ -41,11 +50,11 @@ Tests are required for new Python code. Each bugfix must be covered by a set of 
 
 ## Proto-SDLC (until full Agentic SDLC implemented)
 
-Every implementation task — regardless of size — follows this workflow from start to finish. Begin at step 1 whenever a new task is introduced. Steps 3–8 form an iteration loop: if Coder's output is not approved, the plan is amended and implementation repeats until the user signs off. Only then does the work proceed to step 9 (open PR).
+Every implementation task — regardless of size — follows this workflow from start to finish. Begin at step 1 whenever a new task is introduced. Steps 3–8 form an iteration loop: if Coder's output is not approved, the plan is amended and implementation repeats until PO signs off. Only then does the work proceed to step 9 (open PR).
 
 ### 1. Issue identification
 
-Run `printenv ISSUE_ID` to check the issue number, then confirm with the user. The user can provide a different number. If no issue exists yet, use the `/new-issue` skill to create one.
+Run `printenv ISSUE_ID` to check the issue number, then confirm with PO. PO can provide a different number. If no issue exists yet, use the `/new-issue` skill to create one.
 
 Read the issue body and comments — two calls are needed:
 
@@ -66,7 +75,7 @@ NEVER commit to `main` directly. NEVER merge PRs — merging is a strictly manua
 
 ### 3. Plan
 
-Enter plan mode. **Discuss the approach with the user before writing — the "Discuss before you act" principle applies here: writing the plan is an act.** Then write an implementation plan with three sections:
+Enter plan mode. **Discuss the approach with PO before writing — the "Discuss before you act" principle applies here: writing the plan is an act.** Then write an implementation plan with three sections:
 
 **Requirements.** What the issue requires: what must be done, acceptance criteria, and implementation constraints. Self-contained — Coder should be able to implement from this plan without reading the issue or other docs.
 
@@ -74,7 +83,7 @@ Enter plan mode. **Discuss the approach with the user before writing — the "Di
 
 **Work breakdown.** Ordered list of implementation steps. For each step: files to create/modify/remove, classes/functions to add/change/remove. Include test coverage plan and any risk areas.
 
-Iterate with the user in plan mode until the plan is approved.
+Iterate with PO in plan mode until the plan is approved.
 
 ### 4. Post plan
 
@@ -92,7 +101,7 @@ Dispatch the `@coder` subagent with: issue id, issue title, issue type, path to 
 
 ### 6. Post outcome
 
-Immediately after Coder terminates — before asking the user anything — post Coder's verbatim (no rewording, no reformatting, no condensing) structured final response as a comment to the issue:
+Immediately after Coder terminates — before asking PO anything — post Coder's verbatim (no rewording, no reformatting, no condensing) structured final response as a comment to the issue:
 
 ```bash
 gh issue comment {issue-id} --body "..."
@@ -102,13 +111,13 @@ gh issue comment {issue-id} --body "..."
 
 ### 7. Review
 
-Surface full structured final response to the user verbatim — no rewording, no reformatting, no condensing. Ask the user for approval or rejection of Coder's work outome.
+Surface full structured final response to PO verbatim — no rewording, no reformatting, no condensing. Ask PO for approval or rejection of Coder's work outome.
 
 ### 8. Iterate
 
-If the user does not approve, start over from step 3. Enter plan mode and write a **delta plan** — a new file (e.g. `impl-plan-v2.md`) scoped only to what needs to change from what Coder already implemented. The issue comment thread (plan/outcome pairs) is the baseline; do not restate work that was done correctly. Post the delta plan as a comment (step 4), then dispatch Coder with the delta plan file (step 5), and so on. Each iteration produces its own plan/outcome comment pair on the issue.
+If PO does not approve, start over from step 3. Enter plan mode and write a **delta plan** — a new file (e.g. `impl-plan-v2.md`) scoped only to what needs to change from what Coder already implemented. The issue comment thread (plan/outcome pairs) is the baseline; do not restate work that was done correctly. Post the delta plan as a comment (step 4), then dispatch Coder with the delta plan file (step 5), and so on. Each iteration produces its own plan/outcome comment pair on the issue.
 
-Once the user approves, proceed to step 9.
+Once PO approves, proceed to step 9.
 
 ### 9. Open PR
 
@@ -148,7 +157,7 @@ When dispatching subagents (AA, Coder) via the Agent tool and SendMessage, you (
   AA completed its work on `spec.md`. Should we proceed to the next phase?
   ```
 - Relay subagent messages verbatim — do not reword, reformat, or condense.
-- Use a transit marker when routing a PO response back to a subagent. After using SendMessage to send PO's rmessage to subagent, show this to PO:
+- Use a transit marker when routing a PO response back to a subagent. After using SendMessage to send PO's response to subagent, show this to PO:
   ```
   🔵 #Project Manager (PM): Sending your response to <subagent emoji> #<subagent full name>...
   ```
