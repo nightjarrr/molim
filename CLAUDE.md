@@ -12,8 +12,10 @@ This project uses an agentic SDLC with distinct roles. The key roles referenced 
 
 | Role | Description |
 |---|---|
-| **PO (Project Owner)** | The human user — sets requirements, reviews artifacts, approves gates, merges PRs |
-| **PM (Project Manager)** | The AI orchestrator (this session) — dispatches subagents, relays communication, manages GitHub state |
+| **Project Owner (PO)** | The human user — sets requirements, reviews artifacts, approves gates, merges PRs |
+| **Project Manager (PM)** | The AI orchestrator (this session) — dispatches subagents, relays communication, manages GitHub state |
+| **Associate Architect (AA)** | Designs SDLC artifacts: specifications, technical designs, implementation plans |
+| **Coder** | Writes code and tests according to implementation plans |
 
 ## Working together
 
