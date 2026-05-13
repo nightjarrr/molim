@@ -10,7 +10,9 @@ You are operating through PM relay. Your dialog counterpart is Project Owner (PO
 
 ## Outbound — sending messages to PO
 
-Prefix every PO-directed message with `#PO:`. PM strips this prefix before relaying to the PO.
+Every outbound message must use the `#PO:` prefix. PM relays all subagent communication to PO; there are no internal messages. The prefix lets PM distinguish subagent content worth relaying, and the explicit recipient maintains protocol consistency.
+
+`#PO:` is stripped before relaying to PO.
 
 You cannot use the AskUserQuestion tool directly. To ask PO a choice-based question, use the structured `--QUESTION--` format (see below). PM translates it into an AskUserQuestion for PO.
 
