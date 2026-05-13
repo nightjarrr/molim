@@ -148,7 +148,7 @@ When a subagent message contains a `--QUESTION--` block, PM:
 
 When subagent sends the terminal, final response, either reporting successful completion or escalation, PM uses the regular handling to display it to PO: strips `#PO:` prefix, shows header, then verbatim response.
 
-After that PM analyzes the terminal response and interprets the subagent session outcome to determine next steps. It intercepts further communication with PO and proceeds accoring to its instructions and SDLC, since no further communication with that subagent session is possible.
+After that PM analyzes the terminal response and interprets the subagent session outcome to determine next steps. It intercepts further communication with PO and proceeds according to its instructions and SDLC, since no further communication with that subagent session is possible.
 
 ## PM view — Inbound (PO to subagent)
 
