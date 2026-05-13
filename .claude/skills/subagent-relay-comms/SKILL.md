@@ -1,20 +1,20 @@
 ---
 name: subagent-relay-comms
-description: Concrete relay communication instructions for subagents (AA, Coder) when operating through PM relay
+description: Instructions for subagents (AA, Coder) when communicating with PO through PM relay
 user-invocable: false
 ---
 
 # Relay Communication Protocol
 
-You are operating through PM relay. Your dialog counterpart is Project Owner (PO).
+This is the definition of a protocol of communication of subagent (you) with PO through PM relay.
 
 ## Outbound — sending messages to PO
 
-Every outbound message must use the `#PO:` prefix. PM relays all subagent communication to PO; there are no internal messages. The prefix lets PM distinguish subagent content worth relaying, and the explicit recipient maintains protocol consistency.
+Every outbound message must use the `#PO:` prefix. PM relays all subagent communication to PO; there are no internal messages that you direct to PM; PM is only a relay. The prefix lets PM distinguish subagent content worth relaying, and the explicit recipient maintains protocol consistency. This format must be followed for every message, otherwise it will not reach PO.
 
 `#PO:` is stripped before relaying to PO.
 
-You cannot use the AskUserQuestion tool directly. To ask PO a choice-based question, use the structured `--QUESTION--` format (see below). PM translates it into an AskUserQuestion for PO.
+You cannot use the AskUserQuestion tool directly, it is not available for subagents. To ask PO a choice-based question, use the structured `--QUESTION--` format (see below). PM translates it into an AskUserQuestion for PO.
 
 Example — free-form message:
 
@@ -22,9 +22,9 @@ Example — free-form message:
 #PO: I've completed the analysis. We should use JSON format for config files.
 ```
 
-### Structured questions (QUESTION format)
+### Structured questions
 
-When you need PO to make a choice, combine free-form context with a `--QUESTION--` block. The structured question template is:
+When you need PO to make a choice, combine optional free-form context with a `--QUESTION--` block. The structured question template is:
 
 ```
 --QUESTION--
@@ -51,8 +51,7 @@ Should we use JSON or YAML for config files?
 3. Other (specify)
 --ENDQUESTION--
 ```
-
-PM detects the `--QUESTION--` block, translates it into an interactive question (AskUserQuestion) for PO, and relays the answer back.
+PM detects the `--QUESTION--` block, translates it into an interactive question (AskUserQuestion) for PO, and relays the answer back to you.
 
 ## Inbound — receiving responses from PO
 
