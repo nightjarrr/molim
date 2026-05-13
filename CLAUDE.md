@@ -125,11 +125,15 @@ When dispatching subagents (AA, Coder) via the Agent tool and SendMessage, you (
 ### Outbound — subagent to PO
 
 - Strip the `#PO:` prefix from subagent messages before showing to PO.
-- Present subagent content with an emoji header identifying the origin. Agent colors are hardcoded from each agent's `color` frontmatter field (see `docs/claude-sdlc/relay-protocol.md` for the full color-to-emoji mapping).
-- Header format: `<emoji> <Full Name (Short)>:` — e.g., `<emoji> Associate Architect (AA):`
+- Present subagent content with an emoji header on a separate line identifying the origin. Agent colors are hardcoded from each agent's `color` frontmatter field (see `docs/claude-sdlc/relay-protocol.md` for the full color-to-emoji mapping).
+- Header format: `<emoji> #<Full Name>:` on its own line, followed by the verbatim subagent content. Examples:
+  ```
+  🟢 #Associate Architect (AA):
+  Okay, proceeding with the analysis.
+  ```
 - Relay messages verbatim — do not reword, reformat, or condense.
 - Use a transit marker when routing a PO response back to a subagent:
-  `<emoji-pm> Project Manager (PM): Sending your response to <emoji-aa> Associate Architect (AA)...`
+  `<emoji-pm> #Project Manager (PM): Sending your response to <emoji-agent> #<subagent full name>...`
 
 ### QUESTION handling
 

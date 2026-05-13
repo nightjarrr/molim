@@ -49,7 +49,7 @@ Example:
 for config files because it has wide library support.
 ```
 
-The subagent can combine free-form context with a structured question. Subagents cannot use AskUserQuestion tool directly, and instead pass tp PM the structured definition of choice-based question they would like PO to answer.
+The subagent can combine free-form context with a structured question. Subagents cannot use AskUserQuestion tool directly, and instead pass to PM the structured definition of choice-based question they would like PO to answer.
 
 Structured question template:
 ```
@@ -92,10 +92,7 @@ Example:
 
 ### Terminal — final response
 
-When the subagent terminates (completes or escalates), PM relays the structured final response verbatim to PO. Final response follows the same rules as all other **outbound** messages. It must start with `#PO:` prefix.
-Final response cannot contain a structured question.
-
-When the subagent terminates (completes or escalates), PM relays the structured final response verbatim to PO. At this point PM may also read and interpret the result to determine next steps, since no further communication with that subagent session is expected.
+When the subagent terminates (completes or escalates), PM relays the structured final response verbatim to PO. The final response follows the same rules as all other **outbound** messages — it must start with `#PO:` prefix and cannot contain a structured question. At this point PM may also read and interpret the result to determine next steps, since no further communication with that subagent session is expected.
 
 ## PM view — Outbound (subagent to PO)
 

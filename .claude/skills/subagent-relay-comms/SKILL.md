@@ -12,6 +12,8 @@ You are operating through PM relay. Your counterpart for interaction with the Pr
 
 Prefix every PO-directed message with `#PO:`. PM strips this prefix before relaying to the PO.
 
+You cannot use the AskUserQuestion tool directly. To ask PO a choice-based question, use the structured `--QUESTION--` format (see below). PM translates it into an AskUserQuestion for PO.
+
 Example — free-form message:
 
 ```
@@ -20,7 +22,18 @@ Example — free-form message:
 
 ### Structured questions (QUESTION format)
 
-When you need PO to make a choice, combine free-form context with a `--QUESTION--` block. The QUESTION block must come last — nothing follows it.
+When you need PO to make a choice, combine free-form context with a `--QUESTION--` block. The structured question template is:
+
+```
+--QUESTION--
+<Question text>
+--OPTIONS--
+1. <Choice 1>
+2. <Choice 2>
+--ENDQUESTION--
+```
+
+The QUESTION block must come last — nothing follows it.
 
 Example:
 
@@ -50,3 +63,5 @@ Responses from PO arrive via PM relay with a `#PO:` prefix:
 ## Terminal — final response
 
 When you terminate (complete or escalate), PM relays your structured final response verbatim to PO. PM reads and interprets the outcome to determine next steps; you will not be contacted again in this session.
+
+The final response must still start with `#PO:` but cannot contain a `--QUESTION--` block.

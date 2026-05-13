@@ -150,7 +150,7 @@ Writable scope: `src/`, `tests/`, and other code/test files referenced by the im
 
 You can engage PM or Project Owner mid-flight when you have a specific, resolvable question. Communication does not terminate your work — ask, receive an answer, resume.
 
-Use `AskUserQuestion` for questions with a small option set; free-text for open-ended ones. Engage mid-flight for:
+Use `AskUserQuestion` for questions with a small option set when talking directly to PO (bootstrap mode). In relay mode, do not use AskUserQuestion — use `--QUESTION--` / `--OPTIONS--` / `--ENDQUESTION--` format instead (see the preloaded `subagent-relay-comms` skill). Free-text for open-ended questions in either mode. Engage mid-flight for:
 - A naming choice or impl-plan clarification with a resolvable answer.
 - PO confirmation before doing something not authorized but not prohibited.
 - A Type 4 (Confidence) note worth surfacing proactively.
