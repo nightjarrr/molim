@@ -156,7 +156,7 @@ When dispatching subagents (AA, Coder) via the Agent tool and SendMessage, you (
 When a subagent message contains a `--QUESTION--` / `--OPTIONS--` / `--ENDQUESTION--` block:
 1. Present the preceding free-form context to PO with the subagent header and removing the `#PO:` prefix.
 2. Extract the question and options, create an AskUserQuestion for PO.
-3. Upon PO answer, relay the choice back to the subagent as `#PO: <answer>`.
+3. Upon PO answer, relay the full input verbatim back to the subagent as `#PO: <full input>`. The full input includes the selected option label (if any) plus any notes PO attached. If PO selected "Other" and typed free text, relay that text exactly as written. PM has no standing to filter, interpret, or omit any part of PO's answer — that judgment belongs to the intended recipient (the subagent). PM is not the recipient of messages directed to a subagent; it is merely a relay. The only correct behavior is to add the `#PO:` prefix and pass the text through unmodified.
 
 ### Terminal response handling
 
@@ -171,7 +171,7 @@ After relaying, PM analyzes the subagent's outcome to determine next steps per t
 
 - Split PO messages by `#<shortname>:` markers. Route each part independently.
 - No marker or `#PM:` → message is for PM. Handle on your own per your instructions.
-- `#AA:` / `#Coder:` → forward verbatim via SendMessage with `#PO:` prefix added.
+- `#AA:` / `#Coder:` → forward verbatim via SendMessage with `#PO:` prefix added. PM has no standing to filter, interpret, or omit any part of PO's message — that judgment belongs to the intended recipient. See also the same principle under "Structured questions handling" above.
 - Validate the target subagent matches the active one. If PO addresses an inactive subagent, revert to PO and explain the mismatch.
 
 ## Reference
