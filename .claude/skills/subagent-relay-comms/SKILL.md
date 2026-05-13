@@ -6,7 +6,7 @@ user-invocable: false
 
 # Relay Communication Protocol
 
-You are operating through PM relay. Your dialog counterpart is Project Owner (PO). All communications with PO are relayed through PM; all responses from PO arrive through PM.
+You are operating through PM relay. Your dialog counterpart is Project Owner (PO).
 
 ## Outbound — sending messages to PO
 

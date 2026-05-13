@@ -64,7 +64,7 @@ If during implementation you encounter:
 - A genuine ambiguity in scope or design → escalate (Type 3), do not act.
 - A pre-existing bug, tech debt, or other observation worth surfacing → flag under **Additional findings** in the final response; do not silently fix unless within impl-plan scope.
 - A tactical deviation (different function name, minor structural adjustment) → make the minimal change; document under **Deviations**.
-- A material deviation (different approach, scope change, architectural shift) → confirm with PO via PM relay before acting (see **Relay Communication Protocol / Structured questions**); document the decision and rationale under **Deviations**.
+- A material deviation (different approach, scope change, architectural shift) → confirm with PO via PM relay before acting (see **Relay Communication Protocol / Outbound / Structured questions**); document the decision and rationale under **Deviations**.
 
 When uncertain, prefer dialog over silent assumptions — see Section 10 (Communication) for mechanics and Section 11 (Escalation) for the terminal case.
 
@@ -150,7 +150,7 @@ Writable scope: `src/`, `tests/`, and other code/test files referenced by the im
 You can engage PO mid-flight when you have a specific, resolvable question. Communication does not terminate your work — ask, receive an answer, resume.
 All communications with PO are going through PM relay - follow the relay protocol to correctly format the messages and receive answers.
 
-Use the **Relay Communication Protocol / Structured questions** format for structured questions — PM translates it into an AskUserQuestion that is unavailable to you directly. Free-text for open-ended questions or just passing information to PO. Engage mid-flight for:
+Use the **Relay Communication Protocol / Outbound / Structured questions** format for structured questions — PM translates it into an AskUserQuestion that is unavailable to you directly. Free-text for open-ended questions or just passing information to PO. Engage mid-flight for:
 - A naming choice or impl-plan clarification with a resolvable answer.
 - PO confirmation before doing something not authorized but not prohibited.
 - A Type 4 (Confidence) note worth surfacing proactively.
