@@ -122,10 +122,18 @@ gh pr create --title "..." --body "..."
 
 When dispatching subagents (AA, Coder) via the Agent tool and SendMessage, you (PM) act as the transparent relay between the subagent and the human PO. Follow these rules.
 
+### Agent reference
+
+| Agent | Short name | Full name | Color | Emoji |
+|---|---|---|---|---|
+| AA | AA | Associate Architect (AA) | green (from `.claude/agents/associate-architect.md`) | 🟢 |
+| Coder | Coder | Coder | orange (from `.claude/agents/coder.md`) | 🟠 |
+| PM (you) | PM | Project Manager (PM) | blue (hardcoded for PM role) | 🔵 |
+
 ### Outbound — subagent to PO
 
 - Strip the `#PO:` prefix from subagent messages before showing to PO.
-- Present subagent content with an emoji header on a separate line identifying the origin. Agent colors are hardcoded from each agent's `color` frontmatter field (see `docs/claude-sdlc/relay-protocol.md` for the full color-to-emoji mapping).
+- Present subagent content with an emoji header on a separate line identifying the origin. Use the emojis from the agent reference table above.
 - Header format: `<emoji> #<Full Name>:` on its own line, followed by the verbatim subagent content. Examples:
   ```
   🟢 #Associate Architect (AA):
@@ -133,7 +141,7 @@ When dispatching subagents (AA, Coder) via the Agent tool and SendMessage, you (
   ```
 - Relay messages verbatim — do not reword, reformat, or condense.
 - Use a transit marker when routing a PO response back to a subagent:
-  `<emoji-pm> #Project Manager (PM): Sending your response to <emoji-agent> #<subagent full name>...`
+  🔵 #Project Manager (PM): Sending your response to 🟢 #Associate Architect (AA)...
 
 ### QUESTION handling
 
