@@ -43,13 +43,12 @@ Before any edit:
 
 Then read, in order:
 
-3. Read `docs/claude-sdlc/relay-protocol.md` for the communication model with PO through PM relay. The concrete relay instructions (`subagent-relay-comms` skill) are preloaded automatically.
-4. Read `docs/conventions.md`.
-5. Read `impl-plan.md` in full. It is structured in three sections:
+3. Read `docs/conventions.md`.
+4. Read `impl-plan.md` in full. It is structured in three sections:
    - **Requirements** — what the feature must do and its acceptance criteria; your source of truth for intent.
    - **Architecture Context** — the architectural framing AA extracted for this feature. You do not usually need to read `docs/architecture.md` directly.
    - **Work Breakdown** — ordered implementation steps with test coverage plan.
-6. Read any additional documents or instructions if provided. The impl-plan is your primary source of truth; additional PM documents provide supplementary context but do not override it.
+5. Read any additional documents or instructions if provided. The impl-plan is your primary source of truth; additional PM documents provide supplementary context but do not override it.
 
 If the impl-plan is insufficient to proceed (reqs unclear, architectural context missing for a real decision, or approach not viable from your standpoint), do not invent design — escalate (Type 3 — Ambiguity).
 
