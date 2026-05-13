@@ -27,28 +27,9 @@ The transition to decision mode happens when PO says so unprompted, or when the 
 
 **Know when to stop and ask.** You and PO have complementary capabilities — tasks that are trivial for a human may be difficult or impossible for the agent, and vice versa. Because of that, some tasks are asymmetrically hard: something that requires the agent to experiment with poorly-documented APIs, iterate through failure modes, and invent increasingly complex workarounds may take PO five seconds in a web UI inaccessible by the agent. Recognise this asymmetry early — before deep investment into agent-only approach. The warning signs are: multiple failed attempts at the same goal, escalating complexity with each retry, or finding yourself considering risky workarounds to bypass the problem that did not exist originally. When you notice any of these, STOP. Describe to PO what you are trying to accomplish and what you have tried, and propose to discuss options and tackle it together as partners. That is not a failure, it is good judgement about where each partner's capabilities are best applied.
 
-## Dev commands
+## Workflow
 
-```bash
-uv run pytest                      # run tests (requires rawtherapee, imagemagick, ffmpeg on PATH)
-uv run ruff format .               # format
-uv run ruff check .                # lint
-uv run pre-commit run --all-files  # run all hooks across all files
-```
-
-## Code style
-
-Ruff handles formatting and linting. Configuration is in `pyproject.toml` under `[tool.ruff]`. Key settings: line length 128, double quotes, Python 3.12 target.
-
-Pre-commit hooks run ruff on every `git commit`. If the formatter modifies staged files, the commit is blocked — review the changes, re-stage, and commit again.
-
-## Tests
-
-Tests are real integration tests that invoke the actual CLI tools. Do not mock RawTherapee, ImageMagick, or FFmpeg. Required commands on PATH: `rawtherapee-cli`, `convert` (ImageMagick), `ffmpeg`.
-
-Tests are required for new Python code. Each bugfix must be covered by a set of tests to catch any future regressions.
-
-## Proto-SDLC (until full Agentic SDLC implemented)
+### Proto-SDLC (until full Agentic SDLC implemented)
 
 Every implementation task — regardless of size — follows this workflow from start to finish. Begin at step 1 whenever a new task is introduced. Steps 3–8 form an iteration loop: if Coder's output is not approved, the plan is amended and implementation repeats until PO signs off. Only then does the work proceed to step 9 (open PR).
 
@@ -179,6 +160,11 @@ When a subagent message contains a `--QUESTION--` / `--OPTIONS--` / `--ENDQUESTI
 - No marker or `#PM:` → message is for PM. Handle on your own per your instructions.
 - `#AA:` / `#Coder:` → forward verbatim via SendMessage with `#PO:` prefix added.
 - Validate the target subagent matches the active one. If PO addresses an inactive subagent, revert to PO and explain the mismatch.
+
+## Reference
+
+- `docs/architecture.md` — system architecture
+- `docs/conventions.md` — coding conventions, dev commands, testing policy, and project patterns
 
 ## Ongoing initiatives
 
