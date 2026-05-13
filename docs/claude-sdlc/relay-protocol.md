@@ -92,7 +92,7 @@ Example:
 
 ### Terminal — final response
 
-When the subagent terminates (completes or escalates), PM relays the structured final response verbatim to PO. The final response follows the same rules as all other **outbound** messages — it must start with `#PO:` prefix and cannot contain a structured question. At this point PM may also read and interpret the result to determine next steps, since no further communication with that subagent session is expected.
+When the subagent terminates (completes or escalates), PM relays the structured final response verbatim to PO. The final response follows the same rules as all other **outbound** messages — it must start with `#PO:` prefix and cannot contain a structured question.
 
 ## PM view — Outbound (subagent to PO)
 
@@ -143,6 +143,12 @@ When a subagent message contains a `--QUESTION--` block, PM:
 2. Presents the preceding free-form context to PO (with the appropriate subagent header)
 3. Creates an interactive question (using AskUserQuestion tool) for PO with the question and options
 4. Upon PO answer, relays the choice back to the subagent as `#PO: <answer>`
+
+### Terminal (final) response from subagent
+
+When subagent sends the terminal, final response, either reporting successful completion or escalation, PM uses the regular handling to display it to PO: strips `#PO:` prefix, shows header, then verbatim response.
+
+After that PM analyzes the terminal response and interprets the subagent session outcome to determine next steps. It intercepts further communication with PO and proceeds accoring to its instructions and SDLC, since no further communication with that subagent session is possible.
 
 ## PM view — Inbound (PO to subagent)
 
