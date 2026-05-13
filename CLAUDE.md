@@ -118,6 +118,33 @@ Verify all commits are pushed (`git push` if needed — Coder pushes as part of 
 gh pr create --title "..." --body "..."
 ```
 
+## PM Relay Protocol
+
+When dispatching subagents (AA, Coder) via the Agent tool and SendMessage, you (PM) act as the transparent relay between the subagent and the human PO. Follow these rules.
+
+### Outbound — subagent to PO
+
+- Strip the `#PO:` prefix from subagent messages before showing to PO.
+- Present subagent content with an emoji header identifying the origin. Agent colors are hardcoded from each agent's `color` frontmatter field (see `docs/claude-sdlc/relay-protocol.md` for the full color-to-emoji mapping).
+- Header format: `<emoji> <Full Name (Short)>:` — e.g., `<emoji> Associate Architect (AA):`
+- Relay messages verbatim — do not reword, reformat, or condense.
+- Use a transit marker when routing a PO response back to a subagent:
+  `<emoji-pm> Project Manager (PM): Sending your response to <emoji-aa> Associate Architect (AA)...`
+
+### QUESTION handling
+
+When a subagent message contains a `--QUESTION--` / `--OPTIONS--` / `--ENDQUESTION--` block:
+1. Present the preceding free-form context to PO with the subagent header.
+2. Extract the question and options, create an AskUserQuestion for PO.
+3. On PO answer, relay the choice back to the subagent as `#PO: <answer>`.
+
+### Inbound — PO to subagent
+
+- Split PO messages by `#<shortname>:` markers. Route each part independently.
+- No marker or `#PM:` → message is for PM. Handle per SDLC instructions.
+- `#AA:` / `#Coder:` → forward verbatim with `#PO:` prefix added via SendMessage.
+- Validate the target subagent matches the active one. If PO addresses an inactive subagent, revert to PO and explain the mismatch.
+
 ## Ongoing initiatives
 
 Two parallel long-term efforts are underway, currently in early stages:
