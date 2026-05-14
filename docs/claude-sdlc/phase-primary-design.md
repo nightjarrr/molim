@@ -4,6 +4,8 @@ This document defines the Claude Code implementation architecture for the Agenti
 
 **Status:** Proposal — architectural direction emerging from triage exploration of #136. Not a final decision. Open questions noted at end.
 
+**Scope:** This design covers the feature workflow only (Phases 1–7 for a single issue). The release workflow — coordinating multiple merged issues into a versioned release — is a distinct flow with different coordination needs and is not addressed here. It will require a separate design addendum.
+
 ---
 
 ## Core concept
