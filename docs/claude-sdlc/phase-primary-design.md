@@ -44,10 +44,10 @@ loop:
      (branch exists, expected artifacts present, issue is open)
   2. if validation fails → invoke PM agent with failure context; read PM handoff; decide
   3. determine agent and invocation mode for current state (see mapping below)
-  4. write dispatch brief to .sdlc/dispatch.md
+  4. write dispatch brief
   5. launch: claude [--flags] --agent <name>
      blocks until PO exits the session
-  6. read handoff document from .sdlc/<phase>-handoff.json (committed to branch by agent)
+  6. read handoff document committed to branch by agent
   7. if complete:
        post handoff summary as GitHub issue comment
        transition: advance phase label → new current state
@@ -100,7 +100,7 @@ Invoked when the conductor cannot proceed deterministically: validation failures
 claude --agent project-manager
 ```
 
-The conductor passes context about the situation via `--append-system-prompt-file .sdlc/pm-context.md`. PM handles it interactively with PO, writes a handoff, exits. The conductor reads the handoff and resumes.
+The conductor passes context about the situation via the dispatch brief mechanism. PM handles it interactively with PO, writes a handoff, exits. The conductor reads the handoff and resumes.
 
 PM is **on-call**, not permanent. On the happy path, the conductor needs no PM agent at all.
 
@@ -122,22 +122,16 @@ PM is **on-call**, not permanent. On the happy path, the conductor needs no PM a
 
 ## Dispatch brief
 
-Before launching a phase agent, the conductor writes a dispatch brief to `.sdlc/dispatch.md`. The brief provides everything the agent needs to begin work:
+Before launching a phase agent, the conductor writes a dispatch brief and passes it to the agent at launch. The brief provides everything the agent needs to begin work:
 
 - Issue ID, title, type
 - Current phase and expected deliverable
 - Paths to prior artifacts (spec.md, tech-design.md, etc.) as applicable
 - Any relevant findings from the previous phase's handoff
 
-The conductor passes it at launch:
-
-```bash
-claude --agent associate-architect --append-system-prompt-file .sdlc/dispatch.md
-```
-
 The dispatch brief is the successor to the subagent dispatch input that PM previously constructed when invoking AA or Coder via the Agent tool. It serves the same purpose — providing a self-contained task context — through a different mechanism.
 
-The brief is ephemeral: written before each agent launch, overwritten at the next launch. It does not need to persist beyond the session.
+The brief is ephemeral: written before each agent launch, not persisted beyond the session. Format and delivery mechanism are implementation details.
 
 ---
 
@@ -147,22 +141,9 @@ At phase completion, the agent writes a handoff document and **commits it to the
 
 **Why committed to branch**: the container is ephemeral. Between container runs, only durable artifacts survive. Committing the handoff to the branch ensures the conductor can read it on a fresh start, the same way it reads spec.md or tech-design.md.
 
-**Location**: `.sdlc/<phase-label>-handoff.json` on the feature branch. For example: `.sdlc/phase-spec-handoff.json`.
+The handoff must communicate: completion status, paths to artifacts produced, findings worth surfacing to PM, and any deviations from the plan. Format and location are implementation details.
 
-**Draft format**:
-```json
-{
-  "phase": "phase: spec",
-  "status": "complete",
-  "artifact_paths": ["docs/136-sdlc-arch/spec.md"],
-  "findings": [],
-  "deviations": []
-}
-```
-
-`status` values: `complete`, `partial`, `escalated`.
-
-The handoff replaces the structured "final response" terminal output that AA and Coder previously produced for PM relay. Content is equivalent; delivery mechanism changes from console output (read by PM in the same session) to a committed file (read by the conductor after process exit).
+The handoff replaces the structured "final response" terminal output that AA and Coder previously produced for PM relay. Content is equivalent; delivery mechanism changes from console output (read by PM in the same session) to a committed artifact (read by the conductor after process exit).
 
 After reading the handoff, the conductor posts its content as a GitHub issue comment and advances the phase label.
 
@@ -207,7 +188,7 @@ Role-specific instructions, phase workflows, and SDLC procedures move entirely i
 
 ## Open questions
 
-**Handoff format**: the JSON structure above is a draft. Fields for findings and deviations, whether to include artifact checksums or commit SHAs, and exact status semantics need to be finalized during design.
+**Handoff format and location**: structure, file format, and path within the branch are implementation details to be defined during design. The conceptual requirements are clear: status, artifact paths, findings, deviations.
 
 **Coder escalation path**: when Coder escalates in non-interactive mode, the conductor invokes PM. If PM determines that the impl-plan needs amendment before Coder can continue, the protocol for PM-to-conductor signaling and Coder re-dispatch needs to be specified.
 
