@@ -19,7 +19,7 @@ A complete `spec.md` has all of the following sections. Do not omit any; if a se
 3. **Out of scope** — Explicit exclusions. Naming something out of scope is as important as naming it in scope; it prevents scope creep and helps reviewers calibrate expectations.
 4. **Acceptance criteria and verification scenarios** — Observable, independently testable conditions that must hold when the feature is complete. Written from the user's perspective; each criterion must be verifiable without access to implementation internals.
 5. **Impact on existing functionality** — What existing behaviors, commands, or workflows are affected? What stays the same? If none, say so.
-6. **Alternatives considered and rejected** — At least two alternatives that were evaluated. For each: what it is, what forces favor it, and why it was rejected in favor of the chosen approach.
+6. **Alternatives considered and rejected** — Alternatives that were evaluated. For each: what it is, what forces favor it, and why it was rejected in favor of the chosen approach.
 7. **Decision log** — The record of decisions made during elaboration with the Project Owner, including the date, the question raised, the decision taken, and the forces that drove it.
 
 ---
