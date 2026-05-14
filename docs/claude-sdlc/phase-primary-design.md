@@ -2,7 +2,7 @@
 
 This document defines the Claude Code implementation architecture for the Agentic SDLC. It translates the platform-agnostic design in `docs/AGENTIC-SDLC.md` into concrete Claude Code primitives.
 
-**Status:** Draft — architectural decisions from triage exploration of #136. Open questions noted at end.
+**Status:** Proposal — architectural direction emerging from triage exploration of #136. Not a final decision. Open questions noted at end.
 
 ---
 
@@ -16,17 +16,17 @@ This has a direct consequence: relay is unnecessary. If AA is the active agent f
 
 ---
 
-## Why not the alternatives
+## Alternatives considered
 
-Three approaches were evaluated against the SDLC's requirements and rejected.
+Three approaches were analyzed as part of the triage exploration. This section captures what was learned from each — it informs the proposal but does not represent a final decision on any of them.
 
-**Subagents + relay** (`relay-protocol.md`): PM stays primary, dispatches AA and Coder as subagents, relays communication via SendMessage. Hard blockers: background-resumed agents auto-deny permission prompts (platform constraint — AA cannot write files in the relay loop); relay is structurally unstable because PM interprets content it should pass transparently (content fabrication and message loss occurred in the first live session). Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.
+**Subagents + relay** (`relay-protocol.md`): PM is the primary session by default — that is a consequence of PM being the container's default CMD, not of the relay. When PM dispatches AA or Coder as subagents, PO cannot communicate directly with the subagent; all messages flow through PM via the relay protocol, a narrowly-scoped message-passing mechanism. The relay's own problems are significant: background-resumed agents auto-deny permission prompts (hard platform constraint — AA cannot write files when resumed via SendMessage); relay is structurally unstable because PM interprets content it should pass transparently, producing content fabrication and message loss in the first live session. Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.
 
 **Agent Teams**: PM as team lead, AA and Coder as teammates with direct PO access. Designed for parallel independent workers with minimal human involvement; SDLC is sequential with high human involvement — a mismatch in workflow shape. Same experimental flag as relay; teammates lost on `/resume`. Significantly higher token cost.
 
 **Merged PM/AA (skills-based)**: PM and AA collapse into one primary session; Coder remains as a fire-and-forget subagent. Destroys the role separation that is fundamental to the SDLC design. With Coder as the only remaining agent, the architecture is a monolith in practice.
 
-**The root mismatch in all three**: each assumes the active Claude Code session is PM, permanently, with everything else secondary. The SDLC does not require this. It requires the right agent to be primary at the right time. The relay was an attempt to automate session switching inside Claude Code; the platform resists because the Agent tool is designed for fire-and-forget delegation, not interactive primary sessions.
+**The common thread**: in all three approaches, PM is the permanent primary session and AA/Coder are secondary. PM becomes primary simply by being the default Claude Code session — a structural consequence of the container CMD, not something the relay controls. The relay is a separate, narrow protocol layered on top for message passing; its problems are its own. The deeper issue is the underlying model: the Agent tool is designed for fire-and-forget delegation, not for dispatching interactive sessions that need deep conversational access to PO. AA's phases require exactly that — and these cannot be adequately served through a secondary session regardless of how well the relay works.
 
 ---
 
