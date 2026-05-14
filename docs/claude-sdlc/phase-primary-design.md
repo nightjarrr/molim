@@ -48,18 +48,28 @@ loop:
   3. determine agent and invocation mode for current state (see mapping below)
   4. write dispatch brief
   5. launch: claude [--flags] --agent <name>
-     blocks until PO exits the session
+     blocks until PO explicitly exits the Claude Code session (returns control to conductor)
   6. read handoff document committed to branch by agent
-  7. if complete:
+  7. present PO gate with conductor's suggested action based on handoff status:
+       a. proceed to next phase  (suggested when handoff is complete)
+       b. invoke out-of-phase PM  (suggested when handoff is escalated or partial)
+       c. end the loop and exit
+  8. if proceed:
        post handoff summary as GitHub issue comment
        transition: advance phase label → new current state
        if issue lifecycle done → exit
        continue loop
-  8. if escalated or partial:
-       invoke PM agent with context; read PM handoff; decide whether to transition or stop
+  9. if invoke PM:
+       invoke PM agent with context; read PM handoff; return to gate
+  10. if end:
+       exit
 ```
 
 The conductor owns all GitHub write operations (label updates, issue comments). Phase agents do not write to GitHub directly — the conductor does, after reading each handoff.
+
+**PO session exit**: at the end of a phase session, PO is responsible for explicitly exiting the Claude Code REPL (e.g. typing `/exit`) to return control to the conductor. The conductor blocks on the agent process and cannot proceed until the session terminates.
+
+**PO gates**: the conductor pauses between phases and presents PO with explicit choices before taking any action. The conductor offers a suggested action based on the handoff status, but PO retains full control — they can accept the suggestion, call for an out-of-phase PM session to assess the situation, or end the loop entirely. The gate is what makes the conductor a supervised state machine rather than a fully autonomous one.
 
 **Container lifetime** is still PO-controlled. PO can exit the conductor loop (Ctrl+C) at any time. A single container run may cover one phase or many — the same choice as today.
 
