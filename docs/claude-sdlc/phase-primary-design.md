@@ -67,42 +67,27 @@ The conductor owns all GitHub write operations (label updates, issue comments). 
 
 ## Agent invocation patterns
 
-Three patterns cover all cases.
+Two invocation modes are available. The `--agent` flag selects the role; the presence or absence of `-p` selects interactive vs. non-interactive execution.
 
-### Interactive phase sessions
-
-Used for phases requiring discovery conversations, iterative drafting, and approval gates.
+### Interactive
 
 ```bash
-claude --agent associate-architect
-claude --agent project-manager
+claude --agent <name>
 ```
 
-The agent is a fully foreground primary session. PO talks to it directly. No relay. The agent has full permissions for its role including `fs:write` for AA.
+Foreground primary session. PO talks directly to the agent. No relay. Used for AA across all design phases, and for PM — both at phase-owning steps (triage, PR) and out-of-phase when the conductor cannot proceed deterministically and needs judgment.
 
-### Non-interactive Coder
-
-Coder's role is narrow: implement per the plan, run quality gates, commit, report. PO interaction is rare. Coder runs in non-interactive (print) mode:
+### Non-interactive
 
 ```bash
-claude -p --agent coder [--output-format json]
+claude -p --agent <name>
 ```
 
-The conductor launches Coder, it executes, exits with output. The conductor reads the result. If Coder escalates, the conductor invokes PM to handle the situation with PO before re-dispatching.
+Print mode. The agent executes, produces output, and exits without an interactive session. The conductor reads the result. `--output-format json` can be added to make the output machine-readable.
 
-The one-flag difference (`-p`) between interactive and non-interactive is intentional: Coder's fire-and-forget nature is enforced at the platform level, not just by convention.
+The one-flag difference between modes is intentional: non-interactive enforces fire-and-forget at the platform level, not just by convention.
 
-### Out-of-phase PM
-
-Invoked when the conductor cannot proceed deterministically: validation failures, agent escalations, ambiguous situations requiring judgment.
-
-```bash
-claude --agent project-manager
-```
-
-The conductor passes context about the situation via the dispatch brief mechanism. PM handles it interactively with PO, writes a handoff, exits. The conductor reads the handoff and resumes.
-
-PM is **on-call**, not permanent. On the happy path, the conductor needs no PM agent at all.
+**Coder's mode is an open question.** Coder may run non-interactively (fire-and-forget; conductor reads output directly) or interactively (same as AA and PM; Coder surfaces questions to PO during implementation). See Open questions.
 
 ---
 
@@ -190,7 +175,9 @@ Role-specific instructions, phase workflows, and SDLC procedures move entirely i
 
 **Handoff format and location**: structure, file format, and path within the branch are implementation details to be defined during design. The conceptual requirements are clear: status, artifact paths, findings, deviations.
 
-**Coder escalation path**: when Coder escalates in non-interactive mode, the conductor invokes PM. If PM determines that the impl-plan needs amendment before Coder can continue, the protocol for PM-to-conductor signaling and Coder re-dispatch needs to be specified.
+**Coder invocation mode**: Coder may run interactively (direct PO access, same as AA and PM) or non-interactively (fire-and-forget, conductor reads output). The tradeoff: non-interactive enforces Coder's narrow role at the platform level but requires a separate escalation path; interactive allows Coder to surface questions mid-run but requires PO attention during implementation.
+
+**Coder escalation path**: if Coder runs non-interactively and escalates, the conductor invokes PM to handle the situation with PO. If PM determines the impl-plan needs amendment before Coder can continue, the protocol for that cycle needs to be specified.
 
 **Conductor implementation**: technology not defined — to be decided during design. The state machine logic, GitHub API requirements, and process management needs inform the choice.
 
