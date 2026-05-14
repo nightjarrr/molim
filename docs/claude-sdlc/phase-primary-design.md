@@ -34,26 +34,27 @@ Three approaches were analyzed as part of the triage exploration. This section c
 
 The **conductor** is the container's default CMD. It replaces the current behavior of launching a single PM Claude Code session as the container's main process.
 
-The conductor is a shell script. It implements the SDLC phase loop for a single issue:
+The conductor implements a **state machine** over GitHub issue phase labels. Each SDLC phase is a state; transitions are triggered by successful phase completion (advance to next phase) or failure conditions (invoke PM for judgment). For each state, the conductor determines the correct agent, launches it, reads the handoff, and drives the transition:
 
 ```
+current state = read phase label from GitHub issue
+
 loop:
-  1. read current phase label from GitHub issue
-  2. validate prerequisites for that phase
+  1. validate prerequisites for current state
      (branch exists, expected artifacts present, issue is open)
-  3. if validation fails → invoke PM agent with failure context; read PM handoff; decide
-  4. determine agent and invocation mode for current phase (see mapping below)
-  5. write dispatch brief to .sdlc/dispatch.md
-  6. launch: claude [--flags] --agent <name>
+  2. if validation fails → invoke PM agent with failure context; read PM handoff; decide
+  3. determine agent and invocation mode for current state (see mapping below)
+  4. write dispatch brief to .sdlc/dispatch.md
+  5. launch: claude [--flags] --agent <name>
      blocks until PO exits the session
-  7. read handoff document from .sdlc/<phase>-handoff.json (committed to branch by agent)
-  8. if complete:
+  6. read handoff document from .sdlc/<phase>-handoff.json (committed to branch by agent)
+  7. if complete:
        post handoff summary as GitHub issue comment
-       advance phase label
-       if issue lifecycle done → exit loop
-       continue to next iteration
-  9. if escalated or partial:
-       invoke PM agent with context; read PM handoff; decide whether to continue or stop
+       transition: advance phase label → new current state
+       if issue lifecycle done → exit
+       continue loop
+  8. if escalated or partial:
+       invoke PM agent with context; read PM handoff; decide whether to transition or stop
 ```
 
 The conductor owns all GitHub write operations (label updates, issue comments). Phase agents do not write to GitHub directly — the conductor does, after reading each handoff.
@@ -172,7 +173,7 @@ After reading the handoff, the conductor posts its content as a GitHub issue com
 In the current proto-SDLC, PM is the permanent primary session — always active, present for all phases. In the phase-primary design, PM is an on-call agent:
 
 - **Happy path**: the conductor handles phase transitions, label updates, and GitHub state updates deterministically. No PM agent invocation needed.
-- **Out-of-phase**: PM is invoked when judgment is required — validation failures, escalations, cross-issue coordination decisions that the script cannot resolve. PM handles the situation interactively with PO, writes a handoff, exits.
+- **Out-of-phase**: PM is invoked when judgment is required — validation failures, escalations, cross-issue coordination decisions the conductor cannot resolve deterministically. PM handles the situation interactively with PO, writes a handoff, exits.
 
 PM's cross-issue coordination capabilities remain intact. Between phases, the conductor reads GitHub state (labels, comments, links). When something requires PM judgment, PM reconstructs cross-issue context from GitHub at session start — the same approach the SDLC design has always intended.
 
@@ -210,7 +211,7 @@ Role-specific instructions, phase workflows, and SDLC procedures move entirely i
 
 **Coder escalation path**: when Coder escalates in non-interactive mode, the conductor invokes PM. If PM determines that the impl-plan needs amendment before Coder can continue, the protocol for PM-to-conductor signaling and Coder re-dispatch needs to be specified.
 
-**Conductor language**: shell script is the natural starting point given the existing launcher. Complexity may warrant a more structured implementation (Node.js). Decision deferred to implementation planning.
+**Conductor implementation**: technology not defined — to be decided during design. The state machine logic, GitHub API requirements, and process management needs inform the choice.
 
 **Session naming**: using `--name` to give each agent session a meaningful display name (e.g., `AA Phase 2 #136`) improves observability when multiple sessions appear in history. Naming convention to be defined.
 
