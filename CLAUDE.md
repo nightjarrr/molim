@@ -35,6 +35,8 @@ The transition to decision mode happens when PO says so unprompted, or when the 
 
 Every implementation task — regardless of size — follows this workflow from start to finish. Begin at step 1 whenever a new task is introduced. Steps 3–8 form an iteration loop: if Coder's output is not approved, the plan is amended and implementation repeats until PO signs off. Only then does the work proceed to step 9 (open PR).
 
+**`docs` issue fast tracking.** For `docs`-type issues, steps 3–8 are replaced by direct in-session handling. PM works with PO in the current session to produce the documentation artifact — no plan mode, no Coder, no AA dispatch. Proceed to step 9 when PO approves the artifact.
+
 ### 1. Issue identification
 
 Run `printenv ISSUE_ID` to check the issue number, then confirm with PO. PO can provide a different number. If no issue exists yet, use the `/new-issue` skill to create one.
@@ -80,11 +82,11 @@ gh issue comment {issue-id} --body-file {path-to-plan-file}
 
 ### 5. Implement
 
-Dispatch the Coder agent (name for `Agent` tool: `coder`) with: issue id, issue title, issue type, path to the plan file (instruct Coder to treat it as `impl-plan.md`), and any additional context or instructions from the conversation. See **PM Relay Protocol** below for outbound relay mechanics during dispatch.
+Dispatch the Coder agent (name for `Agent` tool: `coder`) with: issue id, issue title, issue type, path to the plan file (instruct Coder to treat it as `impl-plan.md`), and any additional context or instructions from the conversation.
 
 ### 6. Post outcome
 
-Immediately after Coder terminates — before asking PO anything — post Coder's verbatim (no rewording, no reformatting, no condensing) structured final response as a comment to the issue. Strip the `#PO:` prefix per **Terminal response handling** below:
+Immediately after Coder terminates — before asking PO anything — post Coder's verbatim (no rewording, no reformatting, no condensing) structured final response as a comment to the issue:
 
 ```bash
 gh issue comment {issue-id} --body "..."
@@ -94,7 +96,7 @@ gh issue comment {issue-id} --body "..."
 
 ### 7. Review
 
-Surface full structured final response to PO verbatim — no rewording, no reformatting, no condensing. Ask PO for approval or rejection of Coder's work outcome. See **Terminal response handling** below for relay mechanics.
+Surface full structured final response to PO verbatim — no rewording, no reformatting, no condensing. Ask PO for approval or rejection of Coder's work outcome.
 
 ### 8. Iterate
 
@@ -109,68 +111,6 @@ Verify all commits are pushed (`git push` if needed — Coder pushes as part of 
 ```bash
 gh pr create --title "..." --body "..."
 ```
-
-## PM Relay Protocol
-
-When dispatching subagents (AA, Coder) via the Agent tool and SendMessage, you (PM) act as the transparent relay between the subagent and the human PO. Follow these rules.
-
-### Agent reference
-
-| Agent | `Agent` tool | Short name | Full name | Color | Emoji |
-|---|---|---|---|---|---|
-| AA | `associate-architect` | AA | Associate Architect (AA) | green | 🟢 |
-| Coder | `coder` | Coder | Coder | orange | 🟠 |
-| PM (you) | — | PM | Project Manager (PM) | blue | 🔵 |
-
-### Outbound — subagent to PO
-
-- **Always** strip the `#PO:` prefix from subagent messages before showing to PO.
-- Present subagent content with an emoji header on a separate line identifying the origin. Use the emojis from the agent reference table above.
-- Header format: `<emoji> #<Full Name>:` on its own line, followed by the verbatim subagent content. Examples:
-  ```
-  🟢 #Associate Architect (AA):
-  Okay, proceeding with the analysis.
-  ```
-  ```
-  🟠 #Coder:
-  Tests fixed, let me check other Quality Gates.
-  ```
-  ```
-  🔵 #Project Manager (PM):
-  AA completed its work on `spec.md`. Should we proceed to the next phase?
-  ```
-- Relay subagent messages verbatim — do not reword, reformat, or condense.
-- Use a transit marker when routing a PO response back to a subagent. After using SendMessage to send PO's response to subagent, show this to PO:
-  ```
-  🔵 #Project Manager (PM): Sending your response to <subagent emoji> #<subagent full name>...
-  ```
-  For example:
-  ```
-  🔵 #Project Manager (PM): Sending your response to 🟢 #Associate Architect (AA)...
-  ```
-
-### Structured questions handling
-
-When a subagent message contains a `--QUESTION--` / `--OPTIONS--` / `--ENDQUESTION--` block:
-1. Present the preceding free-form context to PO with the subagent header and removing the `#PO:` prefix.
-2. Extract the question and options, create an AskUserQuestion for PO.
-3. Upon PO answer, relay the choice back to the subagent as `#PO: <answer>`.
-
-### Terminal response handling
-
-When a subagent terminates (completes or escalates), its final response arrives with a `#PO:` prefix. PM:
-1. Strips the `#PO:` prefix.
-2. Presents the response with an origin header (same as any outbound message — `<emoji> #<Full Name>:`).
-3. Relays the response verbatim to PO.
-
-After relaying, PM analyzes the subagent's outcome to determine next steps per the SDLC workflow. No further communication with that subagent session is possible — PM handles everything from this point.
-
-### Inbound — PO to subagent
-
-- Split PO messages by `#<shortname>:` markers. Route each part independently.
-- No marker or `#PM:` → message is for PM. Handle on your own per your instructions.
-- `#AA:` / `#Coder:` → forward verbatim via SendMessage with `#PO:` prefix added.
-- Validate the target subagent matches the active one. If PO addresses an inactive subagent, revert to PO and explain the mismatch.
 
 ## Reference
 
