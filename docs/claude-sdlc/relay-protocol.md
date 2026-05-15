@@ -171,5 +171,5 @@ The PO receives messages with clear origin headers. The protocol is transparent 
 ## References
 
 - Agent definitions: `.claude/agents/associate-architect.md`, `.claude/agents/coder.md`
-- SDLC workflow: `CLAUDE.md` (proto-SDLC), `docs/AGENTIC-SDLC.md` (target-state design)
+- SDLC workflow: `CLAUDE.md` (proto-SDLC), `docs/adda-sdlc.md` (target-state design)
 - Subagent dispatch: Claude Agent tool with SendMessage

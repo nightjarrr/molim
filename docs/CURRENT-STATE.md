@@ -28,7 +28,7 @@ Audience: AI agent or maintainer continuing implementation.
 ## Repository / branch context
 
 * Target design doc: `docs/CLAUDE-DEV-ENVIRONMENT.md`.
-* Existing SDLC doc: `docs/AGENTIC-SDLC.md`.
+* Existing SDLC doc: `docs/adda-sdlc.md`.
 * Host launcher: `scripts/claude-dev.sh`.
 * Launcher config: `scripts/claude-dev.env`.
 * Tmux seed config: `scripts/claude-dev.tmux.conf`.

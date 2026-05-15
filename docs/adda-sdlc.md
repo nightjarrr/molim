@@ -1,4 +1,6 @@
-# Agentic SDLC
+# ADDA — Agentic Development with Durable Artifacts
+
+ADDA is an agent-native software development flow where durable artifacts — specifications, technical designs, implementation plans, handoff artifacts, and issue state — carry context across phases, agents, reviews, implementation, and release, so that no phase relies on hidden session memory.
 
 ## Purpose and audience
 
@@ -317,7 +319,7 @@ This protocol applies at every point where validation runs — session start, ph
 docs/
 ├── architecture.md           # Persistent project-wide architecture reference
 ├── conventions.md            # Coding conventions and patterns
-├── AGENTIC-SDLC.md           # This document — conceptual SDLC design (human audience)
+├── adda-sdlc.md              # This document — conceptual SDLC design (human audience)
 └── {issue-id}-{slug}/        # Per-feature folder, e.g. 42-avif-heic-support/
     ├── spec.md               # Functional specification
     ├── tech-design.md        # Technical design
@@ -651,8 +653,8 @@ These documents are persistent inputs that may be referenced by AI agents during
 |---|---|---|
 | `docs/architecture.md` | Codebase structure, modules, key patterns | AA |
 | `docs/conventions.md` | Coding conventions used consistently in the codebase | AA, Coder |
-| `docs/AGENTIC-SDLC.md` | This document — conceptual design of the agentic system | Project Owner only |
+| `docs/adda-sdlc.md` | This document — conceptual design of the agentic system | Project Owner only |
 
 The architecture document is read by AA when performing decision-heavy work that requires structural awareness of the codebase. The conventions document is read by both AA and Coder when their delegated work involves writing or modifying code or referencing established patterns. They are produced once (by an AI agent reading the full codebase) before AI-assisted development begins and updated incrementally thereafter.
 
-This document (`AGENTIC-SDLC.md`) is read only by the Project Owner during setup and when the system design itself is being modified. It is not part of any agent's runtime context.
+This document (`adda-sdlc.md`) is read only by the Project Owner during setup and when the system design itself is being modified. It is not part of any agent's runtime context.

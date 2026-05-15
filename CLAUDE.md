@@ -31,7 +31,7 @@ The transition to decision mode happens when PO says so unprompted, or when the 
 
 ## Workflow
 
-### Proto-SDLC (until full Agentic SDLC implemented)
+### Proto-SDLC (until full ADDA implemented)
 
 Every implementation task — regardless of size — follows this workflow from start to finish. Begin at step 1 whenever a new task is introduced. Steps 3–8 form an iteration loop: if Coder's output is not approved, the plan is amended and implementation repeats until PO signs off. Only then does the work proceed to step 9 (open PR).
 
@@ -181,7 +181,7 @@ After relaying, PM analyzes the subagent's outcome to determine next steps per t
 
 Two parallel long-term efforts are underway, currently in early stages:
 
-- **Agentic SDLC** — a Claude Code-driven development lifecycle for this project. Design is in `docs/AGENTIC-SDLC.md` (written for the human; not agent runtime context, unless explicitly asked by the user).
+- **ADDA** — a Claude Code-driven development lifecycle for this project. Design is in `docs/adda-sdlc.md` (written for the human; not agent runtime context, unless explicitly asked by the user).
 - **Isolated container runtime** — a hardened, ephemeral Docker environment for Claude Code sessions. Design and current state are in `docs/CLAUDE-DEV-ENVIRONMENT.md` and `docs/CURRENT-STATE.md`.
 
 The isolated container is the primary intended runtime for Claude Code sessions, but the project can be set up and developed in other environments as well.
