@@ -44,8 +44,6 @@ translated into vendor-specific primitives during that generation step.
   defined in this document.
 - Maintains feature-level state by reading GitHub Issues and the repository.
 - Dispatches Associate Architect or Coder for individual steps within phases.
-- Acts as a transparent relay between subagents and the Project Owner during
-  collaborative work.
 - Handles all GitHub state updates: phase labels, comments, links, PR creation.
 - Surfaces phase gate questions to the Project Owner and records approvals.
 
@@ -55,7 +53,7 @@ translated into vendor-specific primitives during that generation step.
   designs, implementation plans, and project-wide documentation updates.
 - Step-scoped: invoked by PM for one specific step within a phase, terminates
   on completion.
-- Communicates with the Project Owner during its work via PM relay.
+- Communicates with the Project Owner during its work directly.
 - Produces artifact documents that fully capture decisions and rationale,
   enabling later phases to operate without access to prior session context.
 - Never writes code on its own, only generates artifacts for the coding phase.
@@ -65,7 +63,7 @@ translated into vendor-specific primitives during that generation step.
 - Performs implementation: writing code, writing tests, running quality gates.
 - Step-scoped: invoked by PM for Phase 5 implementation steps.
 - Only role with shell execution capability.
-- Communicates with the Project Owner during its work via PM relay.
+- Communicates with the Project Owner during its work directly.
 
 ---
 
@@ -91,7 +89,7 @@ When PM delegates a step to AA or Coder, it constructs a self-contained task des
   for Coder. AA is responsible for carrying any architectural context Coder
   needs into `impl-plan.md` (see Phase 4); the workflow does not depend on
   Coder reading `architecture.md`. If the impl-plan is insufficient for Coder
-  to proceed, the recourse is escalation via PM relay.
+  to proceed, the recourse is escalation to PM.
 - The specific deliverable expected from this step.
 - Any constraints or decisions surfaced earlier in the workflow that bound the subagent's work.
 
@@ -115,12 +113,12 @@ that subsequent phases can operate on those artifacts alone.
 
 ### Communication
 
-- Project Owner communicates with the system through PM exclusively.
+- Each agent communicates with the Project Owner directly as required by its work. The mechanism for this communication is a runtime concern — ADDA does not prescribe it.
 - Project Owner provides intent (e.g. "proceed with #42"); PM derives the current phase and next action from GitHub Issue state and codebase state. PM always validates Issue and codebase consistency before acting using "Validate Issue" skill. When inconsistencies or missing required state are detected, PM follows the Issue Validation Failure Remediation protocol.
 - Phase gate approvals are explicit chat exchanges: PM asks for approval, Project Owner confirms, PM records the approval as an Issue comment and updates the phase label to the next phase.
 - PM does not automatically proceed to the next phase after approval; PM explicitly asks whether to proceed, allowing the Project Owner to pause feature implementation.
-- When PM relays for a subagent, the active subagent is identified to the Project Owner (e.g. "Coder via PM" indicator).
-- When acting as a relay between Project Owner and subagent, PM does not interpret or filter the relayed conversation; PM is a transparent pipe during these exchanges, acting only on the completion signal and execution summary received from the subagent, at which point PM takes over the conversation again.
+
+**Design note (2026-05):** An earlier revision of this document prescribed an explicit relay protocol — structured message prefixes and PM-as-transparent-pipe mechanics for PM-mediated subagent-to-PO communication. This was retired after the relay model proved unworkable in practice. ADDA now states that each agent requires direct communication with the Project Owner; the implementation mechanism is a runtime concern outside ADDA's scope.
 
 ### Escalation
 
@@ -134,10 +132,9 @@ escalation path:
 | 3 — Ambiguity | Scope or decision outside role authority | Always escalate to human; encourage proactive early review rather than assumption. |
 | 4 — Confidence | Work done but uncertainty surfaced | Always surface as information, encourage proactive disclosure and review from human. |
 
-Content roles (AA, Coder) escalate to the Project Owner via PM relay. PM
-escalates to the Project Owner directly when its own operations encounter
-issues. Skills (non-agent capabilities) surface failures to their invoking
-agent.
+Content roles (AA, Coder) escalate to PM. PM surfaces escalations to the
+Project Owner as needed. Skills (non-agent capabilities) surface failures to
+their invoking agent.
 
 ---
 
@@ -520,7 +517,7 @@ On Project Owner approval, PM sets the phase label directly to `phase: impl-done
 | Implement code changes per `impl-plan.md`, iterate with Project Owner on implementation questions. | Coder (delegated by PM) | — |
 | Write new tests per the test coverage plan, ensure they pass, iterate with Project Owner on implementation questions. | Coder (delegated by PM) | — |
 | Run all quality gates locally. | Coder (delegated by PM) | Quality Gates |
-| Flag deviations from impl plan to Project Owner via PM relay. | Coder | — |
+| Flag deviations from impl plan to PM. | Coder | — |
 | Commit code changes to feature branch, push feature branch. | Coder (delegated by PM) | — |
 | Monitor CI job on feature branch to completion | PM. | — |
 | Project Owner reviews and approves the implementation based on feature branch changes. | Project Owner | — |
