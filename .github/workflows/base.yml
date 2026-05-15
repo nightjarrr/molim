@@ -23,7 +23,7 @@ jobs:
         run: uv sync --all-extras --dev
 
       - name: Install CLI tools
-        run: sudo apt-get install -y --no-install-recommends rawtherapee imagemagick ffmpeg
+        run: sudo apt-get install -y --no-install-recommends rawtherapee imagemagick ffmpeg libheif1 libheif-plugin-libde265
 
       - name: Run tests
         run: uv run pytest
