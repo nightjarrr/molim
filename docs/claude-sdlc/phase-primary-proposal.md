@@ -1,10 +1,10 @@
-# Phase-Primary Design
+# Phase-Primary: Concept Proposal
 
-This document defines the Claude Code implementation architecture for the Agentic SDLC. It translates the platform-agnostic design in `docs/AGENTIC-SDLC.md` into concrete Claude Code primitives.
+This document captures the exploration and ideation that produced the phase-primary approach. It is **not a design artifact** — it is the input to the design process (spec, tech-design, impl-plan). The actual design work happens in subsequent SDLC phases that take this proposal as their starting point.
 
 **Status:** Proposal — architectural direction emerging from triage exploration of #136. Not a final decision. Open questions noted at end.
 
-**Scope:** This design covers the feature workflow only (Phases 1–7 for a single issue). The release workflow — coordinating multiple merged issues into a versioned release — is a distinct flow with different coordination needs and is not addressed here. It will require a separate design addendum.
+**Scope:** This proposal covers the feature workflow only (Phases 1–7 for a single issue). The release workflow — coordinating multiple merged issues into a versioned release — is a distinct flow with different coordination needs and is not addressed here. It will require separate design work.
 
 ---
 
