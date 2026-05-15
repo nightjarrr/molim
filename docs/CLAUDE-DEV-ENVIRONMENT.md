@@ -2,7 +2,7 @@
 
 This document specifies the target design of an isolated, ephemeral, hardened container environment for running **Claude Code** against a GitHub-hosted project repository. It covers the image, the network perimeter, the container lifecycle, and the host-side and container-side scripts that bootstrap the environment.
 
-Companion to [`AGENTIC-SDLC.md`](AGENTIC-SDLC.md).
+Companion to [`adda-sdlc.md`](adda-sdlc.md).
 
 **Audience: human Project Owner only.** Read at setup time and when modifying the environment. Not part of any agent's runtime context.
 
