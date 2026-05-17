@@ -43,8 +43,6 @@ Point it at a folder, pick a command, and it handles the rest.
 
 ## Installation
 
-## Installation
-
 ### Latest release
 
 Requires `jq` for parsing the GitHub API response:
