@@ -233,6 +233,10 @@ require_var ENVOY_ADMIN_CONTAINER_PORT
 require_var ENVOY_ADMIN_ADDRESS
 require_var ENVOY_SOCKET_CONTAINER_PATH
 
+require_var CLAUDE_DEV_KEYRING_GITHUB_KEY
+require_var CLAUDE_DEV_KEYRING_CLAUDE_KEY
+require_var CLAUDE_DEV_KEYRING_DEEPSEEK_KEY
+
 # Backend resolution order:
 #   1. explicit CLI option
 #   2. claude-dev.env / inherited environment
@@ -314,21 +318,22 @@ fi
 # ----------------------------------------------------------------------
 keyring_lookup() {
     local account="$1"
+    local key="$2"
     local value
-    value="$(secret-tool lookup service claude-dev account "$account" || true)"
+    value="$(secret-tool lookup service claude-dev account "$account" key "$key" || true)"
     if [[ -z "$value" ]]; then
-        die "no secret found in keyring for service=claude-dev account=${account}. See CLAUDE-DEV-ENVIRONMENT.md for the bootstrap procedure."
+        die "no secret found in keyring for service=claude-dev account=${account} key=${key}. See CLAUDE-DEV-ENVIRONMENT.md for the bootstrap procedure."
     fi
     printf '%s' "$value"
 }
 
-GITHUB_TOKEN_="$(keyring_lookup github-token)"
+GITHUB_TOKEN_="$(keyring_lookup github "$CLAUDE_DEV_KEYRING_GITHUB_KEY")"
 export GITHUB_TOKEN_
 
 BACKEND_DOCKER_ENV=()
 case "$CLAUDE_DEV_LLM_BACKEND" in
   anthropic)
-    CLAUDE_CODE_OAUTH_TOKEN="$(keyring_lookup claude-oauth)"
+    CLAUDE_CODE_OAUTH_TOKEN="$(keyring_lookup claude "$CLAUDE_DEV_KEYRING_CLAUDE_KEY")"
     export CLAUDE_CODE_OAUTH_TOKEN
     BACKEND_DOCKER_ENV=(
       -e CLAUDE_CODE_OAUTH_TOKEN
@@ -336,7 +341,7 @@ case "$CLAUDE_DEV_LLM_BACKEND" in
     ;;
 
   deepseek)
-    ANTHROPIC_AUTH_TOKEN="$(keyring_lookup deepseek-apikey)"
+    ANTHROPIC_AUTH_TOKEN="$(keyring_lookup deepseek "$CLAUDE_DEV_KEYRING_DEEPSEEK_KEY")"
 
     ANTHROPIC_BASE_URL="${CLAUDE_DEV_DEEPSEEK_BASE_URL:-https://api.deepseek.com/anthropic}"
     ANTHROPIC_MODEL="${CLAUDE_DEV_DEEPSEEK_MODEL:-deepseek-v4-flash}"

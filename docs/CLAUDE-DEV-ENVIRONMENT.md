@@ -239,12 +239,13 @@ Both are stored in the host Secret Service keyring, retrieved by the launcher, a
 
 ### Secret naming in keyring
 
-| Secret                  | Service      | Account        |
-| ----------------------- | ------------ | -------------- |
-| Claude Code OAuth token | `claude-dev` | `claude-oauth` |
-| GitHub Token            | `claude-dev` | `github-token` |
+| Secret                  | Service      | Account    | Key                               |
+| ----------------------- | ------------ | ---------- | --------------------------------- |
+| Claude Code OAuth token | `claude-dev` | `claude`   | `oauth` (default)                 |
+| GitHub Token            | `claude-dev` | `github`   | repo-specific (e.g. `molim-token`) |
+| DeepSeek API key        | `claude-dev` | `deepseek` | `apikey` (default)                |
 
-Both use the `claude-dev` service namespace. The `account` attribute distinguishes them.
+All entries use the `claude-dev` service namespace. `account` identifies the target system; `key` identifies the credential within that system and is configured per-repo in `claude-dev.env` via `CLAUDE_DEV_KEYRING_GITHUB_KEY`, `CLAUDE_DEV_KEYRING_CLAUDE_KEY`, and `CLAUDE_DEV_KEYRING_DEEPSEEK_KEY`. Multiple GitHub repos can coexist in one keyring by using distinct `key` values (e.g., `molim-token`, `otherrepo-token`).
 
 ### One-time bootstrap: Claude Code OAuth token
 
@@ -266,7 +267,7 @@ Procedure:
 
 ```bash
 secret-tool store --label='Claude Code OAuth' \
-  service claude-dev account claude-oauth
+  service claude-dev account claude key oauth
 ```
 
 ### One-time bootstrap: GitHub Token
@@ -274,9 +275,12 @@ secret-tool store --label='Claude Code OAuth' \
 Generate a fine-grained Personal Access Token in GitHub and store it directly in the keyring:
 
 ```bash
-secret-tool store --label='Claude Code GitHub Token' \
-  service claude-dev account github-token
+secret-tool store --label='Claude Code GitHub Token ({repo})' \
+  service claude-dev account github key {repo}-token
 ```
+
+Replace `{repo}` with the actual repository name (e.g., `molim`). The `{repo}-token` value must match `CLAUDE_DEV_KEYRING_GITHUB_KEY` in that repo's `claude-dev.env`. Using distinct values per repo enables simultaneous sessions against different repositories from the same keyring.
+
 Github token scoping and permissions are explained further in **GitHub Token scoping** section.
 
 ### Retrieval
@@ -284,8 +288,8 @@ Github token scoping and permissions are explained further in **GitHub Token sco
 The launcher retrieves both tokens at runtime:
 
 ```bash
-CLAUDE_CODE_OAUTH_TOKEN=$(secret-tool lookup service claude-dev account claude-oauth)
-GITHUB_TOKEN_=$(secret-tool lookup service claude-dev account github-token)
+CLAUDE_CODE_OAUTH_TOKEN=$(secret-tool lookup service claude-dev account claude key oauth)
+GITHUB_TOKEN_=$(secret-tool lookup service claude-dev account github key {repo}-token)
 ```
 
 If either lookup returns empty, the launcher fails fast with a bootstrap-procedure pointer.
