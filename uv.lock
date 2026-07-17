@@ -164,7 +164,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "rich", specifier = ">=13.9.4" },
-    { name = "sh", specifier = ">=2.2.1" },
+    { name = "sh", specifier = ">=2.2.4" },
     { name = "tomlkit", specifier = ">=0.13.2" },
 ]
 
@@ -398,11 +398,11 @@ wheels = [
 
 [[package]]
 name = "sh"
-version = "2.2.1"
+version = "2.2.4"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/bd/30/abf254f7b56ba7bcae938767e3ee0f54d220d931a35a8721de350b76dec5/sh-2.2.1.tar.gz", hash = "sha256:287021ae84183dea49787985e33797dda7fe769e4f95f2c94dff8e245ab4cb00", size = 345105, upload-time = "2025-01-09T22:31:19.329Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/58/cd/e31a5fdc7e851e37d3b4b729692da7a130dbbd36c755e0b3f24b30323c97/sh-2.2.4.tar.gz", hash = "sha256:38c65e836b289ce14436b57ba35d3a87438218a1c0af535d89d648b1ed6b072e", size = 346840, upload-time = "2026-06-06T19:33:24.455Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3d/9a/3fb455591ab32280ea9397e8cb02b167bf591428e89779a896f2998cfd56/sh-2.2.1-py3-none-any.whl", hash = "sha256:c7369c4ae13729d8ea100b5e93af1a8be528a008433428e38651c9f2b5b5fe2c", size = 38147, upload-time = "2025-01-09T22:31:16.323Z" },
+    { url = "https://files.pythonhosted.org/packages/41/ac/ec18f388caed492de297886df4b37583f26aa58e60a6fcb2062d2ffa75f2/sh-2.2.4-py3-none-any.whl", hash = "sha256:a45af832d92d423290b7ebc416c00b04250c15ec95715513e3c32c1b431e2c00", size = 38364, upload-time = "2026-06-06T19:33:22.738Z" },
 ]
 
 [[package]]
